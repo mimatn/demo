@@ -2,6 +2,25 @@ import com.fasterxml.jackson.databind.JsonNode
 
 class DependencyBuilder {
 
+    // Decodifica i token JSON Pointer: ~1 = /, ~0 = ~
+    private fun decodeToken(value: String): String {
+        return value.replace("~1", "/").replace("~0", "~")
+    }
+
+    private fun extractSchemaNameFromRef(ref: String): String {
+        // Caso standard OpenAPI: #/components/schemas/SchemaName
+        if (ref.contains("/components/schemas/")) {
+            return decodeToken(ref.substringAfterLast("/"))
+        }
+
+        // Caso generico: prendo l'ultimo pezzo dopo #/... (es: #/definitions/User -> User)
+        val fragment = ref.substringAfter("#", "")
+        if (fragment.isBlank()) return "UNDEFINED_SCHEMA"
+
+        val lastToken = fragment.split("/").lastOrNull { it.isNotBlank() } ?: return "UNDEFINED_SCHEMA"
+        return decodeToken(lastToken)
+    }
+
     fun buildFileDependencies(file: List<YamlFileInfo>): List<DependencyEdge> {
         // Creo una lista di dipendenze tra i file
         val dip = mutableListOf<DependencyEdge>()
@@ -17,7 +36,6 @@ class DependencyBuilder {
                 }
             }
         }
-
         // Ritorno la lista delle dipendenze eliminando i duplicati (se ci sono)
         return dip
     }
@@ -57,13 +75,7 @@ class DependencyBuilder {
                     )
                     // Se il ref punta ad un altro schema esterno creo una dipendenza tra i due file e i due schemi
                 } else if (e.startsWith("./")) {
-                    val targetSchema =
-                            if (e.contains("/components/schemas/")) {
-                                e.substringAfterLast("/")
-                            } else {
-                                // Se il ref non contiene la parte /components/schemas/ non riesco ad identificare lo schema di destinazione, quindi lo indico come UNDEFINED_SCHEMA
-                                "UNDEFINED_SCHEMA"
-                            }
+                    val targetSchema = extractSchemaNameFromRef(e)
                     edge.add(
                             DependencyEdge(
                                     "$fileName::$schemaName",
@@ -125,12 +137,7 @@ class DependencyBuilder {
                         )
                     } else if (e.startsWith("./")) {
                         val targetFile = e.substringBefore("#").removePrefix("./")
-                        val targetSchema =
-                                if (e.contains("/components/schemas/")) {
-                                    e.substringAfterLast("/")
-                                } else {
-                                    "UNDEFINED_SCHEMA"
-                                }
+                        val targetSchema = extractSchemaNameFromRef(e)
 
                         edges.add(
                                 DependencyEdge(
