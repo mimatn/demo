@@ -1,0 +1,41 @@
+# Custom data types
+components:
+  schemas:
+    epochDateTime:
+      type: integer
+      format: int64
+      description: "64 bit unix epoch (milliseconds since 1970-01-01 00:00:00.000)"
+      example: 1646002800000
+    apiDateTime:
+      description: |
+        A date-time value in ISO format, in UTC timezone, formatted like YYYY-MM-DDThh:mm:ss.sZ; 
+        see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+      type: string
+      format: date-time
+      example: "2022-02-25T14:10:00.0Z"
+    apiDateTimeReadOnly:
+      description: |
+        A date-time value in ISO format, in UTC timezone, formatted like YYYY-MM-DDThh:mm:ss.sZ; 
+        see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+      type: string
+      readOnly: true
+      format: date-time
+      example: "2022-02-25T14:10:00.0Z"
+    apiDate:
+      description: A date, formatted like YYYY-MM-DD; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+      type: string
+      format: date
+      example: "2022-02-25"
+    apiDateReadOnly:
+      description: |
+        A read-only date, formatted like YYYY-MM-DD; see [Specification > DataTypes](https://swagger.io/specification/#data-types).
+      type: string
+      format: date
+      readOnly: true
+      example: "2022-02-25"
+    # TODO: test if "format: time" is recognized. Not an OAS official value, see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+    apiTime:
+      description: "A time, formatted like hh:mm:ss o hh:mm:ss.d where hh=00..23, mm=00..59, ss=00..59, d=0..999 (decimal fraction)"
+      type: string
+      format: time
+      example: "14:10:00.0"

@@ -1,0 +1,445 @@
+openapi: 3.0.3
+info:
+  title: Statistics API
+  version: "-"
+tags:
+  - name: Statistics
+    description: |
+      The .one data model offers flexible structures for collecting datasets to support various statistical analyses.
+
+      Each analysis, associated with a specific phenomenon, is defined by a statistical type (`StatType`), which 
+      determines whether measures are expressed as quantities (using a defined unit of measurement) or as amounts 
+      (using a specified currency).  
+
+      Statistics can be targeted to different locations, such as dashboards, customer profiles, or item records, 
+      as defined by the `StatTargetLocation` dictionary. 
+
+      Depending on the nature of the data, each statistic can be visualized with the most suitable chart type. 
+
+      For instance, overlapping line charts are ideal for comparing sales trends to targets, while pie charts are better 
+      suited for showing sales distribution by customer group.
+components:
+  schemas:
+    StatTypeGraphX:
+      description: Type of dimension represented on the X-axis of the chart.
+      type: string
+      enum:
+        - StatTypeGraphX.Period
+        - StatTypeGraphX.Customer
+        - StatTypeGraphX.Item
+    StatTypeMeasure:
+      description: Type of measure represented by the statistic.
+      type: string
+      enum:
+        - StatTypeMeasure.Quantity
+        - StatTypeMeasure.Amount
+    StatTargetLocation:
+      description: |
+        Statistics can be targeted to different locations, such as dashboards, customer profiles, or item records.
+        See dictionary `StatTargetLocation`.
+      type: string
+      enum:
+        - StatTargetLocation.Dashboard
+        - StatTargetLocation.Customer
+        - StatTargetLocation.Item
+        - StatTargetLocation.SalesRep
+    StatLayout:
+      description: Each statistic can be visualized with the most suitable chart type. See dictionary `StatLayout`.
+      type: string
+      enum:
+        - StatLayout.BarChart
+        - StatLayout.DonutChart
+        - StatLayout.LineChart
+        - StatLayout.PieChart
+    XAxisColumn:
+      description: |
+        Statistics can have multiple columns, which are properly displayed in the table layout.
+        See dictionary `XAxisColumn`.
+      type: string
+      enum:
+        - XAxisColumn.SalesRepId
+        - XAxisColumn.Year
+        - XAxisColumn.Month
+        - XAxisColumn.CustomerStatGroup1Id
+        - XAxisColumn.CustomerStatGroup2Id
+        - XAxisColumn.CustomerAccountId
+        - XAxisColumn.ItemStatGroup1Id
+        - XAxisColumn.ItemStatGroup2Id
+        - XAxisColumn.ItemId
+    StatConfig:
+      description: Statistics configuration resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "StatConfig"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - statTypeId
+            - statTypeGraphXId
+            - statTypeMeasureId
+            - statTargetLocationId
+            - entityId
+            - statLayoutId
+            - jsonConfig
+          properties:
+            descr:
+              description: General description of the statistic.
+              type: string
+            statTypeId:
+              description: The type of statistic.
+              type: string
+            statTypeGraphXId:
+              $ref: "#/components/schemas/StatTypeGraphX"
+            statTypeMeasureId:
+              $ref: "#/components/schemas/StatTypeMeasure"
+            entityId:
+              description: The ID of the entity which contains the related data for the statistic.
+              type: string
+              example: "StatSalesData"
+            statTargetLocationId:
+              $ref: "#/components/schemas/StatTargetLocation"
+            statLayoutId:
+              $ref: "#/components/schemas/StatLayout"
+            jsonConfig:
+              description: |
+                String in JSON format, which describes the configuration of the statistic. 
+                The structure of the JSON depends on the type of statistic.
+                For example, for a sales statistic, it includes fields like `customerStatGroup1Id`, `itemStatGroup1Id`, 
+                etc.
+              type: string
+            xAxisColumnId:
+              $ref: "#/components/schemas/XAxisColumn"
+        relationships:
+          type: object
+          description: Related entities.
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currency:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            qtyUnitOfMeasurement:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    StatsConfigIncluded:
+      description: Related entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    StatsConfigListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Stats.
+          type: array
+          items:
+            $ref: "#/components/schemas/StatConfig"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/StatsConfigIncluded"
+    UserProfileStatsConfigRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - organizationId
+            - appId
+            - statsIds
+          properties:
+            organizationId:
+              description: The ID of the organization.
+              type: string
+            appId:
+              description: The ID of the application for which the statistics are configured.
+              type: string
+            statsIds:
+              type: array
+              description: The IDs of the statistics to configure for the user profile
+              items:
+                type: string
+              uniqueItems: true
+    SalesStatsDataset:
+      description: Statistical sales dataset resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SalesStatsDataset"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - StatsTypeId
+            - statsTargetLocationId
+            - statsLayoutId
+          properties:
+            customerStatGroup1Id:
+              description: First customer statistical grouping. See dictionary `CustomerStatGroup1`.
+              type: string
+            customerStatGroup2Id:
+              description: Second customer statistical grouping. See dictionary `CustomerStatGroup2`.
+              type: string
+            itemStatGroup1Id:
+              description: First item statistical grouping. See dictionary `ItemStatGroup1`.
+              type: string
+            itemStatGroup2Id:
+              description: Second item statistical grouping. See dictionary `ItemStatGroup2`.
+              type: string
+            year:
+              description: Reference year of the statistic.
+              type: integer
+              minimum: 0
+            month:
+              description: Reference month of the statistic.
+              type: integer
+              minimum: 1
+              maximum: 12
+            pctTarget:
+              description: Percentage representing the target to be achieved.
+              type: number
+              format: double
+            descr:
+              description: Generic textual information of the statistic.
+              type: string
+            amountType:
+              type: object
+              properties:
+                amount:
+                  description: Statistical data amount expressed in currency.
+                  type: number
+                  format: double
+                previousAmount:
+                  description: Statistical data amount from the previous year, expressed in currency.
+                  type: number
+                  format: double
+                pctChangeAmount:
+                  description: |
+                    Percentage change in amount compared to the previous period.
+                    Calculated as: `100 * ((amount - previousAmount) / previousAmount)`.
+                  type: number
+                  format: double
+                costAmount:
+                  description: Cost amount.
+                  type: number
+                  format: double
+                pctChangeCostAmount:
+                  description: |
+                    Percentage change in cost amount compared to the amount.
+                    Calculated as: `100 * ((amount - costAmount) / costAmount)`.
+                  type: number
+                  format: double
+                targetAmount:
+                  description: Target amount.
+                  type: number
+                  format: double
+                pctChangeTargetAmount:
+                  description: |
+                    Percentage change in target amount compared to the target amount.
+                    Calculated as: `100 * ((amount - targetAmount) / targetAmount)`.
+                  type: number
+                  format: double
+                organizationAmount:
+                  description: Amount expressed in the organization's currency.
+                  type: number
+                  format: double
+                organizationCostAmount:
+                  description: The `costAmount` expressed in the organization's currency.
+                  type: number
+                  format: double
+                organizationTargetAmount:
+                  description: The `targetAmount` expressed in the organization's currency.
+                  type: number
+                  format: double
+            quantityType:
+              type: object
+              properties:
+                qty:
+                  description: Statistical data expressed in quantity.
+                  type: number
+                  format: double
+                previousQty:
+                  description: Statistical data in quantity referring to the previous year.
+                  type: number
+                  format: double
+                pctChangeQty:
+                  description: |
+                    Percentage change in quantity compared to the quantity.
+                    Calculated as: `100 * ((qty - previousQty) / previousQty)`.
+                  type: number
+                  format: double
+                targetQty:
+                  description: Statistical data representing the target in quantity.
+                  type: number
+                  format: double
+                pctChangeTargetQty:
+                  description: |
+                    Percentage change in target quantity compared to the target quantity.
+                    Calculated as: `100 * ((qty - targetQty) / targetQty)`.
+                  type: number
+                  format: double
+        relationships:
+          type: object
+          description: The related entities.
+          required:
+            - statsConfig
+            - userProfile
+          properties:
+            statsConfig:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            userProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            salesRep:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            customerAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            item:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    SalesStatsDatasetIncluded:
+      description: Related entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SalesStatsDatasetListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: List of Stats.
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesStatsDataset"
+        included:
+          $ref: "#/components/schemas/SalesStatsDatasetIncluded"
+paths:
+  /stats:
+    get:
+      description: |
+        Returns a list of all statistical analyses configured for the organization and the application.
+      operationId: listStats
+      tags:
+        - Statistics
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - name: sort
+          in: query
+          description: The list is ordered by the sequence number configured for the user profile.
+          required: false
+          style: form
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string inside the stats descr.
+                type: string
+              statsTargetLocationId:
+                description: Filter by the target location of the statistic.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Statistics configurations list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/StatsConfigListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-stats/{statId}/dataset:
+    get:
+      description: |
+        Returns the sales statistics dataset for the given statistic ID. The statId must be a valid statistic ID which 
+        type is `Sales`.
+      operationId: getSalesStatsDataset
+      tags:
+        - Statistics
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: statId
+          in: path
+          description: The ID of the statistic for which the dataset is requested.
+          required: true
+          schema:
+            type: string
+        - name: customerAccountId
+          in: query
+          description: The ID of the customer for which the dataset is filtered.
+          required: false
+          schema:
+            type: string
+        - name: "filter"
+          in: query
+          description: Filter by itemId, userProfileId, and salesRepId.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              itemId:
+                description: Filter the response by Item Id.
+                type: string
+              userProfileId:
+                description: Filter the response by UserProfile Id.
+                type: string
+              salesRepId:
+                description: Filter the response by SalesRep Id.
+                type: string
+      responses:
+        "200":
+          description: Statistics dataset response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesStatsDatasetListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

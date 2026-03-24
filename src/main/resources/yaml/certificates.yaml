@@ -1,0 +1,328 @@
+openapi: 3.0.3
+info:
+  title: Certificates API
+  version: "-"
+tags:
+  - name: Certificate
+    description: APIs for Certificate resources
+components:
+  schemas:
+    CertificateStatus:
+      description: The status of the certificate. See dictionary `CertificateStatus` for more information.
+      type: string
+      enum:
+        - CertificateStatus.Current
+        - CertificateStatus.Draft
+        - CertificateStatus.Renewed
+      default: CertificateStatus.Draft
+
+    CertificateType:
+      description: Certificate type resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CertificateType"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - entityId
+            - descr
+            - recurrenceTypeId
+          properties:
+            entityName:
+              description: The certificate type applies to this entity.
+              type: string
+              example: Asset
+            code:
+              description: Code of the Certificate Type.
+              type: string
+            descr:
+              description: Description of the Certificate Type.
+              type: string
+            recurrenceTypeId:
+              $ref: "./core.yaml#/components/schemas/RecurrenceType"
+            recurrenceFrequency:
+              description: Number of days, weeks, months or years from an occurrence and another.
+              type: integer
+              minimum: 1
+        relationships:
+          type: object
+          description: The related organization.
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CertificateTypeIncluded:
+      description: Related organization.
+      type: array
+      items:
+        $ref: "./core.yaml#/components/schemas/Organization"
+      uniqueItems: true
+    CertificateTypeListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of CertificateTypes.
+          type: array
+          items:
+            $ref: "#/components/schemas/CertificateType"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CertificateTypeIncluded"
+    CertificateTypeResponse:
+      description: Single CertificateType response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CertificateType"
+        included:
+          $ref: "#/components/schemas/CertificateTypeIncluded"
+
+    Certificate:
+      description: Certificate resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Certificate"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - entityObjectId
+            - code
+            - certificateStatusId
+          properties:
+            entityObjectId:
+              description: |
+                The entity object id to which the certificate is related. The entity id is in the related certificate type.
+              type: string
+            requestDate:
+              description: Date of the request.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            code:
+              description: Code of the Certificate.
+              type: string
+            submissionDate:
+              description: Date of the submission.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            releaseDate:
+              description: Date of the release.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            expirationDate:
+              description: Certificate expiration date.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            certificateStatusId:
+              description: Certificate status. See dictionary `CertificateStatus`.
+              type: string
+        relationships:
+          type: object
+          description: The related certificate type.
+          required:
+            - certificateType
+          properties:
+            certificateType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CertificateIncluded:
+      description: Related certificate type.
+      type: array
+      items:
+        $ref: "#/components/schemas/CertificateType"
+      uniqueItems: true
+    CertificateListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Certificates.
+          type: array
+          items:
+            $ref: "#/components/schemas/Certificate"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CertificateIncluded"
+    CertificateResponse:
+      description: Single Certificate response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Certificate"
+        included:
+          $ref: "#/components/schemas/CertificateIncluded"
+paths:
+  /certificate-types:
+    get:
+      description: Returns a list of all certificate types.
+      operationId: listCertificatesTypes
+      tags:
+        - Certificate
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside code and descr attributes.
+                type: string
+              code:
+                description: Filter the response by code.
+                type: string
+              entityName:
+                description: Filter the response by entity name.
+                type: string
+      responses:
+        "200":
+          description: Certificate type list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CertificateTypeListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /certificate-types/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The certificate type id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single certificate type.
+      operationId: getCertificateType
+      tags:
+        - Certificate
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CertificateTypeResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /certificates:
+    get:
+      description: Returns a list of all certificates.
+      operationId: listCertificates
+      tags:
+        - Certificate
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside code attribute.
+                type: string
+              code:
+                description: Filter the response by code.
+                type: string
+              entityName:
+                description: Filter the response by entity name.
+                type: string
+              certificateType:
+                description: Filter the response by certificate type.
+                type: string
+              expirationDate:
+                description: Filter the response by expiration date.
+                type: string
+      responses:
+        "200":
+          description: Certificate list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CertificateListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /certificates/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The certificate id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single certificate.
+      operationId: getCertificate
+      tags:
+        - Certificate
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CertificateResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"

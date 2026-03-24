@@ -1,0 +1,583 @@
+openapi: 3.0.3
+info:
+  title: Messages API
+  version: "-"
+tags:
+  - name: User Message
+    description: |
+      Messages are a form of communication that .one users can use to contact other users of the platform.
+      Messages are created and exchanged only within the .one platform Apps.
+components:
+  schemas:
+    MessagePriority:
+      description: Represents the message priority. See dictionary `MessagePriority`.
+      type: string
+      enum:
+        - MessagePriority.High
+        - MessagePriority.Normal
+        - MessagePriority.Low
+    MessageReadingStatus:
+      description: Represents the message reading status.
+      type: string
+      enum:
+        - Read
+        - NotRead
+        - PartiallyRead
+      readOnly: true
+    UserMessage:
+      description: User message.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: UserMessage
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - subject
+            - body
+            - creationTs
+            - messagePriorityId
+            - processingStatusId
+            - isDeleted
+          properties:
+            subject:
+              description: Message subject.
+              type: string
+            body:
+              description: Message text in plain text format.
+              type: string
+            creationTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+            sentTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+            messagePriorityId:
+              $ref: "#/components/schemas/MessagePriority"
+            processingStatusId:
+              description: |
+                Message processing status. One of:
+                * `ProcessingStatus.Draft`: message not yet submitted;
+                * `ProcessingStatus.Released`: message sent;
+                * `ProcessingStatus.Cancelled`: message cancelled by user.
+              type: string
+              readOnly: true
+            messageReadingStatus:
+              $ref: "#/components/schemas/MessageReadingStatus"
+            readTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+            isDeleted:
+              description: True if the message has been deleted, false otherwise.
+              type: boolean
+              readOnly: true
+              default: false
+            hasAttachments:
+              description: True if the message has attachments, false otherwise.
+              type: boolean
+              readOnly: true
+              default: false
+        relationships:
+          type: object
+          description: User message can be sent by a user profile or system user.
+          required:
+            - senderIdentity
+          properties:
+            senderIdentity:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            senderUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            recipientsUserProfiles:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+            attachments:
+              $ref: "./jsonapi.yaml#/components/schemas/relToManyReadOnly"
+    UserMessageIncluded:
+      description: |
+        Contains:
+        * Sender identity that sent the message. Can be a user profile or system user or device;
+        * Sender user profile that sent the message (if the sender identity is a user profile);
+        * Recipients user profiles that received the message;
+        * Attachments (digital contents) of the message (available only when a single message is required).
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    UserMessageListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of User Messages.
+          type: array
+          items:
+            $ref: "#/components/schemas/UserMessage"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/UserMessageIncluded"
+    UserMessageResponse:
+      description: Single user message response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/UserMessage"
+        included:
+          $ref: "#/components/schemas/UserMessageIncluded"
+    UserMessageRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/UserMessage"
+    UserMessageReturnReceipt:
+      description: User message return  receipt. Match the reading status for each receipt.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: UserMessageReturnReceipt
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - firstName
+            - lastName
+            - messageReadingStatus
+          properties:
+            firstName:
+              description: Receipt first name.
+              type: string
+              readOnly: true
+            lastName:
+              description: Receipt last name.
+              type: string
+              readOnly: true
+            messageReadingStatus:
+              $ref: "#/components/schemas/MessageReadingStatus"
+            readTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+    UserMessageReturnReceiptListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of User Message Return Receipts.
+          type: array
+          items:
+            $ref: "#/components/schemas/UserMessageReturnReceipt"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    UserMessageReturnReceiptRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - read
+          properties:
+            read:
+              type: boolean
+              description: True if the message has been read, false otherwise.
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The message id
+      required: true
+      schema:
+        type: string
+paths:
+  /messages/incoming:
+    get:
+      summary: listIncomingMessages
+      description: Returns a list of the incoming messages.
+      operationId: listIncomingMessages
+      tags:
+        - User Message
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string inside subject attribute.
+                type: string
+              sender:
+                description: Filter the response by message sender.
+                type: string
+              isRead:
+                description: |
+                  Filter the response whether the recipient (service caller) has read the message or not.
+                    * `nn:` (not-null): the message has been read by the recipient (service caller);
+                    * `nl:` (null): the message has not yet been read by the recipient (service caller).
+                type: string
+              messagePriorityId:
+                description: Filter the response by message priority id.
+                type: string
+      responses:
+        "200":
+          description: Incoming messages list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/UserMessageListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /messages/message:
+    post:
+      summary: sendMessage
+      description: |
+        Send a new message.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | postMessage |
+      operationId: sendMessage
+      tags:
+        - User Message
+      x-authorities: ["postMessage"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        description: Message to send.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/UserMessageRequest"
+      responses:
+        "201":
+          description: Message sent.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/UserMessageResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /messages/message/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      summary: getMessage
+      description: Returns a single message.
+      operationId: getMessage
+      tags:
+        - User Message
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/UserMessageResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    delete:
+      summary: deleteMessage
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) user message.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | postMessage |
+      operationId: deleteMessage
+      tags:
+        - User Message
+      x-authorities: ["postMessage"]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /messages/message/{id}/return-receipts:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      summary: listMessageReturnReceipts
+      description: Returns a list of return receipts.
+      operationId: listMessageReturnReceipts
+      tags:
+        - User Message
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string inside subject attribute.
+                type: string
+              messageReadingStatus:
+                description: |
+                  Filter the response by message reading status. Value must be one of:
+                  * `Read`: the message has been read by all recipients;
+                  * `NotRead`: the message has not yet been read by any recipients;
+                  * `PartiallyRead`: the message has been read by at least one recipient but not all.
+                type: string
+      responses:
+        "200":
+          description: Message return receipts list.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/UserMessageReturnReceiptListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /messages/reading-status:
+    post:
+      summary: changeMessageReadingStatus
+      description: Change message reading status.
+      operationId: changeMessageReadingStatus
+      tags:
+        - User Message
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: "id"
+          in: query
+          description: The specific message id. If `allMessages` is set to `true`, this parameter is ignored.
+          required: false
+          style: form
+          schema:
+            type: string
+        - name: "allMessages"
+          in: query
+          description: |
+            This filter selects all incoming messages and ignores any other filters. 
+            The new message reading status will affect all the incoming messages.
+          required: false
+          style: form
+          schema:
+            type: boolean
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string inside subject attribute.
+                type: string
+              sender:
+                description: Filter the response by message sender.
+                type: string
+              isRead:
+                description: |
+                  Filter the response whether the recipient (service caller) has read the message or not.
+                    * `nn:` (not-null): the message has been read by the recipient (service caller);
+                    * `nl:` (null): the message has not yet been read by the recipient (service caller).
+                type: string
+              messagePriorityId:
+                description: Filter the response by message priority id.
+                type: string
+      requestBody:
+        description: Message reading status to set.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/UserMessageReturnReceiptRequest"
+      responses:
+        "200":
+          description: "[No content](https://jsonapi.org/format/#crud-creating-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /messages/recipients:
+    get:
+      summary: listMessageRecipients
+      description: Returns a list of the messages recipients.
+      operationId: listMessageRecipients
+      tags:
+        - User Message
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: "Generic search on the following attributes: userName, firstName, lastName"
+                type: string
+      responses:
+        "200":
+          description: Messages senders list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/UserProfileListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /messages/senders:
+    get:
+      summary: listMessageSenders
+      description: Returns a list of the messages senders.
+      operationId: listMessageSenders
+      tags:
+        - User Message
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: "Generic search on the following attributes: description and code."
+                type: string
+      responses:
+        "200":
+          description: Messages senders list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./identities.yaml#/components/schemas/IdentityListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /messages/sent:
+    get:
+      summary: listSentMessages
+      description: Returns a list of the sent messages.
+      operationId: listSentMessages
+      tags:
+        - User Message
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string inside subject attribute.
+                type: string
+              messageReadingStatus:
+                description: |
+                  Filter the response by message reading status. Value must be one of:
+                  * `Read`: the message has been read by all recipients;
+                  * `NotRead`: the message has not yet been read by any recipient;
+                  * `PartiallyRead`: the message has been read by at least one recipient but not all.
+                type: string
+              messagePriorityId:
+                description: Filter the response by message priority id.
+                type: string
+              recipient:
+                description: Filter the response by message recipient id.
+                type: string
+      responses:
+        "200":
+          description: Sent messages list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/UserMessageListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

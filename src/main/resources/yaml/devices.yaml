@@ -1,0 +1,627 @@
+openapi: 3.0.3
+info:
+  title: Devices API
+  version: "-"
+  description: APIs to manage devices
+tags:
+  - name: Device
+    description: |
+      The Device object represents an electronic device where one or more apps can typically be installed 
+      and where each of these can be run by a user.
+
+      The Device object has the attributes defined in the Device table 
+      to which a read-only property is added that indicates the number of Apps installed on the device.
+
+      It has no intrinsic relationships: the links with the Apps installed on the device and the users 
+      who use the Apps of the device can be obtained by calling respectively the listDeviceApps services 
+      belonging to this API listUserProfileDevices of the UserProfile API.
+
+      The object does not support draft mode, the creation or modification operations are therefore applied directly to the public object.
+components:
+  schemas:
+    #
+    # Enum definition
+    #
+    DeviceTypeId:
+      description: The type of the device. See dictionary `DeviceType`.
+      type: string
+      enum:
+        - DeviceType.Printer
+        - DeviceType.Reader
+        - DeviceType.Semaphore
+        - DeviceType.Smartphone
+        - DeviceType.Tablet
+    OSTypeId:
+      description: The operation system of the device. See dictionary `OSType`.
+      type: string
+      enum:
+        - OSType.Android
+        - OSType.IOS
+    #
+    # Device resources
+    #
+    DeviceAttributes:
+      description: Device attributes.
+      type: object
+      required:
+        - descr
+        - deviceTypeId
+        - disabled
+      properties:
+        descr:
+          description: General description/name of the device.
+          type: string
+        deviceTypeId:
+          $ref: "#/components/schemas/DeviceTypeId"
+        osTypeId:
+          $ref: "#/components/schemas/OSTypeId"
+        osVersion:
+          description: Version of the operation system or firmware.
+          type: string
+        model:
+          description: Device model
+          type: string
+        networkAddress:
+          description: Device's IP address or name.
+          type: string
+        macAddress:
+          description: Device's MAC address.
+          type: string
+        imei:
+          description: Device's IMEI code number.
+          type: string
+        disabled:
+          description: True if the device is disabled, false otherwise. A disabled device cannot be used and is therefore not monitored.
+          type: boolean
+          default: false
+        installedApps:
+          description: Convenience read only field representing the number of apps installed on the device. It's value is ignored when inserting or modifying a device.
+          type: integer
+        deviceGroupId:
+          description: Device group id. See dictionary `DeviceGroup`.
+          type: string
+        lastChangeTs:
+          $ref: "./core.yaml#/components/schemas/lastChangeTs"
+        lastConnectionTs:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+    Device:
+      description: Device resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "Device"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/DeviceAttributes"
+    DeviceResponse:
+      description: Single Device response
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Device"
+    DeviceListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Devices
+          type: array
+          items:
+            $ref: "#/components/schemas/Device"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    DeviceRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Device"
+    #
+    # DeviceApp objects
+    #
+    DeviceAppAttributes:
+      description: DeviceApp attributes.
+      type: object
+      properties:
+        pushToken:
+          description: Push token.
+          type: string
+        appVersion:
+          description: App's version installed on the device.
+          type: string
+        installationDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+    DeviceAppRelationships:
+      description: The relationships of the Device App.
+      type: object
+      required:
+        - device
+        - app
+      properties:
+        device:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        app:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        userProfile:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    DeviceApp:
+      description: DeviceApp resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "DeviceApp"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/DeviceAppAttributes"
+        relationships:
+          $ref: "#/components/schemas/DeviceAppRelationships"
+    DeviceAppIncluded:
+      description: Related device, app and user profile.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    DeviceAppResponse:
+      description: Single Device App response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DeviceApp"
+        included:
+          $ref: "#/components/schemas/DeviceAppIncluded"
+    DeviceAppListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of DeviceApps
+          type: array
+          items:
+            $ref: "#/components/schemas/DeviceApp"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/DeviceAppIncluded"
+    DeviceAppRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DeviceApp"
+    DeviceWithLinks:
+      description: |
+        Puts a Device together with the relationships provided by the `DeviceApp` schema. This scheme is used in the `upsertDeviceAndLinks` service 
+        and allows you to create a device or update an existing one. At the same time it allows you to create or update the relationship between the 
+        device and an application by associating them with the user who made the request.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "DeviceWithLinks"
+        id:
+          description: Device id.
+          type: string
+        attributes:
+          description: Puts together the attributes of `Device` and `DeviceApp` schemas.
+          type: object
+          required:
+            - deviceAttributes
+            - deviceAppAttributes
+          properties:
+            deviceAttributes:
+              $ref: "#/components/schemas/DeviceAttributes"
+            deviceAppAttributes:
+              $ref: "#/components/schemas/DeviceAppAttributes"
+        relationships:
+          description: Related app.
+          type: object
+          required:
+            - app
+          properties:
+            app:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    DeviceWithLinksRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DeviceWithLinks"
+    DeviceWithLinksIncluded:
+      description: Related applications.
+      type: array
+      items:
+        $ref: "./core.yaml#/components/schemas/App"
+      uniqueItems: true
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The device id
+      required: true
+      schema:
+        type: string
+    deviceId:
+      name: deviceId
+      in: path
+      description: The device id
+      required: true
+      schema:
+        type: string
+    appId:
+      name: appId
+      in: path
+      description: The app id
+      required: true
+      schema:
+        type: string
+    entityId:
+      name: entityId
+      in: path
+      description: Related entity id
+      required: true
+      schema:
+        type: string
+paths:
+  #
+  # JSON:API definition for Devices services
+  #
+  /devices/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Returns a single device.
+      operationId: getDevice
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) a Device"
+      operationId: updateDevice
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Device to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DeviceRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[Delete](https://jsonapi.org/format/#crud-deleting) a Device"
+      operationId: deleteDevice
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Physically toggles the device in the path either on or off depending on its current state. If the device is on,
+        it is switched off and vice versa. To toggle a device it could be necessary to call an external API. This is
+        controlled by configuration parameters.
+      operationId: toggleDevice
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /devices/{deviceId}/apps/{appId}:
+    parameters:
+      - $ref: "#/components/parameters/deviceId"
+      - $ref: "#/components/parameters/appId"
+    get:
+      description: "Get a DeviceApp relation."
+      operationId: getDeviceApp
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DeviceAppResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) a DeviceApp relation."
+      operationId: updateDeviceApp
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: DeviceApp to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DeviceAppRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DeviceAppResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[delete](https://jsonapi.org/format/#crud-deleting) a DeviceApp relation"
+      operationId: deleteDeviceApp
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /devices/{id}/installable-apps:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Returns the list of all apps that can be installed on the given device and are not yet.
+      operationId: listInstallableApps
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/filterSearch"
+      responses:
+        "200":
+          description: The list of Apps that can bi installed on the given device.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/AppListResponse"
+        "401":
+          description: Not authorized
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/apiError"
+  /devices/{id}/apps:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Returns a list of all apps installed on the given device.
+      operationId: listDeviceApps
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/filterSearch"
+      responses:
+        "200":
+          description: DeviceApp list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DeviceAppListResponse"
+        "401":
+          description: Not authorized
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/apiError"
+    post:
+      description: Creates a relationship between a device, an app and the user that made the request.
+      operationId: createDeviceApp
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: DeviceApp to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DeviceAppRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DeviceAppResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /devices:
+    get:
+      description: Returns a list of all devices.
+      operationId: listDevices
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: filter
+          description: Optional parameters that can be used to filter devices.
+          in: query
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Generic query string that applies to devices' `descr` and `model` attributes.
+                type: string
+              checkpointId:
+                description: Filters devices by considering the checkpoints linked to them.
+                type: string
+      responses:
+        "200":
+          description: Device list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DeviceListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Create a Device
+      operationId: createDevice
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Device to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DeviceRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DeviceResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    put:
+      description: Upsert a Device and the relationships between the device and an app.
+      operationId: upsertDeviceAndLinks
+      tags:
+        - Device
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Device and relationships to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DeviceWithLinksRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DeviceWithLinks"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

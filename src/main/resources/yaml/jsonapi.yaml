@@ -1,0 +1,879 @@
+# File originally downloaded from http://www.columbia.edu/~alan/schemas/common/jsonapi.yaml
+# and then modified to adapt it to the code generator used and to onSales Next format
+# (especially regarding optional metadata)
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: "JSON:API Specification"
+  description: "JSON:API Specification"
+components:
+  schemas:
+    JSONAPIresponse:
+      oneOf:
+        - $ref: "#/components/schemas/success"
+        - $ref: "#/components/schemas/failure"
+        - $ref: "#/components/schemas/info"
+    success:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/data"
+        included:
+          description: |
+            To reduce the number of HTTP requests, servers **MAY** allow
+            responses that include related resources along with the requested
+            primary resources. Such responses are called `compound documents`.
+          type: array
+          items:
+            $ref: "#/components/schemas/resource"
+          uniqueItems: true
+        meta:
+          $ref: "#/components/schemas/meta"
+        links:
+          description: Link members related to the primary data.
+          allOf:
+            - $ref: "#/components/schemas/links"
+            - $ref: "#/components/schemas/pagination"
+        jsonapi:
+          $ref: "#/components/schemas/jsonapi"
+      additionalProperties: false
+    failure:
+      type: object
+      required:
+        - errors
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/apiError"
+          uniqueItems: true
+        meta:
+          $ref: "#/components/schemas/meta"
+        jsonapi:
+          $ref: "#/components/schemas/jsonapi"
+        links:
+          $ref: "#/components/schemas/links"
+      additionalProperties: false
+    info:
+      type: object
+      required:
+        - meta
+      properties:
+        meta:
+          $ref: "#/components/schemas/meta"
+        links:
+          $ref: "#/components/schemas/links"
+        jsonapi:
+          $ref: "#/components/schemas/jsonapi"
+      additionalProperties: false
+    onlyMeta:
+      properties:
+        meta:
+          $ref: "#/components/schemas/meta"
+      additionalProperties: false
+    meta:
+      description: |
+        Non-standard meta-information that can not be represented as an
+        attribute or relationship.
+      type: object
+      additionalProperties: true
+    relationshipMeta:
+      description: |
+        Used to retrieve main info of a related entity. The client often needs the basic information of an entity
+        without the need to include all the information.
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          description: Related entity code
+          type: string
+          readOnly: true
+        descr:
+          description: Related entity description
+          type: string
+          readOnly: true
+        date:
+          description: Related entity date
+          $ref: "./dataTypes.yaml#/components/schemas/apiDateReadOnly"
+    relationshipToManyMeta:
+      description: |
+        Used to retrieve main info of a related entities. The client often needs the basic information of an entity
+        without the need to include all the information.
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          description: Related entity code
+          type: string
+          readOnly: true
+        descr:
+          description: Related entity description
+          type: string
+          readOnly: true
+        date:
+          description: Related entity date
+          $ref: "./dataTypes.yaml#/components/schemas/apiDateReadOnly"
+        sequenceNum:
+          type: integer
+          description: The sequence number used to sort the relationships
+        numericValue:
+          type: number
+          format: double
+          description: |
+            A general-purpose numeric value that can be used in various contexts where a number is needed, 
+            such as calculations, weighting, conversion factor, or custom metadata.
+        intValue:
+          type: integer
+          description: General-purpose integer for various business or display scenarios.
+    relationshipToManyPartiesMeta:
+      description: |
+        Used to retrieve main info of a related Parties. The client often needs the basic information of a Party
+        without the need to include all the information.
+      type: object
+      additionalProperties: false
+      readOnly: true
+      properties:
+        code:
+          description: Party code.
+          type: string
+        descr:
+          description: Party description.
+          type: string
+        firstName:
+          description: Party first name.
+          type: string
+        lastName:
+          description: Party last name.
+          type: string
+        companyName:
+          description: Party company name.
+          type: string
+        role:
+          description: Party role.
+          type: string
+        decisionMaker:
+          description: Is Party a decision maker (if the `Party` is a `Contact`).
+          type: boolean
+        contactArea:
+          description: Contact area (if the `Party` is a `Contact`).
+          type: string
+        sequenceNum:
+          type: integer
+          description: The sequence number used to sort the relationships
+    metaSeq:
+      description: Meta-information that carries the sequence number of one to many relationship type.
+      properties:
+        sequenceNum:
+          type: integer
+          description: The sequence number used to sort the relationships
+    relToManyMeta:
+      description: |
+        Non-standard meta-information for a relationship.
+      type: object
+      required:
+        - recordCount
+      properties:
+        recordCount:
+          type: integer
+          description: the total number of resources
+      # additionalProperties: true
+    data:
+      description: |
+        The document's `primary data` is a representation of the resource or
+        collection of resources targeted by a request.
+      oneOf:
+        - $ref: "#/components/schemas/resource"
+        - description: |
+            An array of resource objects, an array of resource identifier
+            objects, or an empty array ([]), for requests that target resource
+            collections.
+          type: array
+          items:
+            $ref: "#/components/schemas/resource"
+          uniqueItems: true
+        - $ref: "#/components/schemas/nulltype"
+    post_datum:
+      description: |
+        single item being [created](https://jsonapi.org/format/#crud-creating).
+        `id` is optional and may be ignored if supplied and created by the system.
+      properties:
+        data:
+          $ref: "#/components/schemas/post_resource"
+    datum:
+      description: single item
+      properties:
+        data:
+          $ref: "#/components/schemas/resource"
+    resource:
+      description: Resource objects appear in a JSON API document to represent resources.
+      type: object
+      required:
+        - type
+        - id
+      properties:
+        type:
+          $ref: "#/components/schemas/type"
+        id:
+          $ref: "#/components/schemas/id"
+        attributes:
+          $ref: "#/components/schemas/attributes"
+        relationships:
+          $ref: "#/components/schemas/relationships"
+        links:
+          $ref: "#/components/schemas/links"
+        meta:
+          $ref: "#/components/schemas/meta"
+      additionalProperties: false
+    # unfortunately $ref resource and tring to change required doesn't work.
+    post_resource:
+      description: A POSTable resource object has an optional id.
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/type"
+        id:
+          $ref: "#/components/schemas/id"
+        attributes:
+          $ref: "#/components/schemas/attributes"
+        relationships:
+          $ref: "#/components/schemas/relationships"
+        # not clear what it means to try to POST links but the spec says POST a Resource Object...
+        links:
+          $ref: "#/components/schemas/links"
+        meta:
+          $ref: "#/components/schemas/meta"
+      additionalProperties: false
+    relationshipLinks:
+      description: |
+        A resource object **MAY** contain references to other resource objects
+        (`relationships`). Relationships may be to-one or to-many. Relationships
+        can be specified by including a member in a resource's links object.
+      type: object
+      properties:
+        # We keep the simple linkUri instead of giving the choice as in schemas/link
+        self:
+          description: |
+            A `self` member, whose value is a URL for the relationship itself (a
+            `relationship URL`). This URL allows the client to directly
+            manipulate the relationship. For example, it would allow a client to
+            remove an `author` from an `article` without deleting the people
+            resource itself.
+          $ref: "#/components/schemas/linkUri"
+        related:
+          $ref: "#/components/schemas/linkUri"
+      # additionalProperties: true
+    links:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/link"
+    link:
+      description: |
+        A link **MUST** be represented as either: a string containing the link's
+        URL or a link object.
+      oneOf:
+        - $ref: "#/components/schemas/linkUri"
+        # - description: A string containing the link's URL.
+        #   type: string
+        #   format: uri-reference
+        - $ref: "#/components/schemas/linkHref"
+        # - type: object
+        #   required:
+        #     - href
+        #   properties:
+        #     href:
+        #       description: A string containing the link's URL.
+        #       type: string
+        #       format: uri-reference
+        #     meta:
+        #       $ref: "#/components/schemas/meta"
+    linkUri:
+      description: A string containing the link's URL.
+      type: string
+      format: uri-reference
+    linkHref:
+      type: object
+      required:
+        - href
+      properties:
+        href:
+          description: A string containing the link's URL.
+          type: string
+          format: uri-reference
+        meta:
+          $ref: "#/components/schemas/meta"
+    attributes:
+      description: |
+        Members of the attributes object (`attributes`) represent information
+        about the resource object in which it's defined.
+      type: object
+      # properties:
+      #   ^(?!relationships$|links$|id$|type$)\w[-\w_]*$:
+      #     type: object
+      #     description: Attributes may contain any valid JSON value.
+      additionalProperties: false
+    # TODO: This validates rather than defines:
+    relationships:
+      description: |
+        Members of the relationships object represent
+        references from the resource object in which it's defined to other
+        resource objects. N.B. this is validation, not useful for inclusion.
+      type: object
+      # properties:
+      #   ^(?!id$|type$)\w[-\w_]*$:
+      #     $ref: "#/components/schemas/relationship"
+      additionalProperties:
+        $ref: "#/components/schemas/relationship"
+    relationship:
+      description: A single relationship description
+      type: object
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          description: Member, whose value represents `resource linkage`.
+          oneOf:
+            - $ref: "#/components/schemas/relationshipToOne"
+            - $ref: "#/components/schemas/relationshipToMany"
+        meta:
+          $ref: "#/components/schemas/meta"
+      anyOf:
+        - required:
+            - data
+        - required:
+            - meta
+        - required:
+            - links
+      additionalProperties: false
+    relationshipToOne:
+      description: |
+        References to other resource objects in a to-one (`relationship`).
+        Relationships can be specified by including a member in a resource's
+        links object.
+      # copied from 'linkage'
+      type: object
+      required:
+        - type
+        - id
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        # anyOf:
+        # - $ref: "#/components/schemas/empty"
+        # - $ref: "#/components/schemas/linkage"
+    relationshipToOneWithMeta:
+      $ref: "#/components/schemas/linkageWithMeta"
+      description: |
+        References to other resource objects in a to-one (`relationship`).
+        Relationships can be specified by including a member in a resource's
+        links object. Contains meta block with entity main info (code and description).
+    relToOne:
+      description: A single relationship
+      type: object
+      required:
+        - data
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/relationshipToOne"
+        # we don't use meta for single relationships
+        # meta:
+        #   $ref: "#/components/schemas/meta"
+    relToOneWithMeta:
+      description: A single relationship with meta block.
+      type: object
+      required:
+        - data
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/linkageWithMeta"
+    relToOneParty:
+      description: A single relationship that is a Party.
+      type: object
+      required:
+        - data
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/linkageParty"
+    relToOnePartyReadOnly:
+      description: A single relationship that is a Party.
+      type: object
+      readOnly: true
+      required:
+        - data
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/linkageParty"
+    relToOneWithMetaReadOnly:
+      description: A single relationship with meta block.
+      type: object
+      readOnly: true
+      required:
+        - data
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/linkageWithMeta"
+    relToOneReadOnly:
+      description: A single read-only relationship.
+      readOnly: true
+      type: object
+      required:
+        - data
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/relationshipToOne"
+    relToOneNullable:
+      description: A single relationship, nullable (you can assign data=null)
+      type: object
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/relationshipToOne"
+        # we don't use meta for single relationships
+        # meta:
+        #   $ref: "#/components/schemas/meta"
+    relToMany:
+      description: A multiple relationship
+      type: object
+      required:
+        - meta
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/relationshipToMany"
+        meta:
+          $ref: "#/components/schemas/relToManyMeta"
+    relToManyReadOnly:
+      description: A multiple relationship
+      type: object
+      readOnly: true
+      required:
+        - meta
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/relationshipToMany"
+        meta:
+          $ref: "#/components/schemas/relToManyMeta"
+    relToManyWithMeta:
+      description: A multiple relationship with one meta block per element.
+      type: object
+      required:
+        - meta
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/relationshipToManyWithMeta"
+        meta:
+          $ref: "#/components/schemas/relToManyMeta"
+    relToManyParties:
+      description: A multiple relationship with one meta block per Party.
+      type: object
+      required:
+        - meta
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/relationshipToManyParties"
+        meta:
+          $ref: "#/components/schemas/relToManyMeta"
+    relToManyPartiesReadOnly:
+      description: A multiple relationship with one meta block per Party.
+      type: object
+      readOnly: true
+      required:
+        - meta
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/relationshipToManyParties"
+        meta:
+          $ref: "#/components/schemas/relToManyMeta"
+    relToManyWithMetaReadOnly:
+      description: A multiple relationship with one meta block per element.
+      type: object
+      readOnly: true
+      required:
+        - meta
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        data:
+          $ref: "#/components/schemas/relationshipToManyWithMeta"
+        meta:
+          $ref: "#/components/schemas/relToManyMeta"
+    relToOneData:
+      description: A single relationship, data only.
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/relationshipToOne"
+    relToManyData:
+      description: A multiple relationship, data only.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/relationshipToMany"
+    relToManyLink:
+      description: A multiple relationship, only link and meta info
+      type: object
+      required:
+        - links
+        - meta
+      properties:
+        links:
+          $ref: "#/components/schemas/relationshipLinks"
+        meta:
+          $ref: "#/components/schemas/relToManyMeta"
+    relationshipToMany:
+      description: |
+        An array of objects each containing `type` and `id` members for to-many
+        relationships.
+      type: array
+      items:
+        $ref: "#/components/schemas/linkageOneToMany"
+      uniqueItems: true
+    relationshipToManyWithMeta:
+      description: |
+        An array of objects each containing `type` and `id` members for to-many
+        relationships and the meta block.
+      type: array
+      items:
+        $ref: "#/components/schemas/linkageToManyWithMeta"
+      uniqueItems: true
+    relationshipToManyParties:
+      description: |
+        An array of Parties each containing `type` and `id` members for to-many
+        relationships and the meta block.
+      type: array
+      items:
+        $ref: "#/components/schemas/linkageToManyParties"
+      uniqueItems: true
+    empty:
+      $ref: "#/components/schemas/nulltype"
+    linkage:
+      description: The `type` and `id` to non-empty members.
+      type: object
+      required:
+        - type
+        - id
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+      additionalProperties: false
+    linkageWithMeta:
+      description: The `type` and `id` to non-empty members. Contains also meta block with entity main info.
+      type: object
+      required:
+        - type
+        - id
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        meta:
+          $ref: "#/components/schemas/relationshipMeta"
+      additionalProperties: false
+    linkageParty:
+      description: The `type` and `id` to non-empty members. Contains also meta block with Party main info.
+      type: object
+      required:
+        - type
+        - id
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        meta:
+          description: todo
+          type: object
+          additionalProperties: false
+          readOnly: true
+          properties:
+            code:
+              description: Party code.
+              type: string
+            descr:
+              description: Party description.
+              type: string
+            firstName:
+              description: Party first name.
+              type: string
+            lastName:
+              description: Party last name.
+              type: string
+            companyName:
+              description: Party company name.
+              type: string
+            role:
+              description: Party role.
+              type: string
+            decisionMaker:
+              description: Is Party a decision maker (if the `Party` is a `Contact`).
+              type: boolean
+            contactArea:
+              description: Contact area (if the `Party` is a `Contact`).
+              type: string
+      additionalProperties: false
+    linkageToManyWithMeta:
+      description: The `type` and `id` to non-empty members. Contains also meta block with entity main info.
+      type: object
+      required:
+        - type
+        - id
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        meta:
+          $ref: "#/components/schemas/relationshipToManyMeta"
+      additionalProperties: false
+    linkageToManyParties:
+      description: The `type` and `id` to non-empty Party. Contains also meta block with entity main info.
+      type: object
+      required:
+        - type
+        - id
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        meta:
+          $ref: "#/components/schemas/relationshipToManyPartiesMeta"
+      additionalProperties: false
+    linkageOneToMany:
+      description: The `type` and `id` to non-empty members.
+      type: object
+      required:
+        - type
+        - id
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        meta:
+          $ref: "#/components/schemas/metaSeq"
+      additionalProperties: false
+    pagination:
+      type: object
+      properties:
+        first:
+          description: URI of the first page of data
+          type: string
+          format: uri-reference
+          # oneOf:
+          #   - type: string
+          #     format: uri-reference
+          #   - $ref: "#/components/schemas/nulltype"
+        last:
+          description: URI of the last page of data
+          type: string
+          format: uri-reference
+        prev:
+          description: URI of the previous page of data
+          type: string
+          format: uri-reference
+        next:
+          description: URI of the next page of data
+          type: string
+          format: uri-reference
+    PaginationMeta:
+      type: object
+      required:
+        - recordCount
+      properties:
+        recordCount:
+          type: integer
+          description: the total number of resources
+        pageCount:
+          type: integer
+          description: the total number of pages
+    jsonapi:
+      description: An object describing the server's implementation
+      type: object
+      properties:
+        version:
+          type: string
+        meta:
+          $ref: "#/components/schemas/meta"
+      additionalProperties: false
+    apiError:
+      type: object
+      properties:
+        # Not used in .one API
+        # id:
+        #   description: A unique identifier for this particular occurrence of the problem.
+        #   type: stringW
+        # links:
+        #   $ref: "#/components/schemas/links"
+        # status:
+        #   description: |
+        #     The HTTP status code applicable to this problem, expressed as a
+        #     string value.
+        #   type: string
+        code:
+          description: |
+            An application-specific error code, expressed as a string value.
+          type: string
+        title:
+          description: |
+            A short, human-readable summary of the problem. It **SHOULD NOT**
+            change from occurrence to occurrence of the problem, except for
+            purposes of localization.
+          type: string
+        detail:
+          description: |
+            A human-readable explanation specific to this occurrence of the
+            problem.
+          type: string
+        source:
+          type: object
+          properties:
+            pointer:
+              description: |
+                A JSON Pointer [RFC6901] to the associated entity in the request
+                document [e.g. `/data` for a primary data object, or
+                `/data/attributes/title` for a specific attribute].
+              type: string
+            parameter:
+              description: A string indicating which query parameter caused the error.
+              type: string
+        meta:
+          $ref: "#/components/schemas/apiErrorMeta"
+      additionalProperties: false
+    apiErrorMeta:
+      description: Meta data for api errors
+      type: object
+      properties:
+        errorParams:
+          description: map of error params values. Values are strings.
+          type: object
+          additionalProperties:
+            type: string
+    nulltype:
+      description: OAS doesn't allow the null type so use this.
+      type: object
+      nullable: true
+      default: null
+    id:
+      type: string
+      description: "[resource object identifier](https://jsonapi.org/format/#document-resource-object-identification)"
+    type:
+      type: string
+      description: "[resource object type](https://jsonapi.org/format/#document-resource-object-identification)"
+  parameters:
+    include:
+      name: include
+      in: query
+      description: "[list of included related resources: list of relationship names, comma separated](https://jsonapi.org/format/#fetching-includes)"
+      required: false
+      style: form
+      schema:
+        type: string
+    sort:
+      name: sort
+      in: query
+      description: "[fields to sort by](https://jsonapi.org/format/#fetching-sorting)"
+      required: false
+      style: form
+      schema:
+        type: string
+    pageSize:
+      name: "page[size]"
+      in: query
+      description: size of page for paginated results
+      required: false
+      schema:
+        type: integer
+    pageNumber:
+      name: "page[number]"
+      in: query
+      description: page number of results
+      required: false
+      schema:
+        type: integer
+    pageLimit:
+      name: "page[limit]"
+      in: query
+      description: limit for this page of paginated results
+      required: false
+      schema:
+        type: integer
+    pageOffset:
+      name: "page[offset]"
+      in: query
+      description: collection items offset for paginated results
+      required: false
+      schema:
+        type: integer
+    acceptLanguage:
+      name: Accept-Language
+      in: header
+      description: User language
+      required: false
+      schema:
+        type: string
+    # unable to properly represent fields and filters? swagger-edit appears to not implement this correctly.
+    fields:
+      name: fields
+      in: query
+      description: "sparse fieldsets: `fields[TYPE]=field1,field2,...`"
+      required: false
+      style: deepObject
+      schema:
+        type: string
+    filterSearch:
+      name: "filter[s]"
+      in: query
+      description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+      required: false
+      style: form
+      schema:
+        type: string
+    marketplace:
+      name: X-Marketplace
+      in: header
+      description: The id of the marketplace
+      required: false
+      schema:
+        type: string
+      example: "B2B"
+    marketplaceRequired:
+      name: X-Marketplace
+      in: header
+      description: The id of the marketplace
+      required: true
+      schema:
+        type: string
+      example: "B2B"

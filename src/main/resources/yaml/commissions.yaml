@@ -1,0 +1,1423 @@
+openapi: 3.0.3
+info:
+  title: Commission API
+  version: "-"
+tags:
+  - name: Commission
+    description: APIs for Commission.
+components:
+  schemas:
+    CommissionAlgorithmType:
+      description: An enumeration with the possible algorithms for commission calculation.
+      type: string
+      enum:
+        - CommissionAlgorithmType.CutOff
+        - CommissionAlgorithmType.Bracket
+      x-enum-varnames:
+        - CutOff
+        - Bracket
+    CommissionRangeType:
+      description: An enumeration with the possible range types.
+      type: string
+      enum:
+        - CommissionRangeType.None
+        - CommissionRangeType.PctPriceTolerance
+        - CommissionRangeType.ValuePriceTolerance
+      x-enum-varnames:
+        - None
+        - PctPriceTolerance
+        - ValuePriceTolerance
+    #
+    # Commission resource
+    #
+    Commission:
+      description: |
+        An element of the commission matrix. It defines:
+        - The sales representative to which the commission applies, if any.
+        - The item group to which the commission applies, if any. It is applied to all items if not specified.
+        - The customer group to which the commission applier, if any. It is applied to all customers if not specified.
+        - The threshold, the calculation algorithm, the priority, the currency and the validity period.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "Commission"
+        id:
+          description: A string that uniquely identify the object.
+          type: string
+          example: "C.1"
+        attributes:
+          description: The attributes of a commission.
+          type: object
+          required:
+            - commissionRangeType
+            - commissionAlgorithmType
+            - priorityOrder
+            - startDate
+            - endDate
+          properties:
+            itemGroupId:
+              description: |
+                The item group to which the commission applies. It is applied to all items if not specified.
+                See dictionary `CommissionItemGroup`.
+              type: string
+              example: "CommissionItemGroup.1"
+            customerGroupId:
+              description: |
+                The customer group to which the commission applies. It is applied to all customers if not specified.
+                See dictionary `CommissionCustomerGroup`.
+              type: string
+              example: "CommissionCustomerGroup.1"
+            commissionRangeType:
+              $ref: "#/components/schemas/CommissionRangeType"
+            commissionAlgorithmType:
+              $ref: "#/components/schemas/CommissionAlgorithmType"
+            priorityOrder:
+              description: The priority order of the commission. The lower the value, the higher the priority.
+              type: integer
+              minimum: 0
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            maxSharePercentage:
+              description: The maximum share percentage of the commission.
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+              readOnly: true
+        relationships:
+          description: The relationships of a commission.
+          type: object
+          required:
+            - currency
+            - organization
+          properties:
+            salesRep:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            currency:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CommissionDetail:
+      description: |
+        A share percentage related to a commission. It defines the parameters needed for commission calculation.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "CommissionDetail"
+        id:
+          description: A string that uniquely identify the object.
+          type: string
+          example: "CD.1"
+        attributes:
+          description: The attributes of a commission detail.
+          type: object
+          properties:
+            percentageMin:
+              description: |
+                The lower bound of the commission expressed as a number between 0 and 100. It makes sense only if the
+                commission handles percentage ranges.
+              type: number
+              format: double
+              minimum: 0
+              maximum: 100
+              example: 10
+            percentageMax:
+              description: |
+                The upper bound of the commission expressed as a number between 0 and 100. It makes sense only if the
+                commission handles percentage ranges.
+              type: number
+              format: double
+              minimum: 0
+              maximum: 100
+              example: 20
+            valueMin:
+              description: |
+                The lower bound of the commission expressed as a fixed value. It makes sense only if the commission
+                handles value ranges.
+              type: number
+              format: double
+              minimum: 0
+              example: 10.0
+            valueMax:
+              description: |
+                The upper bound of the commission expressed as a fixed value. It makes sense only if the commission
+                handles value ranges.
+              type: number
+              format: double
+              minimum: 0
+              example: 20.0
+            commissionPercentage:
+              description: The commission percentage to apply if the following detail is matched.
+              type: number
+              format: double
+              minimum: 0
+              maximum: 100
+              example: 15
+        relationships:
+          description: The relationships of a commission detail.
+          type: object
+          required:
+            - commission
+          properties:
+            commission:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CommissionIncluded:
+      description: Related entities of a commission.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    CommissionDetailIncluded:
+      description: Related entities of a commission detail.
+      type: array
+      items:
+        $ref: "#/components/schemas/Commission"
+      uniqueItems: true
+    CommissionResponse:
+      description: An object with a single commission.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Commission"
+        included:
+          $ref: "#/components/schemas/CommissionIncluded"
+    CommissionDetailListResponse:
+      description: An object with a list of commission details.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of commission details
+          type: array
+          items:
+            $ref: "#/components/schemas/CommissionDetail"
+        included:
+          $ref: "#/components/schemas/CommissionDetailIncluded"
+    UpsertCommission:
+      description: An object containing a commission and its details.
+      type: object
+      required:
+        - commission
+        - details
+      properties:
+        commission:
+          $ref: "#/components/schemas/Commission"
+        details:
+          description: A list of commission details.
+          type: array
+          items:
+            $ref: "#/components/schemas/CommissionDetail"
+    UpsertCommissionRequest:
+      description: An object used to update or create a commission.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/UpsertCommission"
+    CommissionListResponse:
+      description: An object with a list of commissions.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of commissions
+          type: array
+          items:
+            $ref: "#/components/schemas/Commission"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CommissionIncluded"
+    #
+    # CommissionSession resource definition
+    #
+    CommissionSession:
+      description: Commission resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CommissionSession"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - startDate
+            - endDate
+            - salesAmount
+            - salesQuantity
+            - commissionAmount
+            - processingStatusId
+            - processStartTs
+            - errorMessage
+          properties:
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            proformaDocDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            salesAmount:
+              description: The total amount of the sales of the documents included in the calculation session.
+              type: number
+              # There is a bug in openApi generator -> https://github.com/OpenAPITools/openapi-generator/issues/10866
+              #default: 0
+              #minimum: 0
+            salesQuantity:
+              description: Number of document lines included in this calculation session.
+              type: number
+              # There is a bug in openApi generator -> https://github.com/OpenAPITools/openapi-generator/issues/10866
+              #default: 0
+              #minimum: 0
+            commissionAmount:
+              description: The total value of the commissions.
+              type: number
+              # There is a bug in openApi generator -> https://github.com/OpenAPITools/openapi-generator/issues/10866
+              #default: 0
+              #minimum: 0
+            processingStatusId:
+              $ref: "./core.yaml#/components/schemas/ProcessingStatus"
+            processStartTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+            processEndTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+            errorMessage:
+              $ref: "./core.yaml#/components/schemas/SimpleEntityReadOnly"
+            totals:
+              description: Amount and cut off totals
+              type: object
+              required:
+                - base
+                - cutOff
+              properties:
+                base:
+                  description: Base total commissions
+                  type: number
+                cutOff:
+                  description: Cut off total commissions
+                  type: number
+        relationships:
+          type: object
+          description: The relationships of a Commission Session
+          required:
+            - organization
+            - salesRep
+            - currency
+            - userProfile
+            - salesDocCommissionLines
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            salesRep:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            accountingPeriod:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currency:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            docHeader:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            userProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            salesDocCommissionLines:
+              $ref: "./jsonapi.yaml#/components/schemas/relToManyReadOnly"
+    CommissionSessionIncluded:
+      description: Related entities of a commission session.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    CommissionSessionListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Commission Sessions
+          type: array
+          items:
+            $ref: "#/components/schemas/CommissionSession"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CommissionSessionIncluded"
+    CommissionSessionResponse:
+      description: Single CommissionSession response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CommissionSession"
+        included:
+          $ref: "#/components/schemas/CommissionSessionIncluded"
+    CommissionSessionRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - salesRepId
+            - startDate
+            - endDate
+            - currencyId
+          properties:
+            salesRepId:
+              description: SalesRep id.
+              type: string
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            currencyId:
+              description: Currency id.
+              type: string
+    SalesDocLineCommission:
+      description: SalesDocLineCommission resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SalesDocLineCommission"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - selected
+            - netAmount
+            - commissionPct
+            - commissionAmount
+          properties:
+            selected:
+              description: True if the line is included in the commission session, false otherwise.
+              type: boolean
+              default: true
+            netAmount:
+              description: Amount on which the commission percentage is applied.
+              type: number
+              format: double
+              default: 0
+            commissionPct:
+              description: Percentage commission applied.
+              type: number
+              format: double
+              default: 0
+            commissionAmount:
+              description: Amount after the application of the percentage fee.
+              type: number
+              format: double
+              default: 0
+            commissionCustomerGroupId:
+              description: Commission custom group id. See dictionary `CommissionCustomerGroup`.
+              type: string
+            commissionItemGroupId:
+              description: Commission item group id. See dictionary `CommissionItemGroup`.
+              type: string
+        relationships:
+          type: object
+          description: The relationships of a Sales document commission line.
+          required:
+            - commissionSession
+            - salesDocHeader
+            - salesDocLine
+          properties:
+            commissionSession:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            salesDocHeader:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            salesDocLine:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            commissionDetail:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            commissionCutOff:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            commissionCutOffThreshold:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            commissionCutOffRange:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    SalesDocLineCommissionIncluded:
+      description: Related entities of a sales document line commission.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SalesDocLineCommissionListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Sales document lines commission.
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesDocLineCommission"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SalesDocLineCommissionIncluded"
+    SalesDocLinesCommissionRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            description: |
+              Sales document lines that changed their selection flag. True if should be included in the commission session,
+              false otherwise.
+            type: object
+            required:
+              - salesLineId
+              - selected
+            properties:
+              salesLineId:
+                description: Document sales line id.
+                type: string
+              selected:
+                description: True if should be included in the commission session, false otherwise.
+                type: boolean
+    #
+    # CommissionSessionCutOff definition
+    #
+    CommissionSessionCutOff:
+      description: CommissionSessionCutOff resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "CommissionSessionCutOff"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - customerAccount
+            - currentAmount
+            - previousAmount
+            - amountMin
+            - amountMax
+            - commissionAmount
+          properties:
+            customerAccount:
+              $ref: "./core.yaml#/components/schemas/SimpleEntityReadOnly"
+            currentAmount:
+              description: Monthly sales turnover.
+              type: number
+            previousAmount:
+              description: Previous amount.
+              type: number
+            amountMin:
+              description: Min threshold cutoff.
+              type: number
+            amountMax:
+              description: Max threshold cutoff.
+              type: number
+            commissionAmount:
+              description: Commission amount.
+              type: number
+            baseCommissionAmount:
+              description: Defines the value of the theoretical commissions, i.e. those calculated if only the commission matrix is applied to the sales line.
+              type: number
+              readOnly: true
+            paid:
+              description: Paid.
+              type: number
+            payable:
+              description: payable.
+              type: number
+            progressive:
+              description: Monthly sales turnover + previousAmount
+              type: number
+            commissionCutOff:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+    CommissionSessionCutOffListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of CommissionSessionCutOff.
+          type: array
+          items:
+            $ref: "#/components/schemas/CommissionSessionCutOff"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    CommissionSessionStatusRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "./core.yaml#/components/schemas/ProcessingStatus"
+    CommissionCutOff:
+      description: Commission Cut Off.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "CommissionCutOff"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+          properties:
+            code:
+              description: Commission cut off code.
+              type: string
+            descr:
+              description: Commission cut off description.
+              type: string
+    CommissionCutOffListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of commission cut off.
+          type: array
+          items:
+            $ref: "#/components/schemas/CommissionCutOff"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+  parameters:
+    id:
+      name: id
+      in: path
+      description: Commission Session id
+      required: true
+      schema:
+        type: string
+    kpiId:
+      name: kpiId
+      in: path
+      description: The KPI id
+      required: true
+      schema:
+        type: string
+    commissionId:
+      name: id
+      in: path
+      description: The id of a commission resource.
+      required: true
+      schema:
+        type: string
+    CommissionFilters:
+      description: Filters to be applied to a commission list.
+      name: "filter"
+      in: query
+      required: true
+      style: deepObject
+      schema:
+        type: object
+        properties:
+          s:
+            description: |
+              A free search string applied on: sales representative's code and description, code and description of item
+              and customer groups.
+            type: string
+          salesRep:
+            description: Filter the response by sales rep.
+            type: string
+          itemGroup:
+            description: Filter the response by item group.
+            type: string
+          customerGroup:
+            description: Filter the response by customer group.
+            type: string
+          currency:
+            description: Filter the response by currency.
+            type: string
+          startDate:
+            description: Filter the response by start date.
+            type: string
+          endDate:
+            description: Filter the response by end date.
+            type: string
+          algorithm:
+            description: Filter the response by calculation algorithm.
+            type: string
+          rangeType:
+            description: Filter the response by range type.
+            type: string
+          maxSharePercentage:
+            description: Filter the response by maximum share percentage.
+            type: string
+paths:
+  /commission-sessions:
+    get:
+      description: |
+        Returns a list of commission session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listCommissionSessions |
+      operationId: listCommissionSessions
+      tags:
+        - Commission
+      x-authorities: ["listCommissionSessions"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              salesRep:
+                description: Filter the response by sales rep.
+                type: string
+              startDate:
+                description: Filter the response by start date.
+                type: string
+              endDate:
+                description: Filter the response by end date.
+                type: string
+              processingStatusId:
+                description: Filter the response by processing status.
+                type: string
+              docProcessingStatusId:
+                description: Filter the response by the document processing status.
+                type: string
+              accountingPeriod:
+                description: Filter the response by accounting period.
+                type: string
+      responses:
+        "200":
+          description: Commission sessions list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionSessionListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Request a new commission session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | submitNewCommissionSession |
+      operationId: submitNewCommissionSession
+      tags:
+        - Commission
+      x-authorities: ["submitNewCommissionSession"]
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      requestBody:
+        description: Commission session parameters.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CommissionSessionRequest"
+      responses:
+        "202":
+          description: New commission session submitted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /commission-sessions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a single commission session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getCommissionSessions |
+      operationId: getCommissionSession
+      tags:
+        - Commission
+      x-authorities: ["getCommissionSessions"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionSessionResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a Commission Session. 
+        Recalculate the commission session by excluding the deselected sales document lines.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateCommissionSession |
+      operationId: updateCommissionSession
+      tags:
+        - Commission
+      x-authorities: ["updateCommissionSession"]
+      requestBody:
+        description: Sales document lines to be included or excluded in this commission session.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SalesDocLinesCommissionRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionSessionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /commission-sessions/{id}/cut-off:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: |
+        Returns a list of commission session cut off.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getCommissionSessions |
+      operationId: listCommissionSessionsCutOff
+      tags:
+        - Commission
+      x-authorities: ["getCommissionSessions"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              customerAccount:
+                description: Filter the response by customer account.
+                type: string
+      responses:
+        "200":
+          description: Commission sessions list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionSessionCutOffListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Request an export of commission session cut off.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | exportCommissionSessions |
+      operationId: exportCommissionSessionsCutOff
+      x-authorities: ["exportCommissionSessions"]
+      tags:
+        - Commission
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              customerAccount:
+                description: Filter the response by customer account.
+                type: string
+      responses:
+        "202":
+          description: Data export request accepted
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /commission-sessions/{id}/sales-doc-lines:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: |
+        Returns a list of sales document line commission.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getCommissionSessions |
+      operationId: listCommissionSalesDocLines
+      tags:
+        - Commission
+      x-authorities: ["getCommissionSessions"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              customerAccountId:
+                description: Filter the response by customer account id.
+                type: string
+              docType:
+                description: Filter the response by document type.
+                type: string
+              reason:
+                description: Filter the response by reason.
+                type: string
+              item:
+                description: Filter the response by item.
+                type: string
+      responses:
+        "200":
+          description: Sales document line commission list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocLineCommissionListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Request an export of a list of sales documents lines.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | exportCommissionSessions |
+      operationId: exportCommissionSalesDocLines
+      x-authorities: ["exportCommissionSessions"]
+      tags:
+        - Commission
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              customerAccountId:
+                description: Filter the response by customer account id.
+                type: string
+              docType:
+                description: Filter the response by document type.
+                type: string
+              reason:
+                description: Filter the response by reason.
+                type: string
+              item:
+                description: Filter the response by item.
+                type: string
+      responses:
+        "202":
+          description: Data export request accepted
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /commission-sessions/{id}/kpis:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Get all KPIs defined for the given commission session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getCommissionSessions |
+      operationId: listCommissionSessionKPIs
+      tags:
+        - Commission
+      x-authorities: ["getCommissionSessions"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /commission-sessions/{id}/kpis/{kpiId}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/kpiId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Get a single KPI defined for the given commission session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getCommissionSessions |
+      operationId: getCommissionSessionKPI
+      tags:
+        - Commission
+      x-authorities: ["getCommissionSessions"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /commission-sessions/{id}/status:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: |
+        Updates the status of a commission session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateCommissionSessionStatus |
+      operationId: updateCommissionSessionStatus
+      tags:
+        - Commission
+      x-authorities: ["updateCommissionSessionStatus"]
+      requestBody:
+        description: Desired commission session status.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CommissionSessionStatusRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionSessionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /commission-sessions/cut-off:
+    get:
+      summary: listCommissionCutOff
+      description: Returns a list of commission cut off.
+      operationId: listCommissionCutOff
+      tags:
+        - Commission
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string inside code and descr attributes.
+                type: string
+      responses:
+        "200":
+          description: Commission cut off list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionCutOffListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+
+  /commissions:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a list of commissions for the given organization.
+
+        Commissions returned by this API are ordered by `startDate` ascending and `endDate` descending if either 
+        no sorting is specified or if in the sort specification `startDate` or `endDate` are missing. On the other hand,
+        if they're provided by the client, they will override their defaults.
+
+        Here below some examples:
+        1. `sort = null`. Then commissions are ordered by `startDate` ascending and `endDate` descending.
+        2. `sort = otherColumn`. Then commission are ordered by `otherColumn` **and** by `startDate` ascending and 
+        `endDate` descending.
+        3. `sort = -startDate`. Then commissions are ordered by `startDate` descending and `endDate` descending.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listCommission |
+      operationId: listCommissions
+      summary: listCommissions
+      tags:
+        - Commission
+      x-authorities: ["listCommission"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/CommissionFilters"
+      responses:
+        "200":
+          description: Commission list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Creates a new commission and its details.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createCommission |
+      operationId: createCommission
+      summary: createCommission
+      tags:
+        - Commission
+      x-authorities: ["createCommission"]
+      requestBody:
+        description: Commission data to be created.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/UpsertCommissionRequest"
+      responses:
+        "201":
+          description: Commission created
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /commissions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/commissionId"
+    get:
+      description: |
+        Returns the commission identified by `id`.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getCommission |
+      operationId: getCommission
+      summary: getCommission
+      tags:
+        - Commission
+      x-authorities: ["getCommission"]
+      responses:
+        "200":
+          description: Commission response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        Deletes the commission identified by `id` and all its details.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | deleteCommission |
+      operationId: deleteCommission
+      summary: deleteCommission
+      tags:
+        - Commission
+      x-authorities: ["deleteCommission"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "204":
+          description: Commission deleted
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: |
+        Updates the commission identified by `id`. To update a commission its data and those about its details must be
+        provided. Calling this API passing no commission details is equivalent to delete all the commission details.
+        Similarly, details not in the list will be deleted.
+
+        Any update to the either commission range or the algorithm **won't have** any effect: once they're set during
+        creation they cannot be changed anymore.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateCommission |
+      operationId: updateCommission
+      summary: updateCommission
+      tags:
+        - Commission
+      x-authorities: ["updateCommission"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        description: Commission data to be updated.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/UpsertCommissionRequest"
+      responses:
+        "200":
+          description: Commission updated
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /commissions/{id}/details:
+    parameters:
+      - $ref: "#/components/parameters/commissionId"
+      - $ref: "./jsonapi.yaml#/components/parameters/sort"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns the list of the details of the commission identified by `id`.
+      operationId: listCommissionDetails
+      summary: listCommissionDetails
+      tags:
+        - Commission
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+      responses:
+        "200":
+          description: Commission details list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommissionDetailListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /commissions/export:
+    post:
+      description: |
+        Requests the Excel export of commissions. The exported commissions will be those matching the filters.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | exportCommission |
+      operationId: exportCommissions
+      summary: exportCommissions
+      tags:
+        - Commission
+      x-authorities: ["exportCommission"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "#/components/parameters/CommissionFilters"
+      responses:
+        "202":
+          description: Data export request accepted
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

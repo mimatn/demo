@@ -1,0 +1,2093 @@
+openapi: 3.0.3
+info:
+  title: Survey Documents API
+  version: "-"
+  description: APIs for Survey Document
+tags:
+  - name: Survey Document
+    description: |
+      Survey documents are used to collect information through the completion of questionnaires. These questionnaires can contain a series of questions, 
+      ranging from customer qualification to specific surveys, such as the arrangement of items in a supermarket. 
+      A Survey document may consist of multiple parts, called "sections," each of which is used to gather various types of data. For example, in a supermarket survey, 
+      there might be sections for store information, for counter items, and for items displayed on shelves, each with their own specific questions.
+      To specify how the Survey document should be structured, a "template" is used, consisting of a header and several section templates, of which at least one must be defined.
+  - name: Survey Document Section
+    description: |
+      A Survey document section is a part of a Survey document that contains a set of questions. Each section is based on a template section, 
+      which defines the questions that will be asked.
+
+  - name: Survey Document Template
+    description: |
+      A Survey document template is a model that defines the structure of a Survey document. It consists of a header and several section templates, 
+      each of which defines the questions that will be asked in a section of the Survey document.
+components:
+  schemas:
+    SurveyDocSectionTypeId:
+      description: The survey document section type. See dictionary `SurveyDocSectionType`
+      type: string
+      enum:
+        - SurveyDocSectionType.ItemCollection
+        - SurveyDocSectionType.ObjectCollection
+        - SurveyDocSectionType.SingleInstance
+        - SurveyDocSectionType.AssetCollection
+    #
+    # SurveyDocHeaderAttributes (extends ./core.yaml#/components/schemas/DocHeaderAttributes)
+    #
+    SurveyDocHeaderAttributes:
+      description: Attributes specific of a Survey document. Properties common in all type of documents are stored in the `DocHeaderAttributes` object.
+      type: object
+      required:
+        - code
+      properties:
+        salesRep:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Document customer's agent.
+        customerRefNumber:
+          description: Customer's document ref. number
+          type: string
+        customerRefDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+          description: Customer's document ref. date
+        hasAnomalies:
+          description: |
+            True if the survey contains at least one anomaly. Anomalies are answers that do not respect conditions
+            defined in the template the survey is based on.
+          readOnly: true
+          type: boolean
+          default: false
+          example: false
+    SurveyDocHeaderAttributesWithDocHeader:
+      allOf:
+        - $ref: "#/components/schemas/SurveyDocHeaderAttributes"
+        - description: DocHeader attributes
+          type: object
+          properties:
+            docHeaderAttributes:
+              $ref: "./documents.yaml#/components/schemas/DocHeaderAttributes"
+    SurveyDocHeaderRelationships:
+      description: Survey doc header extends DocHeader.
+      type: object
+      required:
+        - docHeader
+        - surveyDocTemplate
+      properties:
+        docHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        surveyDocTemplate:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMetaReadOnly"
+        customerAccount:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+    SurveyDocHeader:
+      description: SurveyDocHeader resource, contains information present in an header of a survey document.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SurveyDocHeader"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/SurveyDocHeaderAttributesWithDocHeader"
+        relationships:
+          description: Attributes of a survey document
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/DocHeaderRelationships"
+            - $ref: "#/components/schemas/SurveyDocHeaderRelationships"
+    SurveyDocHeaderIncluded:
+      description: Related document header and common document header relationships
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SurveyDocHeaderResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SurveyDocHeader"
+        included:
+          $ref: "#/components/schemas/SurveyDocHeaderIncluded"
+    SurveyDocHeaderListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of Survey documents headers.
+          type: array
+          items:
+            $ref: "#/components/schemas/SurveyDocHeader"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SurveyDocHeaderIncluded"
+    SurveyDocHeaderCreation:
+      description: An object containing the data needed to create a new sales document header.
+      type: object
+      required:
+        - type
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: Describes the type of the object.
+          type: string
+          default: "SalesDocHeaderCreationData"
+        attributes:
+          description: The attributes needed to create a new sales document header.
+          type: object
+          required:
+            - docDate
+            - docCode
+          properties:
+            docDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+              description: |
+                Generally the date when the document is created. It may be predated or postdated based on document
+                type's configuration.
+            docCode:
+              description: A formatted version of the sales document number.
+              type: string
+        relationships:
+          description: Related entities relationships needed to create a new sales doc header.
+          type: object
+          required:
+            - docType
+            - surveyDocTemplate
+            - organization
+          properties:
+            customAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            docType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The type of the document. It determines several aspects of the document.
+            surveyDocTemplate:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The organization that the document belongs to.
+    SurveyDocSectionAttributes:
+      description: The attributes of a survey document section.
+      type: object
+      required:
+        - surveyDocTemplateSection
+        - sectionNumber
+        - surveyDocSectionTypeId
+        - sequenceNumber
+        - visible
+      properties:
+        surveyDocTemplateSection:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Survey document template section.
+        sectionNumber:
+          description: Section instance sequence number for a given SurveyDocTemplateSessionId; 1 indicates the first instance of the section.
+          type: integer
+        entityObject:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Identifier of the object generated by the iteration condition, `null` if SingleInstance type section (e.g. ItemId).
+        surveyDocSectionTypeId:
+          $ref: "#/components/schemas/SurveyDocSectionTypeId"
+        sequenceNumber:
+          description: Line sequence number.
+          type: integer
+          minimum: 0
+        visible:
+          description: True if visible, false otherwise.
+          type: boolean
+          default: true
+        hasAnomalies:
+          description: |
+            True if the section contains at least one anomaly. Anomalies are answers that do not respect conditions
+            defined in the survey's template the section is based on.
+          readOnly: true
+          type: boolean
+          default: false
+          example: false
+    SurveyDocSectionRelationships:
+      description: Relationships of a survey document section.
+      type: object
+      required:
+        - surveyDocHeader
+        - sheet
+      properties:
+        surveyDocHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        sheet:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        cluster:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    SurveyDocSection:
+      description: SurveyDocSection resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SurveyDocSection"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/SurveyDocSectionAttributes"
+        relationships:
+          $ref: "#/components/schemas/SurveyDocSectionRelationships"
+    SurveyDocSectionIncluded:
+      description: Related survey document header and sheet.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SurveyDocSectionResponse:
+      description: Single Survey Document Section response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SurveyDocSection"
+        included:
+          $ref: "#/components/schemas/SurveyDocSectionIncluded"
+    SurveyDocSectionListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of Survey documents sections.
+          type: array
+          items:
+            $ref: "#/components/schemas/SurveyDocSection"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SurveyDocSectionIncluded"
+    SurveyAttachment:
+      description: A survey answer with an attachment.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the resource.
+          type: string
+          default: "SurveyAttachment"
+        id:
+          description: |
+            A string that uniquely identify the resource. The id refers to the `DigitalContent` that represents the
+            attachment.
+          type: string
+          example: "SLI.1"
+        attributes:
+          description: The attributes of a survey attachment answer.
+          type: object
+          required:
+            - surveyDate
+            - surveyNumber
+            - question
+            - attachmentUrl
+          properties:
+            dataTypeId:
+              description: The answer's data type. See dictionary `DataType`.
+              type: string
+              example: "DataType.Boolean"
+            surveyDate:
+              description: The date of the survey the attachment is related to.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            surveyNumber:
+              description: The number of the survey the attachment is related to.
+              type: string
+              example: "SURV-001"
+            question:
+              description: |
+                Each attachment refers to a survey line which represents an answer to a survey question. This attribute
+                is the question itself.
+              type: string
+              example: "What is the item's price?"
+            answerTs:
+              description: The timestamp of the answer.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+            attachmentUrl:
+              description: The URL to retrieve the attachment.
+              type: string
+              format: uri-reference
+        relationships:
+          description: The relationships of a survey image answer.
+          type: object
+          required:
+            - surveyDocHeader
+            - surveyDocLine
+            - surveyTemplate
+            - surveyCollector
+            - tags
+          properties:
+            surveyDocHeader:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            surveyDocLine:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            surveyTemplate:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            surveyCollector:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            tags:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    SurveyAttachmentIncluded:
+      description: Resources related to a survey attachment.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SurveyAttachmentListResponse:
+      description: An object that contains a list of survey attachments.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of survey attachments.
+          type: array
+          items:
+            $ref: "#/components/schemas/SurveyAttachment"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SurveyAttachmentIncluded"
+    SurveyAttachmentResponse:
+      description: A response with a single SurveyAttachment.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SurveyAttachment"
+        included:
+          $ref: "#/components/schemas/SurveyAttachmentIncluded"
+    SurveyDocHeaderRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SurveyDocHeader"
+    SurveyDocHeaderCreationRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SurveyDocHeaderCreation"
+    SurveyDocSectionQuestionAndAnswersResponse:
+      description: Single Survey document section questions and answers response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SurveyDocSectionQuestionAndAnswer"
+    SurveyDocSectionQuestionAndAnswer:
+      description: A list of questions and their answer for a survey document section.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SurveyDocSectionQuestionAndAnswer"
+        id:
+          description: The id of the sheet the questions refer to.
+          type: string
+        attributes:
+          $ref: "#/components/schemas/SurveyDocSectionQuestionAndAnswersAttributes"
+    SurveyDocSectionQuestionAndAnswersAttributes:
+      description: The list of questions and their answers for a survey document section.
+      type: object
+      required:
+        - surveyAnswers
+      properties:
+        surveyAnswers:
+          description: List of answers to questions provided by the template for this entity.
+          type: array
+          items:
+            $ref: "#/components/schemas/SurveyAnswer"
+    SurveyAnswer:
+      allOf:
+        - type: object
+          properties:
+            lineId:
+              description: The id of the survey document line the answer refers to.
+              type: string
+        - $ref: "./entityAttributes.yaml#/components/schemas/SheetExEntityAttributeValue"
+      required:
+        - lineId
+    SurveyClusterEntityAnswer:
+      type: object
+      required:
+        - sheetEntityAttributeId
+        - attributeValue
+      properties:
+        sequenceNum:
+          description: Determine the order of the answers.
+          type: integer
+          minimum: 0
+          readOnly: true
+        sheetEntityAttributeId:
+          description: Represents the id of the question.
+          type: string
+        attributeValue:
+          description: Represents the answer to the question.
+        hasAnomalies:
+          description: True if the answer has some anomalies. Anomalies are answers that do not respect conditions defined in the survey's template.
+          readOnly: true
+          type: boolean
+          default: false
+          example: false
+    SurveyTemplateSectionEntity:
+      description: SurveyTemplateSectionEntity resource. Groups answers for a template section.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SurveyTemplateSectionEntity"
+        id:
+          type: string
+        attributes:
+          description: The attributes of a SurveyTemplateSectionEntity.
+          type: object
+          required:
+            - surveyAnswers
+          properties:
+            surveyAnswers:
+              description: List of answers to questions provided by the template for this entity.
+              type: array
+              items:
+                $ref: "#/components/schemas/SurveyClusterEntityAnswer"
+              default: []
+            itemRenditionUrl:
+              description: |
+                URL of the requested rendition of the digital content with the sequence number 0.
+                You need to provide the `renditionTypeId` parameter in order to get the correspondent picture's link.
+                Used only if the template section is of type `ItemCollection` or `AssetCollection`.
+              type: string
+              format: uri-reference
+              readOnly: true
+        relationships:
+          description: |
+            The relationship entityObject can be:
+            - Asset
+            - Item
+            - ItemInstance
+          type: object
+          properties:
+            entityObject:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    SurveyTemplateSectionEntityListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of Survey documents lines.
+          type: array
+          items:
+            $ref: "#/components/schemas/SurveyTemplateSectionEntity"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SurveyTemplateSectionEntityIncluded"
+    SurveyTemplateSectionEntityIncluded:
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SurveyDocTemplate:
+      description: SurveyDocTemplate resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SurveyDocTemplate"
+        id:
+          type: string
+        attributes:
+          description: The attributes of a SurveyDocTemplate.
+          type: object
+          required:
+            - descr
+            - startDate
+            - endDate
+            - processingStatusId
+          properties:
+            code:
+              description: Generic code/name.
+              type: string
+            descr:
+              description: Generic description.
+              type: string
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            processingStatusId:
+              $ref: "./core.yaml#/components/schemas/ProcessingStatus"
+              description: The processing status of the template.
+              default: ProcessingStatus.Released
+            numberOfDocuments:
+              description: The number of documents based on this template.
+              type: integer
+              minimum: 0
+              readOnly: true
+            isDraft:
+              description: True if the template is a draft, false otherwise.
+              type: boolean
+              readOnly: true
+            lastChangeTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+            referenceEntityObjectId:
+              description: |
+                If the template is published it represents its draft (if any), otherwise it represents the ID of the published template.
+                It is `null` if the current entity is a new template yet to be published.
+              type: string
+              readOnly: true
+        relationships:
+          type: object
+          description: Related document type and template sections.
+          required:
+            - docType
+          properties:
+            docType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            templateSections:
+              $ref: "./jsonapi.yaml#/components/schemas/relToManyReadOnly"
+            currentDraftUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            draftOwnerUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    SurveyDocTemplateIncluded:
+      description: Related document type.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SurveyDocTemplateResponse:
+      description: Single SurveyDocTemplate response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SurveyDocTemplate"
+        included:
+          $ref: "#/components/schemas/SurveyDocTemplateIncluded"
+    SurveyDocTemplateListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of survey doc templates.
+          type: array
+          items:
+            $ref: "#/components/schemas/SurveyDocTemplate"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SurveyDocTemplateIncluded"
+    SurveyDocTemplateRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SurveyDocTemplate"
+    SurveyDocTemplateSection:
+      description: SurveyDocTemplateSection resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SurveyDocTemplateSection"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - surveyDocSectionTypeId
+            - sequenceNum
+          properties:
+            code:
+              description: Generic code/name.
+              type: string
+            descr:
+              description: Generic description.
+              type: string
+            surveyDocSectionTypeId:
+              $ref: "#/components/schemas/SurveyDocSectionTypeId"
+            sequenceNumber:
+              description: Line sequence number.
+              type: integer
+              minimum: 0
+            iterationCondition:
+              description: Configuration indicating the type of iteration (JSON format).
+              type: string
+            visibleCondition:
+              description: |
+                JSON that defines a constant or an expression that produces a boolean value, if true then the section is visible; 
+                if false or null the section is not visible.
+              type: string
+        relationships:
+          type: object
+          description: |
+            The relationships of a Budget.
+          required:
+            - surveyDocTemplate
+            - sheet
+          properties:
+            surveyDocTemplate:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            sheet:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            cluster:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    SurveyDocTemplateSectionIncluded:
+      description: SurveyDocTemplateSection relationships.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SurveyDocTemplateSectionListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of SurveyDocTemplateSections
+          type: array
+          items:
+            $ref: "#/components/schemas/SurveyDocTemplateSection"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SurveyDocTemplateSectionIncluded"
+    SurveyDocTemplateSectionResponse:
+      description: Single Survey document template section response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SurveyDocTemplateSection"
+        included:
+          $ref: "#/components/schemas/SurveyDocTemplateSectionIncluded"
+    SurveyDocTemplateSectionRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SurveyDocTemplateSection"
+    SurveyDocTemplateCluster:
+      description: |
+        SurveyDocTemplateCluster resource. Represents the relationship between a survey template and a cluster.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SurveyDocTemplateCluster"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - sequenceNum
+          properties:
+            sequenceNumber:
+              description: Determine the order of the clusters.
+              type: integer
+              minimum: 0
+        relationships:
+          type: object
+          description: |
+            The relationships of a SurveyDocTemplateCluster.
+          required:
+            - surveyDocTemplate
+            - cluster
+          properties:
+            surveyDocTemplate:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            cluster:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    SurveyDocTemplateClusterIncluded:
+      description: SurveyDocTemplateCluster relationships.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SurveyDocTemplateClusterListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of SurveyDocTemplateClusters
+          type: array
+          items:
+            $ref: "#/components/schemas/SurveyDocTemplateCluster"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SurveyDocTemplateClusterIncluded"
+    SurveyClusterEntityAnswerListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: |
+            List of answers to questions of a survey document section.
+            Already given answers will be updated, while new answers will be added.
+            Empty list of answers will result in a bad request.
+          type: array
+          items:
+            $ref: "#/components/schemas/SurveyClusterEntityAnswer"
+    SurveyClusterEntityAnswerRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SurveyClusterEntityAnswer"
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The survey doc header id
+      required: true
+      schema:
+        type: string
+    headerId:
+      name: headerId
+      in: path
+      description: The survey doc header id
+      required: true
+      schema:
+        type: string
+    sectionId:
+      name: sectionId
+      in: path
+      description: The survey doc section id
+      required: true
+      schema:
+        type: string
+    templateSectionId:
+      name: templateSectionId
+      in: path
+      description: The survey doc template section id
+      required: true
+      schema:
+        type: string
+    clusterId:
+      name: clusterId
+      in: path
+      description: The cluster id
+      required: true
+      schema:
+        type: string
+    lineId:
+      name: lineId
+      in: path
+      description: The survey doc line id
+      required: true
+      schema:
+        type: string
+    attachmentId:
+      name: attachmentId
+      in: path
+      description: The id of a survey attachment (i.e. a `DigitalContent`).
+      required: true
+      schema:
+        type: string
+    filters:
+      name: "filter"
+      in: query
+      description: Filter group.
+      required: true
+      style: deepObject
+      schema:
+        properties:
+          s:
+            description: Search the given string inside docType and docNumber attributes.
+            type: string
+          docDate:
+            description: Filter the response by document date.
+            type: string
+          creatorUserProfile:
+            description: Filter the response by creator user profile.
+            type: string
+          processingStatusId:
+            description: Filter the response by document's processing status.
+            type: string
+          transferStatusId:
+            description: Filter the response by document's transfer status.
+            type: string
+          customerAccount:
+            description: Filter the response by customer account.
+            type: string
+          docType:
+            description: Filter the response by Doc Type Id.
+            type: string
+          salesRepId:
+            description: Filter the response by document customer's agent.
+            type: string
+          surveyDocTemplate:
+            description: Filter the response by template.
+            type: string
+          withAnomalies:
+            description: |
+              Filters the response considering if the document has anomalies or not. In
+              particular, if `eq:true` only abnormal surveys are returned; while if `eq:false` only surveys without 
+              anomalies are considered.
+            type: string
+    SurveyAttachmentFilters:
+      name: "filter"
+      in: query
+      description: Filter group.
+      required: true
+      style: deepObject
+      schema:
+        type: object
+        properties:
+          s:
+            description: A free search string applied on survey header's code and survey line's question.
+            type: string
+          docType:
+            description: Filters the response by survey header's document type.
+            type: string
+          templateId:
+            description: Filters the response by survey header's template id.
+            type: string
+          question:
+            description: Filters the response by survey line's question, i.e. the `EntityAttribute` the line refers to.
+            type: string
+          docDate:
+            description: Filters the response by the survey header's document date.
+            type: string
+          surveyCollector:
+            description: Filters the response by the user profile who made the survey.
+            type: string
+          tags:
+            description: Filters the response by the tags associated to the attachment.
+            type: string
+    AttachmentTypeParam:
+      name: filter[attachmentType]
+      in: query
+      description: The type of the attachment.
+      required: true
+      schema:
+        type: string
+    RenditionTypeParam:
+      name: filter[renditionType]
+      in: query
+      description: The type of the attachment rendition.
+      required: true
+      schema:
+        type: string
+    filterAppRequired:
+      name: "filter[appId]"
+      in: query
+      description: Filter the response by application. The user must be enabled for the application in the filter.
+      required: true
+      style: form
+      schema:
+        type: string
+    filterDocCategoryRequired:
+      name: "filter[docCategoryId]"
+      in: query
+      description: Filter the response by document category.
+      required: true
+      style: form
+      schema:
+        type: string
+paths:
+  /survey-docs/headers/{headerId}/sections:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+    get:
+      description: Return the sections of a Survey document.
+      operationId: listSurveyDocSections
+      tags:
+        - Survey Document Section
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocSectionListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/headers/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Return a single Survey document header.
+      operationId: getSurveyDocHeader
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocHeaderResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: |
+        Updates a single survey document header.
+      operationId: updateSurveyDocHeader
+      tags:
+        - Survey Document
+      requestBody:
+        description: The survey document header to patch.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SurveyDocHeaderRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocHeaderResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a Survey document header.
+      operationId: deleteSurveyDocHeader
+      tags:
+        - Survey Document
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/headers:
+    get:
+      description: Return a list of Survey documents headers
+      operationId: listSurveyDocHeaders
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/filters"
+      responses:
+        "200":
+          description: SurveyDocHeader collection response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocHeaderListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Creates a survey document header.
+      operationId: createSurveyDocHeader
+      tags:
+        - Survey Document
+      requestBody:
+        description: The survey document header to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SurveyDocHeaderCreationRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocHeaderResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/headers/{headerId}/template-sections/{templateSectionId}/q-and-a:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+      - $ref: "#/components/parameters/templateSectionId"
+      - name: "filter[appId]"
+        in: query
+        description: Filter the response by app id.
+        required: true
+        style: form
+        schema:
+          type: string
+    get:
+      summary: getDocSectionQuestionsAndAnswers
+      description: Gets the list of Q&A of the given section.
+      operationId: getDocSectionQuestionsAndAnswers
+      tags:
+        - Survey Document Section
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocSectionQuestionAndAnswersResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /survey-docs/headers/{headerId}/template-sections/{templateSectionId}/answers:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+      - $ref: "#/components/parameters/templateSectionId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Return the answers of a Survey document by template section.
+      operationId: listSurveyDocSectionAnswers
+      tags:
+        - Survey Document Section
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - name: renditionTypeId
+          in: query
+          description: Rendition type requested. Provide this parameter to tell the server what type of rendition you need.
+          required: false
+          style: form
+          schema:
+            type: string
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in code and descr attributes.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyTemplateSectionEntityListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/headers/{headerId}/sections/{sectionId}/answers:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+      - $ref: "#/components/parameters/sectionId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: |
+        Use this service to provide answers to questions in a survey document section.
+      operationId: provideSurveyDocSectionAnswers
+      tags:
+        - Survey Document
+      requestBody:
+        description: List of answers. The list must contain at least one answer.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SurveyClusterEntityAnswerRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyClusterEntityAnswerListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/headers/{id}/transfer-statuses:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Return the list of possible valid transfer statuses from the current transfer status of the survey document.
+      operationId: listSurveyDocTransferStatuses
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocTransferStatusListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: Updates the transfer status of a survey document.
+      operationId: updateSurveyDocTransferStatus
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Desired transfer status.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./documents.yaml#/components/schemas/TransferStatusRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocHeaderResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/headers/{id}/linked-docs:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of all the documents linked to the given one.
+      operationId: getSurveyDocLinkedDocs
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocHeaderLiteListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/templates:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      summary: listSurveyDocTemplates
+      description: |
+        Return a list of Survey documents templates.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listSurveyDocTemplates |
+      operationId: listSurveyDocTemplates
+      tags:
+        - Survey Document Template
+      x-authorities: ["listSurveyDocTemplates"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string inside code and descr attributes.
+                type: string
+              docType:
+                description: Filter the response by document type.
+                type: string
+              startDate:
+                description: Find the templates valid from the given date.
+                type: string
+              endDate:
+                description: Find the templates valid until the given date.
+                type: string
+              processingStatusId:
+                description: Filter the response by processing status.
+                type: string
+      responses:
+        "200":
+          description: SurveyDocTemplate collection response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocTemplateListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Create a Survey document template.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSurveyDocTemplate |
+      operationId: createSurveyDocTemplate
+      tags:
+        - Survey Document Template
+      x-authorities: ["createSurveyDocTemplate"]
+      requestBody:
+        description: Survey document template to create.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SurveyDocTemplateRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocTemplateResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/templates/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The survey doc template id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      summary: getSurveyDocTemplate
+      description: |
+        Return a single Survey document template.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) | 
+        |:-:|
+        | getSurveyDocTemplate |
+      operationId: getSurveyDocTemplate
+      tags:
+        - Survey Document Template
+      x-authorities: ["getSurveyDocTemplate"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocTemplateResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a draft or not yet published survey document template.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSurveyDocTemplate |
+        | updateSurveyDocTemplate |
+      operationId: updateSurveyDocTemplate
+      tags:
+        - Survey Document Template
+      x-authorities: ["createSurveyDocTemplate", "updateSurveyDocTemplate"]
+      requestBody:
+        description: Survey document template to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SurveyDocTemplateRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocTemplateResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a survey document template.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSurveyDocTemplate |
+        | updateSurveyDocTemplate |
+        | deleteSurveyDocTemplate |
+      operationId: deleteSurveyDocTemplate
+      tags:
+        - Survey Document Template
+      x-authorities:
+        ["createSurveyDocTemplate", "updateSurveyDocTemplate", "deleteSurveyDocTemplate"]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/templates/{templateId}/edit:
+    parameters:
+      - name: templateId
+        in: path
+        description: The survey doc template id
+        required: true
+        schema:
+          type: string
+          description: The survey doc template id.
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Edit a survey document template.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSurveyDocTemplate |
+        | updateSurveyDocTemplate |
+      operationId: editSurveyDocTemplate
+      tags:
+        - Survey Document Template
+      x-authorities: ["createSurveyDocTemplate", "updateSurveyDocTemplate"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocTemplateResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/templates/{templateId}/publish:
+    parameters:
+      - name: templateId
+        in: path
+        description: The survey doc template id.
+        required: true
+        schema:
+          type: string
+          description: The survey doc template id.
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Publish a survey document template.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSurveyDocTemplate |
+        | updateSurveyDocTemplate |
+      operationId: publishSurveyDocTemplate
+      tags:
+        - Survey Document Template
+      x-authorities: ["createSurveyDocTemplate", "updateSurveyDocTemplate"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocTemplateResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/templates/{templateId}/template-sections:
+    parameters:
+      - name: templateId
+        in: path
+        description: The survey doc template id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      summary: listSurveyDocTemplateSections
+      description: |
+        Returns a list of all SurveyDocTemplateSection.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSurveyDocTemplate |
+      operationId: listSurveyDocTemplateSections
+      tags:
+        - Survey Document Template
+      x-authorities: ["getSurveyDocTemplate"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: SurveyDocTemplateSection list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocTemplateSectionListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Create a Survey document template section.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSurveyDocTemplate |
+        | updateSurveyDocTemplate |
+      operationId: createSurveyDocTemplateSection
+      tags:
+        - Survey Document Template
+      x-authorities: ["createSurveyDocTemplate", "updateSurveyDocTemplate"]
+      requestBody:
+        description: Survey document template section to create.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SurveyDocTemplateSectionRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocTemplateSectionResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/templates/{templateId}/template-sections/{templateSectionId}:
+    parameters:
+      - name: templateId
+        in: path
+        description: The survey doc template id.
+        required: true
+        schema:
+          type: string
+      - name: templateSectionId
+        in: path
+        description: The survey doc template section id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a Survey document template section.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSurveyDocTemplate |
+        | updateSurveyDocTemplate |
+      operationId: updateSurveyDocTemplateSection
+      tags:
+        - Survey Document Template
+      x-authorities: ["createSurveyDocTemplate", "updateSurveyDocTemplate"]
+      requestBody:
+        description: Survey document template section to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SurveyDocTemplateSectionRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocTemplateSectionResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a Survey document template section.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSurveyDocTemplate |
+        | updateSurveyDocTemplate |
+      operationId: deleteSurveyDocTemplateSection
+      tags:
+        - Survey Document Template
+      x-authorities: ["createSurveyDocTemplate", "updateSurveyDocTemplate"]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/attachments:
+    get:
+      description: |
+        Returns a list of attachments related to surveys. Attachments can be of different types, e.g.
+        images or documents, controlled using `attachmentType` filter. Given a type, attachments can have different
+        renditions controlled using `renditionType` filter. The provided rendition type must be among those allowed for
+        the provided attachment type.
+      operationId: listSurveyDocAttachments
+      summary: listSurveyDocAttachments
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/AttachmentTypeParam"
+        - $ref: "#/components/parameters/RenditionTypeParam"
+        - $ref: "#/components/parameters/SurveyAttachmentFilters"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyAttachmentListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Requests the Excel export of survey attachments. Attachments in the export can references different surveys and 
+        are those matching the given filters.
+      operationId: exportSurveyDocAttachmentsInfo
+      summary: exportSurveyDocAttachmentsInfo
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "#/components/parameters/SurveyAttachmentFilters"
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/attachments/export:
+    post:
+      description: |
+        Requests the export of the attachments related to survey doc lines. Attachments will be exported as a ZIP file
+        and they can be of different types, e.g. images or documents. The export will include the attachments of the
+        lines matching the given filters.
+      operationId: exportSurveyDocAttachments
+      summary: exportSurveyDocAttachments
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/AttachmentTypeParam"
+        - $ref: "#/components/parameters/RenditionTypeParam"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "#/components/parameters/SurveyAttachmentFilters"
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/headers/{headerId}/lines/{lineId}/attachments/{attachmentId}:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+      - $ref: "#/components/parameters/lineId"
+      - $ref: "#/components/parameters/attachmentId"
+      - $ref: "#/components/parameters/RenditionTypeParam"
+    get:
+      description: |
+        Return the detail of the attachment identified by `attachmentId` and linked to `lineId`. The attachment
+        rendition is determined by `renditionType` parameter.
+      operationId: getSurveyDocAttachment
+      summary: getSurveyDocAttachment
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyAttachmentResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /survey-docs/headers/{headerId}/lines/{lineId}/attachments/{attachmentId}/download:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+      - $ref: "#/components/parameters/lineId"
+      - $ref: "#/components/parameters/attachmentId"
+      - $ref: "#/components/parameters/RenditionTypeParam"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Downloads the attachment identified by `attachmentId` and linked to `lineId`. The attachment
+        rendition is determined by `renditionType` parameter.
+      operationId: downloadSurveyDocAttachment
+      summary: downloadSurveyDocAttachment
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          headers:
+            Content-Type:
+              description: The MIME type of the attachment.
+              schema:
+                type: string
+            Content-Disposition:
+              description: The disposition of the attachment.
+              schema:
+                type: string
+            Access-Control-Expose-Headers:
+              description: The headers exposed by the server.
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/templates/{templateId}/clusters:
+    parameters:
+      - name: templateId
+        in: path
+        description: The survey doc template id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      summary: listSurveyDocTemplateClusters
+      description: |
+        Returns a list of SurveyDocTemplateCluster, 
+        that represent a relationship between a SurveyDocTemplate and a Cluster.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSurveyDocTemplate |
+      operationId: listSurveyDocTemplateClusters
+      tags:
+        - Survey Document Template
+      x-authorities: ["getSurveyDocTemplate"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: SurveyDocTemplateCluster list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocTemplateClusterListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Add one or more clusters to the given survey document template.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSurveyDocTemplate |
+        | updateSurveyDocTemplate |
+      operationId: addSurveyDocTemplateClusters
+      tags:
+        - Survey Document Template
+      x-authorities: ["createSurveyDocTemplate", "updateSurveyDocTemplate"]
+      requestBody:
+        description: Survey document template cluster to create.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  description: Cluster ids to add to the survey document template.
+                  type: array
+                  items:
+                    type: string
+                  uniqueItems: true
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./clusters.yaml#/components/schemas/ClusterListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/templates/{templateId}/clusters/{clusterId}:
+    parameters:
+      - name: templateId
+        in: path
+        description: The survey doc template id.
+        required: true
+        schema:
+          type: string
+      - name: clusterId
+        in: path
+        description: The cluster id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    delete:
+      description: |
+        Remove a cluster from the given survey document template.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSurveyDocTemplate |
+        | updateSurveyDocTemplate |
+      operationId: removeSurveyDocTemplateCluster
+      tags:
+        - Survey Document Template
+      x-authorities: ["createSurveyDocTemplate", "updateSurveyDocTemplate"]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/headers/{headerId}/recipients:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+    get:
+      description: Returns a list of document email recipients.
+      operationId: listSurveyDocEmailRecipients
+      tags:
+        - Survey Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter the response searching
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in firstName, lastName and email address attributes.
+                type: string
+      responses:
+        "200":
+          description: DocEmailRecipient list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocEmailRecipientListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/doc-types:
+    get:
+      description: |
+        Returns a list containing document types that are eligible as survey document's document type.
+      operationId: listEligibleDocTypesForSurveyDoc
+      tags:
+        - Survey Document
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/filterAppRequired"
+        - $ref: "#/components/parameters/filterDocCategoryRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: filter
+          description: |
+            Optional filters to apply to the response. Currently available filters are:
+              - `customerAccountId`: filter the response by customer account id.
+          in: query
+          required: true
+          style: deepObject
+          schema:
+            properties:
+              customerAccountId:
+                description: Filter the response by customer account id.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocTypeListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/headers/{id}/publish:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Publish a survey document header.
+      operationId: publishSurveyDocHeader
+      tags:
+        - Survey Document
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocHeaderResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /survey-docs/headers/{id}/edit:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Edit a sales document header.
+      operationId: editSurveyDocHeader
+      tags:
+        - Survey Document
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SurveyDocHeaderResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

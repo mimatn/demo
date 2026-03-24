@@ -1,0 +1,4179 @@
+openapi: 3.0.3
+info:
+  title: Sales Documents API
+  version: "-"
+  description: APIs for Sales Document.
+tags:
+  - name: Sales Document
+    description: Sales Document.
+components:
+  schemas:
+    #
+    # SalesDocHeaderAttributes (extends ./core.yaml#/components/schemas/DocHeaderAttributes)
+    #
+    SalesDocHeaderAttributes:
+      description: |
+        Attributes specific of a sales document.
+        Properties common in all type of documents are stored in the `DocHeaderAttributes` object.
+      type: object
+      required:
+        - priceListByDeliveryDate
+        - billToCustomerAccount
+        - billToAddress
+        - sellToCustomerAccount
+        - sellToAddress
+        - deliveryAddress
+        - docPaymentCondition
+        - customerPaymentCondition
+        - taxRegime
+        - listGrossAmount
+        - listNetAmount
+        - netAmount
+        - giftAmount
+        - taxAmount
+        - totalAmount
+        - salesCostAmount
+        - paymentDiscountAmount
+      properties:
+        salesRep:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Document customer's agent.
+        priceListByDeliveryDate:
+          description: True if the reference date to determine the validity of the price list is the delivery date, false otherwise.
+          type: boolean
+        billToCustomerAccount:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Bill to customer account.
+        billToAddress:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Bill to address.
+        sellToCustomerAccount:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Sell to customer account.
+        sellToAddress:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Sell to address.
+        sellToEmail:
+          $ref: "./core.yaml#/components/schemas/Email"
+        deliveryAddress:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Delivery address.
+        warehouse:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Warehouse.
+        priceList:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Header Price List (only if price list most is "Header").
+        docPaymentCondition:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Document's payment condition.
+        customerPaymentCondition:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Customer's payment condition.
+        preferredDeliveryDate:
+          description: |
+            Preferred delivery date. 
+            It is a non-binding indication of the customer's preferred delivery date.
+
+            Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+          type: string
+          format: date
+          example: "2022-02-25"
+        expectedDeliveryDate:
+          description: |
+            Expected delivery date.
+            It is the date on which the delivery is expected to be made.
+
+            Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+          type: string
+          format: date
+          example: "2022-02-25"
+        actualDeliveryDate:
+          description: |
+            Actual delivery date.
+            It is the date on which the delivery was actually made.
+
+            Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+          type: string
+          format: date
+          example: "2022-02-25"
+        shippingMode:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Shipping mode. See dictionary `ShippingMode`.
+        deliveryMode:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Delivery mode. See dictionary `DeliveryMode`.
+        deliveryReason:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Delivery reason. See dictionary `DeliveryReason`.
+        customerRefNumber:
+          description: Customer's external rif.
+          type: string
+        customerRefDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        courier:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: See dictionary `CourierMode`.
+        taxRegime:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Tax regime
+        listGrossAmount:
+          description: Document amount based on the price list without discounts.
+          type: number
+        listNetAmount:
+          description: Document amount based on the price list net of discounts.
+          type: number
+        minDocAmount:
+          description: Document's min amount to compare to net amount.
+          type: number
+        netAmount:
+          description: Net amount.
+          type: number
+        giftAmount:
+          description: Gift amount.
+          type: number
+        taxAmount:
+          description: Tax amount.
+          type: number
+        totalAmount:
+          description: Total amount.
+          type: number
+        salesCostAmount:
+          description: Sales cost amount.
+          type: number
+        paymentDiscountAmount:
+          description: Payment discount amount.
+          type: number
+        shippingCostAmount:
+          description: Shipping cost amount of the document.
+          type: number
+          readOnly: true
+        fulfillmentStatusId:
+          $ref: "./documents.yaml#/components/schemas/FulfillmentStatus"
+        deliveryStatusId:
+          description: Document delivery status. See dictionary `DeliveryStatus`.
+          type: string
+        linesCount:
+          description: The number of lines the document has.
+          type: integer
+          minimum: 0
+          default: 0
+        itemsCount:
+          description: |
+            The number of items the document has. Even if there is an item for each document's line, this number may
+            be different from `linesCount` since duplicates are removed. How to handle duplicates is defined in the
+            business logic.
+          readOnly: true
+          type: integer
+          minimum: 0
+          default: 0
+        variableWeightItemsCount:
+          description: The number of items in the current document that have variable weight.
+          readOnly: true
+          type: integer
+          minimum: 0
+          default: 0
+        netAmountByItemShippingCostGroup:
+          description: |
+            Net amount grouped by item shipping cost group. 
+            The key `withoutShippingCostGroup` is used for items without shipping cost group.
+          type: object
+          readOnly: true
+          additionalProperties:
+            type: number
+            format: double
+          example: |
+            ```
+              {
+                "withoutShippingCostGroup": 3.0,
+                "ItemShippingCostGroup.0001": 1.5,
+                "ItemShippingCostGroup.0002": 4.5,
+                "ItemShippingCostGroup.0003": 1.5
+              }
+            ```
+        totalAmountWithShippingCost:
+          description: Total amount with shipping cost.
+          type: number
+          readOnly: true
+    SalesDocHeaderAttributesWithDocHeader:
+      allOf:
+        - $ref: "#/components/schemas/SalesDocHeaderAttributes"
+        - description: DocHeader attributes.
+          type: object
+          properties:
+            docHeaderAttributes:
+              $ref: "./documents.yaml#/components/schemas/DocHeaderAttributes"
+    SalesDocHeaderAttributesWithDocHeaderLite:
+      allOf:
+        - $ref: "#/components/schemas/SalesDocHeaderAttributesLite"
+        - description: SalesDocHeaderAttributesLite attributes.
+          type: object
+          required:
+            - docHeaderAttributesLite
+          properties:
+            docHeaderAttributesLite:
+              $ref: "./documents.yaml#/components/schemas/DocHeaderAttributesLite"
+    #
+    # SalesDocHeaderAttributesLite attributes
+    #
+    SalesDocHeaderAttributesLite:
+      description: Subset of the specific attributes of a sales document. Includes all the attributes that can be updated.
+      type: object
+      required:
+        - deliveryAddress
+        - docPaymentCondition
+      properties:
+        deliveryAddress:
+          description: Delivery address.
+          $ref: "./core.yaml#/components/schemas/IdCodePair"
+        warehouse:
+          description: Warehouse.
+          $ref: "./core.yaml#/components/schemas/IdCodePair"
+        docPaymentCondition:
+          description: Document's payment condition.
+          $ref: "./core.yaml#/components/schemas/IdCodePair"
+        preferredDeliveryDate:
+          description: |
+            Preferred delivery date. 
+            It is a non-binding indication of the customer's preferred delivery date.
+
+            Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+          type: string
+          format: date
+          example: "2022-02-25"
+        expectedDeliveryDate:
+          description: |
+            Expected delivery date.
+            It is the date on which the delivery is expected to be made.
+
+            Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+          type: string
+          format: date
+          example: "2022-02-25"
+        actualDeliveryDate:
+          description: |
+            Actual delivery date.
+            It is the date on which the delivery was actually made.
+
+            Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+          type: string
+          format: date
+          example: "2022-02-25"
+        shippingModeId:
+          description: Shipping mode. See dictionary `ShippingMode`.
+          type: string
+        deliveryModeId:
+          description: Delivery mode. See dictionary `DeliveryMode`.
+          type: string
+        customerRefNumber:
+          description: Customer's external rif.
+          type: string
+        customerRefDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        courierId:
+          description: See dictionary `CourierMode`.
+          type: string
+        fulfillmentStatusId:
+          $ref: "./documents.yaml#/components/schemas/FulfillmentStatus"
+        deliveryStatusId:
+          description: Document delivery status. See dictionary `DeliveryStatus`
+          type: string
+    SalesDocHeaderRelationships:
+      description: Sales doc header extends DocHeader.
+      type: object
+      required:
+        - docHeader
+        - currency
+      properties:
+        docHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        salesDocHeaderTax:
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+        currency:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        shippingCosts:
+          $ref: "./jsonapi.yaml#/components/schemas/relToManyReadOnly"
+    SalesDocHeader:
+      description: SalesDocHeader resource, contains information present in a header of a sales document.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SalesDocHeader"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/SalesDocHeaderAttributesWithDocHeader"
+        relationships:
+          description: Attributes of a sales document
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/DocHeaderRelationships"
+            - $ref: "#/components/schemas/SalesDocHeaderRelationships"
+    SalesDocHeaderLite:
+      description: SalesDocHeaderLite resource, contains information present in a header of a sales document.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SalesDocHeaderLite"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/SalesDocHeaderAttributesWithDocHeaderLite"
+    SalesDocHeaderIncluded:
+      description: Related document header and common document header relationships.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SalesDocHeaderRequest:
+      description: Object to use to create a new sales document header.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocHeader"
+    SalesDocHeaderResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocHeader"
+        included:
+          $ref: "#/components/schemas/SalesDocHeaderIncluded"
+    SalesDocHeaderListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of Sales documents headers.
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesDocHeader"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SalesDocHeaderIncluded"
+    SalesDocHeaderLiteRequest:
+      description: Object to use to create a new sales document header.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocHeaderLite"
+    SalesDocHeaderTax:
+      description: SalesDocHeaderTax resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SalesDocHeaderTax"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - taxRateId
+            - taxRate
+            - taxableBasePct
+            - taxableBase
+            - taxAmount
+          properties:
+            taxRateId:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: Tax rate id.
+            taxRate:
+              description: Tax rate.
+              type: number
+            taxableBasePct:
+              description: Taxable base pct.
+              type: string
+            taxableBase:
+              description: Taxable base.
+              type: number
+            taxAmount:
+              description: Tax amount.
+              type: string
+        relationships:
+          description: Sales doc header tax relates to a sales doc header.
+          type: object
+          required:
+            - salesDocHeader
+          properties:
+            salesDocHeader:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    SalesDocHeaderTaxResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocHeaderTax"
+    SalesDocLineAttributes:
+      description: The attributes of a single sales document line.
+      type: object
+      required:
+        - lineNumber
+        - reason
+        - taxableBaseVariation
+        - taxCalculation
+        - item
+        - sign
+        - docQuantity
+        - docUnitOfMeasurement
+        - stockQuantity
+        - stockItemUnitOfMeasurement
+        - priceQuantity
+        - priceItemUnitOfMeasurement
+        - priceListPrice
+        - priceListEditable
+        - priceListModeId
+        - docLineGrossPrice
+        - taxRateGroup
+        - listGrossAmount
+        - listNetAmount
+        - netAmount
+        - giftAmount
+        - taxIncluded
+        - salesCostAmount
+        - docFulfilledQuantity
+        - docLineNetPrice
+        - fulfillmentStatusId
+        - headerTotalNetAmount
+        - variableWeight
+      properties:
+        lineStatusId:
+          $ref: "./documents.yaml#/components/schemas/DocLineStatus"
+        lineNumber:
+          description: Document's line number. Starts from 1.
+          type: string
+          example: 1
+        reason:
+          allOf:
+            - $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            - description: Sequence number of the reason based on the document type.
+              type: object
+              readOnly: true
+              properties:
+                sequenceNum:
+                  description: |
+                    Sequence number. If `0` it means that this is the main reason for the document.
+                    If `null` there is no reason associated to the document.
+                  type: integer
+                  minimum: 0
+        warehouse:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Warehouse.
+        taxableBaseVariation:
+          description: |
+            Taxable base variation. 
+            * `1` = increases the taxable amount of the document;
+            * `0` = does not affect the taxable amount of the document;
+            * `-1` = the line is subtracted from the taxable amount of the document.
+          type: integer
+          minimum: -1
+          maximum: 1
+        taxCalculation:
+          description: True if the line's VAT contributes to the total VAT, false otherwise.
+          type: boolean
+        item:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Item.
+        sign:
+          description: 1 = Line's amount is positive, -1 = Line's amount is negative.
+          type: integer
+          multipleOf: 1
+          minimum: -1
+          maximum: 1
+        docQuantity:
+          description: Quantity moved in the unit of measure of the document (`docUnitOfMeasurement`).
+          type: number
+          format: double
+        docUnitOfMeasurement:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Handled quantity unit of measurement.
+        stockQuantity:
+          description: Quantity moved in the stock unit of measure (`stockItemUnitOfMeasurement`).
+          type: number
+          format: double
+        stockItemUnitOfMeasurement:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Handled quantity unit of measurement.
+        priceQuantity:
+          description: Quantity moved in the unit of measure of the price list (`priceItemUnitOfMeasurement`).
+          type: number
+          format: double
+        priceItemUnitOfMeasurement:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Price quantity unit of measurement.
+        convFactorPriceToDoc:
+          description: |
+            Numerator for the conversion calculation from the price unit of measurement to the document unit of measurement.
+            Calculated as: PriceConvFactor * DocConvFactorDenom.
+
+            Example: If the document unit is PK (package) with ConvFactor=12 and ConvFactorDenom=1, 
+            and the price unit is PC (pieces) with ConvFactor=1 and ConvFactorDenom=1, 
+            then convFactorPriceToDoc = 1 * 1 = 1.
+            This means 1 PC in price terms equals 1/12 PK in document terms.
+          type: number
+          format: double
+          readOnly: true
+        convFactorDenomPriceToDoc:
+          description: |
+            Denominator for the conversion calculation from the price unit of measurement to the document unit of measurement.
+            Calculated as: DocConvFactor * PriceConvFactorDenom.
+
+            Example: If the document unit is PK (package) with ConvFactor=12 and ConvFactorDenom=1, 
+            and the price unit is PC (pieces) with ConvFactor=1 and ConvFactorDenom=1, 
+            then convFactorDenomPriceToDoc = 12 * 1 = 12.
+            Combined with convFactorPriceToDoc, the conversion ratio is 1/12, meaning 1 PC = 1/12 PK.
+          type: number
+          format: double
+          readOnly: true
+        convFactorStockToDoc:
+          description: |
+            Numerator for the conversion calculation from the stock unit of measurement to the document unit of measurement.
+            Calculated as: StockConvFactor * DocConvFactorDenom.
+
+            Example: If the document unit is PK (package) with ConvFactor=12 and ConvFactorDenom=1, 
+            and the stock unit is PC (pieces) with ConvFactor=1 and ConvFactorDenom=1, 
+            then convFactorStockToDoc = 1 * 1 = 1.
+            This means 1 PC in stock terms equals 1/12 PK in document terms.
+          type: number
+          format: double
+          readOnly: true
+        convFactorDenomStockToDoc:
+          description: |
+            Denominator for the conversion calculation from the stock unit of measurement to the document unit of measurement.
+            Calculated as: DocConvFactor * StockConvFactorDenom.
+
+            Example: If the document unit is PK (package) with ConvFactor=12 and ConvFactorDenom=1, 
+            and the stock unit is PC (pieces) with ConvFactor=1 and ConvFactorDenom=1, 
+            then convFactorDenomStockToDoc = 12 * 1 = 12.
+            Combined with convFactorStockToDoc, the conversion ratio is 1/12, meaning 1 PC = 1/12 PK.
+          type: number
+          format: double
+          readOnly: true
+        convFactorDocToPrice:
+          description: |
+            Calculated conversion factor from the document unit of measurement to the price unit of measurement.
+            Calculated as: convFactorDenomPriceToDoc / convFactorPriceToDoc.
+
+            Example: If the document unit is PK (package) with ConvFactor=12 and ConvFactorDenom=1, 
+            and the price unit is PZ (pieces) with ConvFactor=1 and ConvFactorDenom=1, 
+            then convFactorDocToPrice = 12 / 1 = 12.
+            This means 1 PK in document terms equals 12 PC in price terms (1 package = 12 pieces).
+          type: number
+          format: double
+          readOnly: true
+        convFactorDocToStock:
+          description: |
+            Calculated conversion factor from the document unit of measurement to the stock unit of measurement.
+            Calculated as: convFactorDenomStockToDoc / convFactorStockToDoc.
+
+            Example: If the document unit is PK (package) with ConvFactor=12 and ConvFactorDenom=1, 
+            and the stock unit is PC (pieces) with ConvFactor=1 and ConvFactorDenom=1, 
+            then convFactorDocToStock = 12 / 1 = 12.
+            This means 1 PK in document terms equals 12 PC in stock terms (1 package = 12 pieces).
+          type: number
+          format: double
+          readOnly: true
+        priceListDetail:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Line's price list detail.
+        priceList:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Line's price list.
+        priceListPrice:
+          description: |
+            Gross price resulting from the application of the commercial condition (`PriceListDetail` or 
+            `PriceCondition`).
+          type: number
+          format: double
+        priceListEditable:
+          description: If `true` the price list detail is editable, `false` otherwise.
+          type: boolean
+        priceListPriceMin:
+          description: |
+            If not `null`, then it represents the minimum assignable price during the application of the condition 
+            (only if Editable is `true`).
+          type: number
+          format: double
+        priceListPriceMax:
+          description: |
+            If not `null`, then it represents the maximum assignable price during the application of the condition 
+            (only if Editable is `true`).
+          type: number
+          format: double
+        priceListDiscountMin:
+          description: |
+            If not `null`, and if `PriceMax` is `null`, then it represents the discount percentage to be applied to 
+            `Price` to determine the maximum assignable price during the application of the condition; 
+            if the value is negative, it represents the maximum applicable markup (only if Editable is `true`).
+          type: number
+          format: double
+        priceListDiscountMax:
+          description: |
+            If not `null`, and if `PriceMax` is `null`, then it represents the discount percentage to be applied to 
+            `Price` to determine the maximum assignable price during the application of the condition; 
+            if the value is negative, it represents the maximum applicable markup (only if Editable is `true`).
+          type: number
+          format: double
+        priceListDiscountModeId:
+          description: |
+            See dictionary `DiscountMode`.
+
+            * `Overwrite` = the discounts in `PriceList` are optionally replaced by those in `DiscountList`;
+            * `Add` = the discounts in `PriceList` are added to those in `DiscountList`;
+            * `Ignore` = the discounts possibly present in `DiscountList` are not considered.
+          type: string
+        docLineGrossPrice:
+          description: |
+            Line price before discounts that determines the gross line amount; if `PriceListEditable` is `false`, 
+            it corresponds to `PriceListPrice`, whereas if `PriceListEditable` is `true`, it corresponds to the price 
+            possibly modified by the user; the price is expressed in `priceItemUnitOfMeasurement`.
+          type: number
+          format: double
+        printableDiscounts:
+          description: A string that concatenate all the discount (both percentage and value discounts).
+          type: string
+          example: "10€+5€+8%"
+        taxRateGroup:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Tax Rate Group.
+        listGrossAmount:
+          description: Line amount obtained by applying the list price (`PriceListPrice`) to the `PriceQuantity`.
+          type: number
+          format: double
+        listNetAmount:
+          description: Line value based on list prices net of discounts.
+          type: number
+          format: double
+        netAmount:
+          description: |
+            Line value net of all discounts, including those granted by the user during document entry; 
+            corresponds to `PriceQuantity * DocLineNetPrice`.
+          type: number
+          format: double
+        giftAmount:
+          description: |
+            Value of free-of-charge lines; it does not affect the net amount, allows discounts to be valued, 
+            and influences the margin of the sales line.
+          type: number
+          format: double
+        taxIncluded:
+          description: True if tax is included, false otherwise.
+          type: boolean
+        salesCostAmount:
+          description: Cost of goods sold for the line, used for margin calculation.
+          type: number
+          format: double
+        deliveryDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        itemBarcode:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Bar code.
+        commissionPct:
+          description: |
+            Commission percentage obtained from the price list or from the commission calculation by applying the matrix; 
+            it is not affected by the possible application of the cut-off.
+          type: number
+          format: double
+        commissionAmount:
+          description: |
+            Commission amount obtained by applying the `CommissionPct`; it is not affected by the possible application 
+            of the cut-off and is populated only after the commission calculation is applied.
+          type: number
+          format: double
+        clusterGroup:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Product's belonging cluster group. See dictionary "ClusterGroup".
+        deliveryStatusId:
+          description: Document delivery status. See dictionary `DeliveryStatus`.
+          type: string
+        docFulfilledQuantity:
+          description: |
+            Fulfilled quantity expressed in docItemUnitOfMeasurement, i.e. the quantity that has been delivered to 
+            the customer.
+          type: number
+          format: double
+        fulfilledDocLineId:
+          description: Optional reference to the document line fulfilled by the current one.
+          type: string
+        docLineNetPrice:
+          description: Document line net price.
+          type: number
+          format: double
+        fulfillmentStatusId:
+          $ref: "./documents.yaml#/components/schemas/FulfillmentStatus"
+        printableTaxRates:
+          description: Vat rates applied concatenated in a single string.
+          type: string
+          example: 4%+1.5%
+        headerTotalNetAmount:
+          description: Total amount net of taxes (relevant to the header).
+          type: number
+          format: double
+        docLineGrossAmount:
+          description: Gross amount equal to DocLineGrossPrice * PriceQuantity.
+          type: number
+          format: double
+        batches:
+          description: Related batches codes.
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        serialNumbers:
+          description: Related serial numbers codes.
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        docPendingQuantity:
+          description: |
+            Handled pending quantity in the document unit of measurement.
+            It's the difference between `docQuantity` and `docFulfilledQuantity`.
+          type: number
+          format: double
+          readOnly: true
+        itemRenditionUrl:
+          description: |
+            Refers to the item linked to the sales doc line.
+            URL of the requested rendition of the digital content with the sequence number 0. 
+            You need to provide the `renditionTypeId` parameter in order to get the correspondent picture's link.
+          type: string
+          format: uri-reference
+          readOnly: true
+        variableWeight:
+          description: Variable Weight Item.
+          type: boolean
+          default: false
+        inAssortment:
+          description: True if the item is in an assortment, false otherwise.
+          type: boolean
+          default: false
+          readOnly: true
+        availableStockQuantity:
+          description: Available stock quantity.
+          type: number
+          format: double
+        availabilityLevelId:
+          $ref: "./items.yaml#/components/schemas/AvailabilityLevelId"
+        warnings:
+          $ref: "#/components/schemas/Warnings"
+        minQty:
+          description: |
+            Minimum quantity for the item, expressed in docUnitOfMeasurement.
+            The highest quantity between the minimum expressed in docUnitOfMeasurement and the minimum present in 
+            the price list.
+          type: number
+          readOnly: true
+          format: double
+          minimum: 0
+        maxQty:
+          description: |
+            Maximum quantity for the item.
+            The highest quantity present in the tiers of the price list.
+          type: number
+          readOnly: true
+          format: double
+          minimum: 0
+        itemShippingCostGroupId:
+          description: Item shipping cost group id. See dictionary `ItemShippingCostGroup`.
+          type: string
+          readOnly: true
+    SalesDocLineAttributesLite:
+      description: A subset of attributes of a single sales document line.
+      type: object
+      required:
+        - docQuantity
+      properties:
+        docQuantity:
+          description: Handled quantity in the document unit of measurement.
+          type: number
+          format: double
+    SalesDocLineRelationships:
+      description: Relationships of a sales document line.
+      type: object
+      required:
+        - docHeader
+        - itemStatus
+        - currency
+        - docUnitOfMeasurement
+      properties:
+        docHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        itemStatus:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        parentItem:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        fulfilledDocHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        currency:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        docLineItemInstances:
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+          description: Array of `DocLineInstance`.
+        docUnitOfMeasurement:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        note:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    SalesDocLine:
+      description: SalesDocLine resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SalesDocLine"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/SalesDocLineAttributes"
+        relationships:
+          $ref: "#/components/schemas/SalesDocLineRelationships"
+    SalesDocLineLite:
+      description: SalesDocLineLite resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SalesDocLineLite"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/SalesDocLineAttributesLite"
+    SalesDocLineIncluded:
+      description: Related document header and item status.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #SalesDocLineRequest:
+    #  description: Object to use to create a new Sales document line.
+    #  type: object
+    #  required:
+    #    - data
+    #  properties:
+    #    data:
+    #      type: array
+    #      items:
+    #        $ref: "#/components/schemas/SalesDocLine"
+    SalesDocLineLiteRequest:
+      description: Object to use to create a new line of a sales document.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocLineLite"
+    UpsertSalesDocLineRequest:
+      description: Object to use to upsert a Sales document line.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/UpsertSalesDocLine"
+    UpsertSalesDocLineResponse:
+      description: Response object for the upsert of a Sales document line.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          required:
+            - id
+            - type
+            - attributes
+          type: object
+          properties:
+            id:
+              type: string
+              description: The updated or created sales doc line id.
+            type:
+              type: string
+              default: "salesDocLine"
+            attributes:
+              type: object
+              properties:
+                netAmount:
+                  type: number
+                  format: double
+                  description: The net amount of the sales document line.
+                docQuantity:
+                  type: number
+                  format: double
+                  description: The quantity of the sales document line.
+                docLineNetPrice:
+                  type: number
+                  format: double
+                  description: The net price of the sales document line.
+                docLineGrossPrice:
+                  type: number
+                  format: double
+                  description: The gross price of the sales document line.
+                printableDiscounts:
+                  type: string
+                  description: The printable discounts of the sales document line.
+    SalesDocLineResponse:
+      description: Single Sales Document Line response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocLine"
+        included:
+          $ref: "#/components/schemas/SalesDocLineIncluded"
+    SalesDocLineListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of Sales documents lines.
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesDocLine"
+        meta:
+          allOf:
+            - $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+            - type: object
+              properties:
+                nextLineNumber:
+                  description: |
+                    It is the first possible line number that can be assigned to a new line.
+                    Calculated according to the document type configuration.
+                    If it is null, it means that there is no configuration for the document type,
+                    and therefore the service caller must manually enter the next line number.
+                  type: string
+                unavailableItemsCount:
+                  description: Number of items in the document header that are not available in stock or budget.
+                  type: integer
+                  minimum: 0
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SalesDocLineIncluded"
+    SalesDocLineWithHeader:
+      description: |
+        SalesDocLineWithHeader resource. Contains all attributes and relationships of the sales document line included
+        sales document header info.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SalesDocLineWithHeader"
+        id:
+          type: string
+        attributes:
+          allOf:
+            - $ref: "#/components/schemas/SalesDocHeaderAttributesWithDocHeader"
+            - $ref: "#/components/schemas/SalesDocLineAttributes"
+        relationships:
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/DocHeaderRelationships"
+            - $ref: "#/components/schemas/SalesDocHeaderRelationships"
+            - $ref: "#/components/schemas/SalesDocLineRelationships"
+    SalesDocLineWithHeaderIncluded:
+      description: SalesDocLineWithHeader related schemas.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SalesDocLineWithHeaderListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of Sales documents lines with their header info included.
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesDocLineWithHeader"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SalesDocLineWithHeaderIncluded"
+    SalesDocLineDiscount:
+      description: |
+        Cross-entity table that contains the detail of the discounts of the document line. 
+        A line can be generated from PriceListDetailDiscount or from DiscountListDetailDiscount.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SalesDocLineDiscount"
+        id:
+          description: SalesDocLineDiscount id. Uniquely identifies a discount line.
+          type: string
+        attributes:
+          type: object
+          required:
+            - entity
+            - sequenceNum
+            - editable
+            - discountAmount
+          properties:
+            detailDiscountEntity:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: Related entity. One of PriceListDetailDiscount or DiscountListDetailDiscount.
+            discountList:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            discountListDetail:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            sequenceNum:
+              description: Sequence number.
+              type: integer
+              minimum: 0
+            detailDiscountCode:
+              description: Optional code or name.
+              type: string
+            percentageDiscount:
+              description: Percentage discount.
+              type: number
+              format: double
+            valueDiscount:
+              description: Value discount.
+              type: number
+              format: double
+            editable:
+              description: True if editable, false otherwise.
+              type: boolean
+              default: false
+            discountAmount:
+              description: Discount amount applied to the line on a percentage basis or unit value.
+              type: number
+              format: double
+            detailDiscountNetPrice:
+              description: |
+                Net price with the discount applied. Computed as DocLineGrossPrice - ValueDiscount. 
+                ValueDiscount is DocLineGrossPrice * PercentageDiscount.
+              type: number
+              format: double
+            discountPriceMin:
+              description: Minimum discount price applicable if editable.
+              type: number
+              format: double
+            discountPriceMax:
+              description: Maximum discount price applicable if editable.
+              type: number
+              format: double
+            percentageDiscountMin:
+              description: Minimum discount price applicable if editable, in percentage.
+              type: number
+              format: double
+            percentageDiscountMax:
+              description: Maximum discount price applicable if editable, in percentage.
+              type: number
+              format: double
+        relationships:
+          description: |
+            The relationships of the SalesDocLineDiscount. 
+            A SalesDocLineDiscount refers to sales document line.
+          type: object
+          required:
+            - salesDocLine
+          properties:
+            salesDocLine:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+          uniqueItems: true
+    SalesDocLineDiscountIncluded:
+      description: Related sales document line.
+      type: array
+      items:
+        $ref: "#/components/schemas/SalesDocLine"
+      uniqueItems: true
+    SalesDocLineDiscountsResponse:
+      description: SalesDocLineDiscount response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesDocLineDiscount"
+        included:
+          $ref: "#/components/schemas/SalesDocLineDiscountIncluded"
+    SalesDocDiscountTotal:
+      description: Total discounts applied to the document grouped by discount code.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SalesDocDiscountTotal"
+        id:
+          description: SalesDocDiscountTotal id. Uniquely identifies an entity.
+          type: string
+        attributes:
+          type: object
+          required:
+            - title
+            - percentageValue
+            - amountValue
+          properties:
+            title:
+              description: Title of the total value.
+              type: string
+            percentageValue:
+              description: Percentage value.
+              type: number
+              format: double
+            amountValue:
+              description: Amount value.
+              type: number
+              format: double
+    SalesDocDiscountTotalsResponse:
+      description: SalesDocDiscountTotals response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesDocDiscountTotal"
+    SalesDocHeaderCreationData:
+      description: An object containing the data needed to create a new sales document header.
+      type: object
+      required:
+        - type
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: Describes the type of the object.
+          type: string
+          default: "SalesDocHeaderCreationData"
+        attributes:
+          description: The attributes needed to create a new sales document header.
+          type: object
+          required:
+            - docCode
+            - creationDate
+          properties:
+            docCode:
+              description: A formatted version of the sales document number.
+              type: string
+            creationDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+              description: |
+                Generally the date when the document is created. It may be predated or postdated based on document
+                type's configuration.
+            preferredDeliveryDate:
+              description: |
+                Preferred delivery date.  If specified, this date will affect the price conditions used for the document.
+                It is a non-binding indication of the customer's preferred delivery date.
+
+                Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+              type: string
+              format: date
+              example: "2022-02-25"
+            expectedDeliveryDate:
+              description: |
+                Expected delivery date.
+                It is the date on which the delivery is expected to be made.
+
+                Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+              type: string
+              format: date
+              example: "2022-02-25"
+            actualDeliveryDate:
+              description: |
+                Actual delivery date.
+                It is the date on which the delivery was actually made.
+
+                Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+              type: string
+              format: date
+              example: "2022-02-25"
+            deliveryModeId:
+              description: |
+                Document's delivery mode. See dictionary `DeliveryMode`. If `null` the customer's delivery mode will be
+                 used.
+              type: string
+            coordinates:
+              description: Location information about the sales document.
+              type: object
+              properties:
+                latitude:
+                  description: The latitude where the document is created.
+                  type: number
+                  format: double
+                longitude:
+                  description: The longitude where the document is created.
+                  type: number
+                  format: double
+                coordinateAccuracy:
+                  description: The accuracy of the coordinates.
+                  type: number
+                  format: double
+        relationships:
+          description: Related entities relationships needed to create a new sales doc header.
+          type: object
+          required:
+            - sellToCustomerAccount
+            - billToCustomerAccount
+            - docType
+            - creatorUserProfile
+            - organization
+          properties:
+            sellToCustomerAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The customer account that will receive the goods.
+            billToCustomerAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The customer account that will pay for the goods.
+            docType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The type of the document. It determines several aspects of the document.
+            creatorUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The user profile that created the document.
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The organization that the document belongs to.
+            device:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The device that created the document.
+            priceList:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The price list to associated to the document.
+    SalesDocHeaderCreationRequest:
+      description: A request to create a new sales document header.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocHeaderCreationData"
+
+    SalesDocLineItemInfoResponse:
+      description: Extended information about the item in the order line response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocLineItemInfo"
+        included:
+          $ref: "#/components/schemas/SalesDocLineItemInfoIncluded"
+    SalesDocLineItemInfoIncluded:
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SalesDocLineItemInfo:
+      description: Extended information about the item in the order line
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SalesDocLineItemInfo"
+        id:
+          description: Item id
+          type: string
+        attributes:
+          description: The attributes related to the item in the order line
+          type: object
+          required:
+            - code
+            - descr
+          properties:
+            code:
+              description: Item code
+              type: string
+            descr:
+              description: Item description
+              type: string
+            category:
+              description: Item category description
+              type: string
+            renditionUrl:
+              description: |
+                URL of the requested rendition of the digital content with the sequence number 0. 
+                You need to provide the `renditionTypeId` parameter in order to get the correspondent picture's link.
+              type: string
+              format: uri-reference
+              readOnly: true
+            availability:
+              type: object
+              properties:
+                warehouseCode:
+                  description: Warehouse code
+                  type: string
+                warehouseDescr:
+                  description: Warehouse descr
+                  type: string
+                availableStockQuantity:
+                  description: Available stock quantity
+                  type: number
+                  format: double
+                unitOfMeasure:
+                  description: Unit of measure related to the available stock quantity
+                  $ref: "./core.yaml#/components/schemas/SimpleEntity"
+                availabilityLevelId:
+                  $ref: "./items.yaml#/components/schemas/AvailabilityLevelId"
+                availabilityDate:
+                  $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        relationships:
+          description: The relationships related to the item in the order line
+          type: object
+          required:
+            - currentSalesDocLine
+          properties:
+            currentSalesDocLine:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            lastSalesDocHeader:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            lastSalesDocLine:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+
+    SalesDocHeaderUpdateData:
+      description: An object containing the data to use to update a sales document header.
+      type: object
+      required:
+        - type
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: Describes the type of the object.
+          type: string
+          default: "SalesDocHeaderUpdateData"
+        attributes:
+          description: The modifiable attributes of a sales document header.
+          type: object
+          required:
+            - docCode
+            - entityAttributeValues
+          properties:
+            docCode:
+              description: |
+                A formatted version of the sales document number. This attribute is used iff no numerator is
+                defined for the document because otherwise document's number and code are automatically calculated.
+              type: string
+              example: "SO-0001"
+            fulfillmentStatusId:
+              $ref: "./documents.yaml#/components/schemas/FulfillmentStatus"
+              description: Document fulfillment status.
+            preferredDeliveryDate:
+              description: |
+                Preferred delivery date. 
+                It is a non-binding indication of the customer's preferred delivery date.
+
+                Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+              type: string
+              format: date
+              example: "2022-02-25"
+            expectedDeliveryDate:
+              description: |
+                Expected delivery date.
+                It is the date on which the delivery is expected to be made.
+
+                Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+              type: string
+              format: date
+              example: "2022-02-25"
+            actualDeliveryDate:
+              description: |
+                Actual delivery date.
+                It is the date on which the delivery was actually made.
+
+                Formatted like `YYYY-MM-DD`; see [Specification > DataTypes](https://swagger.io/specification/#data-types)
+              type: string
+              format: date
+              example: "2022-02-25"
+            deliveryModeId:
+              description: Document delivery mode. See dictionary `DeliveryMode`.
+              type: string
+            deliveryStatusId:
+              description: Document delivery status. See dictionary `DeliveryStatus`.
+              type: string
+            deliveryReasonId:
+              description: Document delivery reason. See dictionary `DeliveryReason`.
+              type: string
+            customerRefNumber:
+              description: Customer's document reference number.
+              type: string
+            customerRefDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+              description: The date of customer reference number.
+            externalRefNumber:
+              description: External reference number, used to identify the document in external systems.
+              type: string
+            shippingMethodId:
+              description: Shipping mode. See dictionary `ShippingMode`.
+              type: string
+            entityAttributeValues:
+              description: A list containing the values to use to update dynamic attributes of the document.
+              type: array
+              items:
+                $ref: "./entityAttributes.yaml#/components/schemas/EntityAttributeValue"
+              default: []
+            totalGoodsWeight:
+              description: The overall weight of goods linked to the document.
+              type: number
+              format: double
+              minimum: 0.0
+              example: 10.0
+        relationships:
+          description: Related entities relationships needed to update a sales doc header.
+          type: object
+          properties:
+            sellToAddress:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The address of the customer that will receive the goods.
+            sellToEmail:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The email of the customer that will receive the goods.
+            billToAddress:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The billing customer's address.
+            deliveryAddress:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The address where the goods will be delivered.
+            salesRep:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The sales representative that is responsible for the document.
+            warehouse:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The warehouse where the goods are stored.
+            priceList:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The price list that will be used for the document.
+            vehicle:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The vehicle that will be used for the delivery.
+            courier:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The courier that will deliver the goods.
+            docPaymentCondition:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+              description: The payment condition that will be used for the document.
+
+    SalesDocHeaderUpdateRequest:
+      description: A request to update a sales document header.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocHeaderUpdateData"
+
+    EligibleSellToCustomerAccount:
+      description: A customer account that can be used as the _sell to_ customer of a sales document.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          description: Describes the type of the object.
+          type: string
+          default: "CustomerAccount"
+        id:
+          description: Uniquely identify the customer account.
+          type: string
+          example: "CUSTOMER.ACC.1"
+        attributes:
+          description: The attributes of an eligible customer account.
+          type: object
+          required:
+            - code
+            - businessName
+          properties:
+            code:
+              description: The code of the customer account.
+              type: string
+            name:
+              description: The business name of the customer account.
+              type: string
+            descr:
+              description: The description of the customer account.
+              type: string
+            mainAddress:
+              description: |
+                The main address of the customer account, chosen among those available for it. Usually, the main address
+                is the one with sequence number equal to 0. If `null` no address is associated to the customer account.
+              type: string
+    EligibleSellToCustomerAccountListResponse:
+      description: Contains a list of eligible customer accounts.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of eligible customer accounts.
+          type: array
+          items:
+            $ref: "#/components/schemas/EligibleSellToCustomerAccount"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+
+    BillToCustomerAccount:
+      description: A customer account that can be used as the _bill to_ customer of a sales document.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          description: Describes the type of the object.
+          type: string
+          default: "CustomerAccount"
+        id:
+          description: Uniquely identify the customer account.
+          type: string
+          example: "CUSTOMER.ACC.1"
+        attributes:
+          description: The attributes of a bill to customer account.
+          type: object
+          required:
+            - code
+            - businessName
+          properties:
+            code:
+              description: The code of the customer account.
+              type: string
+            businessName:
+              description: The business name of the customer account.
+              type: string
+            mainAddress:
+              description: |
+                The main address of the customer account, chosen among those available for it. Usually, the main address
+                is the one with sequence number equal to 0. If `null` no address is associated to the customer account.
+              type: string
+            fiscalCode:
+              description: The fiscal code or VAT number of the customer account.
+              type: string
+    BillToCustomerAccountResponse:
+      description: Contains a customer account that can be used as the _bill to_ customer of a sales document.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/BillToCustomerAccount"
+
+    EligiblePriceListListResponse:
+      description: Contains a list of eligible price lists.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of eligible price lists.
+          type: array
+          items:
+            $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+
+    SalesDocLineCreationData:
+      description: An object containing the data needed to create a new sales document line.
+      type: object
+      required:
+        - type
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: Describes the type of the object.
+          type: string
+          default: "SalesDocLineCreationData"
+        attributes:
+          description: The attributes needed to create a new sales document line.
+          type: object
+          required:
+            - lineNumber
+          properties:
+            lineNumber:
+              description: The line's number.
+              type: string
+              example: "1"
+        relationships:
+          description: Related entities relationships needed to create a new sales doc line.
+          type: object
+          required:
+            - item
+          properties:
+            item:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    SalesDocLineCreationRequest:
+      description: An object containing the data needed to create a new sales document line.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocLineCreationData"
+
+    SalesDocLineUpdateData:
+      description: An object containing the data needed to update a sales document line.
+      type: object
+      required:
+        - type
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: Describes the type of the object.
+          type: string
+          default: "SalesDocLineUpdateData"
+        attributes:
+          description: The updatable attributes of a sales document line.
+          type: object
+          properties:
+            lineNumber:
+              description: A new line number.
+              type: string
+              example: 1
+            itemDescr:
+              description: A description that will override the line's item one.
+              type: string
+              example: "New item's description"
+            docQuantity:
+              description: The new quantity of the line.
+              type: number
+              format: double
+              example: 10.0
+            fulfillmentStatusId:
+              description: The new fulfillment status of the line.
+              type: string
+              example: "FulfillmentStatus.NotRelevant"
+            deliveryStatusId:
+              description: The new delivery status of the line.
+              type: string
+              example: "DeliveryStatus.Example"
+            docLineGrossPrice:
+              description: The new gross price of the line.
+              type: number
+              format: double
+              example: 10.0
+            deliveryDate:
+              description: The new delivery date of the line.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            externalRefNumber:
+              description: The new external reference number of the line.
+              type: string
+              example: "L-0001"
+        relationships:
+          description: |
+            Related entities relationships needed to update a sales doc line.
+
+            In particular, `docUnitOfMeasurement` represents the id of the relationship between an item and a unit
+            of measurement (in this case, the one to use as the document unit of measurement).
+          type: object
+          properties:
+            reason:
+              description: The reason of the line.
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            warehouse:
+              description: The warehouse of the line.
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            docUnitOfMeasurement:
+              description: The unit of measurement of the line.
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            priceList:
+              description: The price list of the line.
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    SalesDocLineUpdateRequest:
+      description: An object containing the data needed to update a sales document line.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesDocLineUpdateData"
+    EligibleItem:
+      description: An item that can be added to a sales document.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: Describes the type of the object.
+          type: string
+          default: "EligibleItem"
+        id:
+          description: Uniquely identify the item.
+          type: string
+        attributes:
+          description: The attributes of an eligible item.
+          type: object
+          properties:
+            code:
+              description: The code of the item.
+              type: string
+            descr:
+              description: The description of the item.
+              type: string
+            isAvailable:
+              description: True if the item is available, false otherwise.
+              type: boolean
+        relationships:
+          type: object
+          description: Related items.
+          properties:
+            relatedItems:
+              $ref: "./jsonapi.yaml#/components/schemas/relToManyWithMeta"
+    EligibleItemIncluded:
+      description: Related items.
+      type: array
+      items:
+        $ref: "./items.yaml#/components/schemas/Item"
+      uniqueItems: true
+    EligibleItemsListResponse:
+      description: An object containing a list of eligible items for a sales document.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of eligible items.
+          type: array
+          items:
+            $ref: "#/components/schemas/EligibleItem"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/EligibleItemIncluded"
+    SalesDocWidgetListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: object
+          description: List of widgets. Contains the data for the widgets selected by the user.
+          properties:
+            tallyWidgets:
+              description: Set of tally widgets.
+              type: array
+              items:
+                $ref: "./widgets.yaml#/components/schemas/TallyWidget"
+    ExceededBudgetLimit:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: Describes the type of the object.
+          type: string
+          default: "ExceededBudgetLimit"
+        id:
+          description: The sales document line id.
+          type: string
+        attributes:
+          type: object
+          properties:
+            targetLimitQuantity:
+              type: number
+              description: Maximum allowed quantity for the target.
+              minimum: 0
+            targetConsumedQuantity:
+              type: number
+              description: Item quantity already consumed for the target.
+              minimum: 0
+            itemCountInCluster:
+              type: integer
+              description: Number of items in the target cluster.
+              minimum: 0
+            docQuantity:
+              type: number
+              description: |
+                Document quantity referred to the line id if set.
+                Expressed in the document unit of measurement, i.e. relationship `docUnitOfMeasurement`.
+              minimum: 0
+            docTargetLimitQuantity:
+              type: number
+              description: |
+                Maximum allowed quantity for document quantity.
+                Expressed in the document unit of measurement, i.e. relationship `docUnitOfMeasurement`.
+              minimum: 0
+        relationships:
+          type: object
+          description: |
+            Related:
+              * Target
+              * Item
+              * Target unit of measurement
+              * Item cluster
+          properties:
+            target:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            item:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            targetUnitOfMeasurement:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            itemCluster:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            docUnitOfMeasurement:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    ExceededBudgetLimitsIncluded:
+      description: Related entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    ExceededBudgetLimitsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExceededBudgetLimit"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/ExceededBudgetLimitsIncluded"
+    SalesDocLineWarning:
+      description: Warning for a sales document line.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: |
+            The type of warning. Possible values: BudgetWarning, AvailabilityWarning.
+          type: string
+          pattern: "^(BudgetWarning|AvailabilityWarning)$"
+        id:
+          description: The sales document line id.
+          type: string
+        attributes:
+          type: object
+          properties:
+            budgetDiscrepancy:
+              description: Details for budget warning (present if type is BudgetWarning).
+              type: object
+              properties:
+                maxBudget:
+                  type: number
+                  description: Maximum allowed budget.
+                targetDescr:
+                  type: string
+                  description: Target description.
+            availabilityDiscrepancy:
+              description: True if there is an availability Warning (present if type is AvailabilityWarning).
+              type: boolean
+        relationships:
+          type: object
+          description: Related entities.
+          properties:
+            targetUnitOfMeasurement:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            item:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            itemCluster:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    SalesDocLineWarningIncluded:
+      description: Related entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SalesDocLineWarningsListResponse:
+      description: Contains the warnings for a sales document line.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of warnings for the sales document line.
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesDocLineWarning"
+        included:
+          $ref: "#/components/schemas/SalesDocLineWarningIncluded"
+    Warnings:
+      description: |
+        List of warnings related to this document line. 
+        Warnings can refer to workflow anomalies, stock or budget unavailability.
+      type: object
+      readOnly: true
+      properties:
+        hasWorkflowAnomalies:
+          description: |
+            True if there are anomalies based on the definition of the workflow for this document line, 
+            false otherwise.
+          type: boolean
+          readOnly: true
+        stockUnavailable:
+          description: |
+            True if the required quantity is not available in stock for the line's item, false otherwise.
+          type: boolean
+          default: false
+        budgetUnavailable:
+          description: |
+            True if the required quantity is not available in budget for the line's item, false otherwise.
+            The budget check is done based on the document's user and sell customer account.
+          type: boolean
+          default: false
+        hasRestrictions:
+          description: |
+            True if this line is subject to budget restrictions or limitations.
+            It is informative only, the line can be created even if this flag is true.
+          type: boolean
+          default: false
+        hasDuplicates:
+          description: |
+            True if this line (item) is a duplicate of another line in the same document, `false` otherwise.
+          type: object
+          properties:
+            isDuplicate:
+              description: |
+                True if this line is a duplicate of another line in the same document, `false` otherwise.
+              type: boolean
+            originalLineId:
+              description: |
+                If isDuplicate is true, contains the id of the original line (only if `count = 1`), `false` otherwise.
+              type: string
+            count:
+              description: |
+                If `isDuplicate` is `true`, contains the number of duplicates found for this item.
+              type: integer
+    PricingCondition:
+      description: |
+        Details about the pricing condition applied to determine the price of the sales document line based on a 
+        unit of measurements, including discounts.
+      type: object
+      properties:
+        quantityMin:
+          description: |
+            Minimum quantity for the item, expressed in docUnitOfMeasurement.
+            The highest quantity between the minimum expressed in docUnitOfMeasurement and the minimum present in 
+            the price list.
+          type: number
+          format: double
+        quantityMax:
+          description: |
+            Maximum quantity for the item.
+            The highest quantity present in the tiers of the price list.
+          type: number
+          format: double
+        grossPrice:
+          description: Gross price expressed in the unit of measurement of the related price list.
+          type: number
+          format: double
+        printableDiscounts:
+          description: A string that concatenates all applied discounts in a human-readable format.
+          type: string
+          example: "10€+5€+8%"
+        totalDiscountPercentage:
+          description: |
+            Total percentage discount. GrossPrice-netPrice/grossPrice*100
+          type: number
+          format: double
+        netPrice:
+          description: Net price expressed in the unit of measurement of the related price list.
+          type: number
+          format: double
+        priceUnitOfMeasurementId:
+          description: The unit of measurement of the related price list.
+          type: string
+    ConstraintWarningLevel:
+      type: string
+      description: |
+        Indicates the severity of a constraint warning for a sales document line:
+          * `Warning`: The order can be placed, but attention is required.
+          * `Blocking`: The order cannot be placed due to a blocking constraint.
+          * `AuthorizationRequired`: The order can be placed only if authorized.
+      enum:
+        - Warning
+        - Blocking
+        - AuthorizationRequired
+    ConstraintType:
+      type: string
+      description: |
+        Indicates the type of constraint that triggered the warning:
+          * `ORDER_MIN_AMOUNT`: The total order amount is below the minimum required.
+          * `CATEGORY_MIN_AMOUNT`: The total amount for a specific category is below the minimum required.
+      enum:
+        - ORDER_MIN_AMOUNT
+        - CATEGORY_MIN_AMOUNT
+    SalesDocConstraintWarning:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SalesDocConstraintWarning"
+        id:
+          $ref: "#/components/schemas/ConstraintType"
+        attributes:
+          type: object
+          properties:
+            # verrà introdotto in un prossimo rilascio
+            #severityLevel:
+            #  $ref: "#/components/schemas/ConstraintWarningLevel"
+            params:
+              type: object
+              additionalProperties:
+                type: object
+    SalesDocConstraintWarningsResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: |
+            A warning related to sales document constraints, such as minimum order amount or minimum category amount.
+            In the attributes, the `params` object contains the parameters related to the warning, and the keys depend
+            on the warning id:
+
+            | Parameter (map key) | Constraint ID | Description | Type |
+            |-|-|-|-|
+            | `minAmount` | `ORDER_MIN_AMOUNT`, `SHIPPING_COST_GROUP_MIN_AMOUNT` | The minimum order amount required | number |
+            | `shippingCostGroupId` | `SHIPPING_COST_GROUP_MIN_AMOUNT` | The shipping cost group id (see dictionary `ShippingCostGroup`) | string |
+          #
+          #These warnings help inform users about constraints that may prevent the order from being placed or require
+          #additional authorization.
+          #The severity of the warning is indicated by the `severityLevel` property:
+          #  * `Warning`
+          #  * `Blocking`
+          #  * `AuthorizationRequired`
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesDocConstraintWarning"
+          example: |
+            ```
+            {
+              "data": [
+                {
+                  "type": "SalesDocConstraintWarning",
+                  "id": "ORDER_MIN_AMOUNT",
+                  "attributes": {
+                    "params": {
+                      "minAmount": 150
+                    }
+                  }
+                },
+                {
+                  "type": "SalesDocConstraintWarning",
+                  "id": "SHIPPING_COST_GROUP_MIN_AMOUNT",
+                  "attributes": {
+                    "params": {
+                      "ShippingCostGroup" : "ItemShippingCostGroup.Frozen",
+                      "minAmount": 200
+                    }
+                  }
+                },
+                {
+                  "type": "SalesDocConstraintWarning",
+                  "id": "SHIPPING_COST_GROUP_MIN_AMOUNT",
+                  "attributes": {
+                    "params": {
+                      "ShippingCostGroup" : "ItemShippingCostGroup.Fresh",
+                      "minAmount": 100
+                    }
+                  }
+                }
+              ]
+            }
+            ```
+    ShippingCost:
+      description: Shipping Cost resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "ShippingCost"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - budgetTypeId
+            - budgetTargetAmountTypeId
+            - docTypeShippingCostGroupId
+            - minNetAmount
+            - maxNetAmount
+            - shippingCostAmount
+            - shippingCostActionId
+          properties:
+            code:
+              description: Code of the shipping cost.
+              type: string
+            descr:
+              description: General description/name of the shipping cost.
+              type: string
+            shippingZoneId:
+              description: Shipping zone. See dictionary `ShippingZone`.
+              type: string
+            itemShippingCostGroupId:
+              description: |
+                Item shipping cost group. See dictionary `ItemShippingCostGroup`.
+                If present the shipping cost applies only to items in the specified shipping cost group.
+                If null the shipping cost applies to all items.
+              type: string
+            docTypeShippingCostGroupId:
+              description: |
+                Document type shipping cost group. See dictionary `DocTypeShippingCostGroup`.
+                Cost applies only to documents of the specified document type shipping cost group.
+              type: string
+            minNetAmount:
+              description: Minimum net amount for the shipping cost to be applied.
+              type: number
+              format: double
+            maxNetAmount:
+              description: Maximum net amount for the shipping cost to be applied.
+              type: number
+              format: double
+            shippingCostAmount:
+              description: Amount of the shipping cost.
+              type: number
+              format: double
+              default: 0.0
+            shippingCostActionId:
+              description: |
+                Action to perform in the App when the shipping cost is applied.
+                See dictionary `ShippingCostAction`.
+              type: string
+        relationships:
+          type: object
+          required:
+            - organization
+            - currency
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currency:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            shippingCostItem:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            shippingCostReason:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    ShippingCostIncluded:
+      description: Related entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    ShippingCostListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of ShippingCosts
+          type: array
+          items:
+            $ref: "#/components/schemas/ShippingCost"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/ShippingCostIncluded"
+    UpsertSalesDocLine:
+      description: data to create or update a sales doc line
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "UpsertSalesDocLine"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - docUnitId
+            - docQuantity
+          properties:
+            docUnitId:
+              description: The unit of measurement of the line.
+              type: string
+            docQuantity:
+              description: The quantity of the line.
+              type: number
+              format: double
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The sales doc header id
+      required: true
+      schema:
+        type: string
+    headerId:
+      name: headerId
+      in: path
+      description: The sales doc header id
+      required: true
+      schema:
+        type: string
+    lineId:
+      name: lineId
+      in: path
+      description: The sales doc line id
+      required: true
+      schema:
+        type: string
+    transferStatusId:
+      name: transferStatusId
+      in: path
+      description: Document transfer status id. See dictionary `TransferStatus`.
+      required: true
+      schema:
+        $ref: "./documents.yaml#/components/schemas/TransferStatus"
+    salesDocHeaderFilters:
+      name: "filters"
+      in: query
+      description: Filter group.
+      required: true
+      style: deepObject
+      schema:
+        properties:
+          s:
+            description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+            type: string
+          docDate:
+            description: Filter the response by document date.
+            type: string
+          creatorUserProfile:
+            description: Filter the response by creator user profile.
+            type: string
+          processingStatusId:
+            description: Filter the response by document's processing status.
+            type: string
+          transferStatusId:
+            description: Filter the response by document's transfer status.
+            type: string
+          sellToCustomerAccount:
+            description: Filter the response by sell to customer account
+            type: string
+          billToCustomerAccount:
+            description: Filter the response by bill to customer account.
+            type: string
+          netAmount:
+            description: Filter the response by net amount.
+            type: string
+          docType:
+            description: Filter the response by Doc Type Id.
+            type: string
+          fulfillmentStatusId:
+            description: Filter the response by document fulfillment status.
+            type: string
+          preferredDeliveryDate:
+            description: Filter the response by preferred delivery date.
+            type: string
+          expectedDeliveryDate:
+            description: Filter the response by expected delivery date.
+            type: string
+          actualDeliveryDate:
+            description: Filter the response by actual delivery date.
+            type: string
+          deliveryStatusId:
+            description: Filter the response by document delivery status.
+            type: string
+          salesRepId:
+            description: Filter the response by document customer's agent.
+            type: string
+          device:
+            description: Filter the response by device.
+            type: string
+          reason:
+            description: Filter the response by Line's reason.
+            type: string
+          item:
+            description: Filter the response by Line's item.
+            type: string
+          itemInstance:
+            description: Filter the response by item instance.
+            type: string
+          authorizationBody:
+            description: Filter the response by authorization body.
+            type: string
+          warehouse:
+            description: Filter the response by warehouse.
+            type: string
+          currency:
+            description: Filter the response by currency.
+            type: string
+          currentDraftUserProfileId:
+            description: Filter the response by current draft user profile.
+            type: string
+    lineFilters:
+      name: "filter"
+      in: query
+      description: Filter group
+      required: true
+      style: deepObject
+      schema:
+        properties:
+          s:
+            description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+            type: string
+          reason:
+            description: Line's reason.
+            type: string
+          item:
+            description: Line's item.
+            type: string
+          fulfillmentStatusId:
+            description: Filter the response by fulfillment status id.
+            type: string
+          deliveryDate:
+            description: Filter the response by delivery date.
+            type: string
+          deliveryStatusId:
+            description: Filter the response by delivery status id.
+            type: string
+          unitOfMeasurement:
+            description: Filter the response by unit of measurement.
+            type: string
+          itemInstance:
+            description: Filter the response by item instance.
+            type: string
+          taxRateGroup:
+            description: Filter the response by tax rate group.
+            type: string
+          itemBarcode:
+            description: Filter the response by item barcode.
+            type: string
+          clusterGroup:
+            description: Filter the response by cluster group.
+            type: string
+          hasAnomalies:
+            description: Filter the response by lines with anomalies.
+            type: string
+          inAssortment:
+            description: True to get items in assortment only, false to get items not in assortment.
+            type: string
+    filterAppRequired:
+      name: "filter[appId]"
+      in: query
+      description: Filter the response by application. The user must be enabled for the application in the filter.
+      required: true
+      style: form
+      schema:
+        type: string
+    filterDocCategoryRequired:
+      name: "filter[docCategoryId]"
+      in: query
+      description: Filter the response by document category.
+      required: true
+      style: form
+      schema:
+        type: string
+    filterCustomerAccountRequired:
+      name: "filter[customerAccountId]"
+      in: query
+      description: Filter the response by customer account.
+      required: true
+      style: form
+      schema:
+        type: string
+    salesDocWidgetsFilters:
+      name: "filters"
+      in: query
+      description: Filter group.
+      required: true
+      style: deepObject
+      schema:
+        properties:
+          docDate:
+            description: Filter the response by document date.
+            type: string
+          sellToCustomerAccount:
+            description: Filter the response by sell to customer account
+            type: string
+paths:
+  /sales-docs/headers/{id}/transfer-statuses:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Return the list of possible valid transfer statuses from the current transfer status of the sales document.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateSalesOrderTransferStatus |
+        | updateSalesDocTransferStatus |
+      operationId: listSalesDocTransferStatuses
+      tags:
+        - Sales Document
+      x-authorities:
+        - updateSalesOrderTransferStatus
+        - updateSalesDocTransferStatus
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocTransferStatusListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: |
+        Updates the transfer status of a sales document.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateSalesOrderTransferStatus |
+        | updateSalesDocTransferStatus |
+
+      operationId: updateSalesDocTransferStatus
+      tags:
+        - Sales Document
+      x-authorities:
+        - updateSalesOrderTransferStatus
+        - updateSalesDocTransferStatus
+      requestBody:
+        description: Desired transfer status.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./documents.yaml#/components/schemas/TransferStatusRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocHeaderResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{headerId}/lines/{lineId}:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+      - $ref: "#/components/parameters/lineId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Return a single line of a sales document.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesOrder |
+        | createSalesOrder |
+        | updateSalesOrder |
+        | getSalesDoc |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: getSalesDocLine
+      tags:
+        - Sales Document
+      x-authorities:
+        - getSalesOrder
+        - createSalesOrder
+        - updateSalesOrder
+        - getSalesDoc
+        - createSalesDoc
+        - updateSalesDoc
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocLineResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: |
+        Updates a single line of a sales document. This operation is implemented such that nullable attributes or
+        relationships are ignored and, therefore, won't change line's values.
+
+        Among the updatable attributes and relationships, there are some that when updated will trigger automatic
+        recalculation of other line's information. In particular, changing:
+        * Line's reason may trigger taxes recalculation.
+        * Line's warehouse may affect items availability.
+        * Line's unit of measurement implies all quantities recalculation.
+        * Line's quantity affects stock price.
+        * Line's gross price affects its net price based on line's discounts (if any).
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: updateSalesDocLine
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      requestBody:
+        description: The line of the sales document to patch.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SalesDocLineUpdateRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocLineResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a Sales Doc Line.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | deleteSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+        | deleteSalesDoc |
+      operationId: deleteSalesDocLine
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - deleteSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+        - deleteSalesDoc
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{headerId}/lines/{lineId}/item-info:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+      - $ref: "#/components/parameters/lineId"
+      - name: renditionTypeId
+        in: query
+        description: Rendition type requested. Provide this parameter to tell the server what type of rendition you need.
+        required: false
+        style: form
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Return the item information for a single line of a sales document.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesOrder |
+        | createSalesOrder |
+        | updateSalesOrder |
+        | getSalesDoc |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: getSalesDocLineItemInfo
+      tags:
+        - Sales Document
+      x-authorities:
+        - getSalesOrder
+        - createSalesOrder
+        - updateSalesOrder
+        - getSalesDoc
+        - createSalesDoc
+        - updateSalesDoc
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocLineItemInfoResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+
+  /sales-docs/headers/{headerId}/lines/{lineId}/discounts:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+      - $ref: "#/components/parameters/lineId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+    get:
+      description: |
+        Return the discounts for a single line of a sales document.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesOrder |
+        | createSalesOrder |
+        | updateSalesOrder |
+        | getSalesDoc |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: listSalesDocLineDiscounts
+      tags:
+        - Sales Document
+      x-authorities:
+        - getSalesOrder
+        - createSalesOrder
+        - updateSalesOrder
+        - getSalesDoc
+        - createSalesDoc
+        - updateSalesDoc
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocLineDiscountsResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/lines:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Return the lines of a sales document.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesOrder |
+        | createSalesOrder |
+        | updateSalesOrder |
+        | getSalesDoc |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: listSalesDocLine
+      tags:
+        - Sales Document
+      x-authorities:
+        - getSalesOrder
+        - createSalesOrder
+        - updateSalesOrder
+        - getSalesDoc
+        - createSalesDoc
+        - updateSalesDoc
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "#/components/parameters/lineFilters"
+        - name: renditionTypeId
+          in: query
+          description: |
+            Rendition type requested. 
+            Provide this parameter to tell the server what type of rendition you need for items linked to the sales order lines.
+          required: false
+          style: form
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocLineListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Creates a sales document line.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: createSalesDocLine
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+      requestBody:
+        description: The sales document line to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SalesDocLineCreationRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocLineResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{headerId}/lines/by-item-code:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+      - $ref: "./jsonapi.yaml#/components/parameters/marketplaceRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Creates a sales document line by providing an item code or barcode.
+
+        The `code` parameter can be either a barcode or an item code. The service first searches for the item by barcode; if not found, it searches by code.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesDocLine |
+      operationId: createSalesDocLineByItemCode
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesDocLine
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  description: |
+                    Item identifier. Can be a barcode or an item code. The service first searches by barcode, 
+                    then by code.
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocLineResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{headerId}/linked-docs:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+    get:
+      description: |
+        Returns a list of all the documents linked to the given one.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesOrder |
+        | createSalesOrder |
+        | updateSalesOrder |
+        | getSalesDoc |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: getSalesDocLinkedDocs
+      tags:
+        - Sales Document
+      x-authorities:
+        - getSalesOrder
+        - createSalesOrder
+        - updateSalesOrder
+        - getSalesDoc
+        - createSalesDoc
+        - updateSalesDoc
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocHeaderLiteListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/release:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Releases a sales document. In particular, it changes its status to `Released` and it generates logistics 
+        handling lines.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: releaseSalesDoc
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/publish:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+    post:
+      description: |
+        Publish a sales document header.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: publishSalesDocHeader
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocHeaderResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+      description: |
+        Return a single sales document header.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesOrder |
+        | createSalesOrder |
+        | updateSalesOrder |
+        | getSalesDoc |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: getSalesDocHeader
+      tags:
+        - Sales Document
+      x-authorities:
+        - getSalesOrder
+        - createSalesOrder
+        - updateSalesOrder
+        - getSalesDoc
+        - createSalesDoc
+        - updateSalesDoc
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocHeaderResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: |
+        Updates a single sales document header.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: updateSalesDocHeader
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      requestBody:
+        description: The sales document header to patch.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SalesDocHeaderUpdateRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocHeaderResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a Sales document header.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | deleteSalesOrder |
+        | createSalesDoc |
+        | deleteSalesDoc |
+      operationId: deleteSalesDocHeader
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - deleteSalesOrder
+        - createSalesDoc
+        - deleteSalesDoc
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/bulk-deletion:
+    patch:
+      description: |
+        Delete multiple sales document lines at once. The sales document must be in draft status.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: bulkDeleteSalesDocLines
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - deleteAll
+                - notInAssortmentOnly
+                - linesIdsToDelete
+              properties:
+                deleteAll:
+                  type: boolean
+                  description: |
+                    * If `true`, `notInAssortmentOnly` and `linesIdsToDelete` will be ignored and all lines of the sales 
+                    document will be deleted.
+                    * If `false`, the lines to delete will be determined according to the other two attributes.
+                  default: false
+                notInAssortmentOnly:
+                  type: boolean
+                  description: |
+                    * If `true`, only lines with items not in assortment will be deleted and `linesIdsToDelete` 
+                    will be ignored.
+                    * If `false`, this attribute will be ignored.
+                  default: false
+                linesIdsToDelete:
+                  type: array
+                  description: |
+                    The list of sales document lines ids to delete. 
+                    * If `deleteAll` or `notInAssortmentOnly` are `true`, this attribute will be ignored.
+                    * If `deleteAll` and `notInAssortmentOnly` are `false` and this list is not empty, only the lines 
+                    with ids in this list will be deleted.
+                  items:
+                    type: string
+                  uniqueItems: true
+                  default: []
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/exceeded-budget-limits:
+    get:
+      description: |
+        Returns the list of exceeded budget limits for the given sales document, both at product and cluster level.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesOrder |
+        | createSalesOrder |
+        | updateSalesOrder |
+        | getSalesDoc |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: listExceededBudgetLimits
+      tags:
+        - Sales Document
+      x-authorities:
+        - getSalesOrder
+        - createSalesOrder
+        - updateSalesOrder
+        - getSalesDoc
+        - createSalesDoc
+        - updateSalesDoc
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The sales document header id
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: List of exceeded budget limits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExceededBudgetLimitsResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Return a list of sales documents headers.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listSalesOrders |
+        | listSalesDocs |
+      operationId: listSalesDocHeaders
+      tags:
+        - Sales Document
+      x-authorities:
+        - listSalesOrders
+        - listSalesDocs
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./documents.yaml#/components/parameters/filterDocCategoryRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+        - $ref: "#/components/parameters/salesDocHeaderFilters"
+      responses:
+        "200":
+          description: SalesDocHeader collection response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocHeaderListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Creates a sales document header. A sales document header has much more information than that provided in the
+        request body. Missing data is created with a default value calculated according to the business logic.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: createSalesDocHeader
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      requestBody:
+        description: The sales document header to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SalesDocHeaderCreationRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocHeaderResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers-export:
+    post:
+      description: |
+        Request an export of a list of sales documents headers.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | exportSalesOrderLines |
+        | exportSalesDocLines |
+      operationId: exportSalesDocHeaders
+      tags:
+        - Sales Document
+      x-authorities:
+        - exportSalesOrderLines
+        - exportSalesDocLines
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./documents.yaml#/components/parameters/filterDocCategoryRequired"
+        - $ref: "#/components/parameters/salesDocHeaderFilters"
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/edit:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+    post:
+      description: |
+        Edit a sales document header.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: editSalesDocHeader
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocHeaderResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/lines:
+    get:
+      description: |
+        Return a list of sales documents lines with their header info included. Lines can relate to different sales
+        document headers.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesOrder |
+        | createSalesOrder |
+        | updateSalesOrder |
+        | getSalesDoc |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: listSalesDocLines
+      tags:
+        - Sales Document
+      x-authorities:
+        - getSalesOrder
+        - createSalesOrder
+        - updateSalesOrder
+        - getSalesDoc
+        - createSalesDoc
+        - updateSalesDoc
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./documents.yaml#/components/parameters/filterDocCategoryRequired"
+        - $ref: "#/components/parameters/salesDocHeaderFilters"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: SalesDocHeader collection response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocLineWithHeaderListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Request an export of a list of sales documents lines with their header info included.
+        Lines can relate to different sales document headers.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | exportSalesOrderLines |
+        | exportSalesDocLines |
+      operationId: exportSalesDocLines
+      tags:
+        - Sales Document
+      x-authorities:
+        - exportSalesOrderLines
+        - exportSalesDocLines
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./documents.yaml#/components/parameters/filterDocCategoryRequired"
+        - $ref: "#/components/parameters/salesDocHeaderFilters"
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/discounts-summary:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Return the discounts totals of a sales document.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesOrder |
+        | createSalesOrder |
+        | updateSalesOrder |
+        | getSalesDoc |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: getSalesDocDiscountsTotals
+      tags:
+        - Sales Document
+      x-authorities:
+        - getSalesOrder
+        - createSalesOrder
+        - updateSalesOrder
+        - getSalesDoc
+        - createSalesDoc
+        - updateSalesDoc
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocDiscountTotalsResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/reports:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Submit a request for a new report.
+          
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | printSalesOrder |
+        | printSalesDoc |
+      operationId: submitNewReportRequest
+      tags:
+        - Sales Document
+      x-authorities:
+        - printSalesOrder
+        - printSalesDoc
+      requestBody:
+        description: The report request to submit.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./core.yaml#/components/schemas/ReportQueueEntryRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/ReportQueueEntryResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/reports/templates:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Return a list of report templates available for a sales document.
+      operationId: listSalesDocReportTemplates
+      tags:
+        - Sales Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      responses:
+        "200":
+          description: List available of report templates.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/ReportTemplateEntityListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/customer-accounts/sell-to:
+    get:
+      description: |
+        Returns a list containing the customer accounts that are eligible as _sell to_ customers of a sales document.
+        When the calling user belongs to a sales network, customer accounts are filtered according to network 
+        visibility rules.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: listEligibleSellToCustomerAccountsForSalesDoc
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/filterAppRequired"
+        - $ref: "#/components/parameters/filterDocCategoryRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+        - name: filter
+          description: Optional filters to apply to the response.
+          in: query
+          required: true
+          style: deepObject
+          schema:
+            properties:
+              s:
+                description: |
+                  Filters the response by customer's: `code`, `name`, `descr`, `fiscalCode` attributes.
+                type: string
+              customerId:
+                description: |
+                  Id of the customer.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EligibleSellToCustomerAccountListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/customer-accounts/{customerAccountId}/bill-to:
+    parameters:
+      - name: customerAccountId
+        in: path
+        description: The id of a customer account.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns the _bill to_ customer account associated to `customerAccountId`. This can be used as the _bill to_
+        customer of a sales document.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: getBillToCustomerAccount
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BillToCustomerAccountResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /sales-docs/{id}/reorder:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Request to create a new sales document by reordering from a previous sales document.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+      operationId: reorderSalesDoc
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+      requestBody:
+        required: false
+        content:
+          application/vnd.api+json:
+            schema:
+              description: A request to create a new sales document by reordering from a previous sales document.
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  type: object
+                  required:
+                    - draftHeaderId
+                    - operation
+                  properties:
+                    draftHeaderId:
+                      type: string
+                      description: The id of the draft sales document header to base the reorder on.
+                    operation:
+                      type: string
+                      description: |
+                        The reorder operation to perform on the draft sales document.
+                        * `ADD`: Adds the items of the source document to the existing items of the draft document.
+                        * `REPLACE`: Replaces the items of the draft document with the items of the source
+                      enum:
+                        - ADD
+                        - REPLACE
+      responses:
+        "202":
+          description: Request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/doc-types:
+    get:
+      description: |
+        Returns a list containing document types that are eligible as sales document's document type.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: listEligibleDocTypesForSalesDoc
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/filterAppRequired"
+        - $ref: "#/components/parameters/filterDocCategoryRequired"
+        - $ref: "#/components/parameters/filterCustomerAccountRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocTypeListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/price-lists:
+    get:
+      description: Returns a list containing price lists that are eligible as sales document's price list.
+      operationId: listEligiblePriceListsForSalesDoc
+      tags:
+        - Sales Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter[docTypeId]"
+          in: query
+          description: Filter the response by document type.
+          required: true
+          style: form
+          schema:
+            type: string
+        - name: "filter[refDate]"
+          in: query
+          description: |
+            A date to use as the reference to refine price lists. In particular, only price lists for which the given
+            date is between their start and end dates will be considered.
+          required: true
+          style: form
+          schema:
+            type: string
+            format: date
+        - $ref: "#/components/parameters/filterCustomerAccountRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EligiblePriceListListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/sheets:
+    get:
+      description: |
+        Returns a list containing the sheets that groups sales document's attributes. These can be either concrete or
+        virtual, depending on the `virtual` flag. Attributes in each sheet are filtered according to user's roles.
+      operationId: listSalesDocSheetsForSalesDoc
+      tags:
+        - Sales Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/filterAppRequired"
+        - $ref: "#/components/parameters/filterDocCategoryRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./entityAttributes.yaml#/components/schemas/EntitySheetListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/items:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a list containing the items that are eligible for the specified header.
+      operationId: listEligibleItemsForSalesDoc
+      tags:
+        - Sales Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: filters
+          in: query
+          description: Optional filters to apply to the response.
+          required: true
+          style: deepObject
+          schema:
+            properties:
+              s:
+                description: |
+                  Searches the given string in the following attributes: `code`, `descr`, `descrShort`, `descrLong`.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EligibleItemsListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{headerId}/recipients:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+    get:
+      description: Returns a list of sales document email recipients.
+      operationId: listSalesDocEmailRecipients
+      tags:
+        - Sales Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter the response searching
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in firstName, lastName and email address attributes.
+                type: string
+      responses:
+        "200":
+          description: DocEmailRecipient list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocEmailRecipientListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/widgets:
+    get:
+      description: |
+        Returns all widgets related to sales documents.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listSalesOrders |
+        | listSalesDocs |
+      operationId: listSalesDocWidgets
+      tags:
+        - Sales Document
+      x-authorities:
+        - listSalesOrders
+        - listSalesDocs
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplaceRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "#/components/parameters/salesDocWidgetsFilters"
+      responses:
+        "200":
+          description: Sales Document Widget list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesDocWidgetListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{headerId}/lines/{lineId}/warnings:
+    parameters:
+      - $ref: "#/components/parameters/headerId"
+      - $ref: "#/components/parameters/lineId"
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns the set of warnings related to a single sales document line.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesOrder |
+        | createSalesOrder |
+        | updateSalesOrder |
+        | getSalesDoc |
+        | createSalesDoc |
+        | updateSalesDoc |
+      operationId: getSalesDocLineWarnings
+      tags:
+        - Sales Document
+      x-authorities:
+        - getSalesOrder
+        - createSalesOrder
+        - updateSalesOrder
+        - getSalesDoc
+        - createSalesDoc
+        - updateSalesDoc
+      responses:
+        "200":
+          description: Warnings for the sales document line.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalesDocLineWarningsListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/constraints-check:
+    get:
+      description: |
+        Checks for constraints (e.g., minimum order amount) on the sales document and returns warnings or anomalies.
+
+        To access the service you need at least one of the following permissions:
+          | Permission (one of) |
+          |:-:|
+          | createSalesOrder |
+          | updateSalesOrder |
+          | createSalesDoc |
+          | updateSalesDoc |
+      operationId: checkSalesDocConstraints
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+        - createSalesDoc
+        - updateSalesDoc
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: List of constraint warnings or anomalies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalesDocConstraintWarningsResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /shipping-costs:
+    get:
+      description: |
+        **This service is not implemented. It is defined for code generation purposes only.**
+      operationId: listShippingCosts
+      tags:
+        - Sales Document
+      x-authorities:
+        - internalApi
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Shipping costs list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ShippingCostListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/{id}/draft-ownership:
+    parameters:
+      - name: id
+        in: path
+        description: Sales document header Id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Invoke this service to find out if you can change the draft owner.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) | 
+        |:-:|
+        | changeDraftSalesDocOwnership |
+        | changeDraftSalesOrderOwnership |
+      operationId: canDraftSalesDocOwnershipChange
+      tags:
+        - Sales Document
+      x-authorities:
+        - changeDraftSalesDocOwnership
+        - changeDraftSalesOrderOwnership
+      responses:
+        "200":
+          description: Means that the owner of the draft can be changed at the moment.
+        "400":
+          description: |
+            Ownership change is not possible because the current draft owner is still active.  
+            The error message will indicate the minimum number of minutes to wait before attempting to change the draft 
+            owner again.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+      description: |
+        The draft of a sales document relates to two user profiles:
+        1. The user that originally created the draft: `draftOwnerUserProfile`;
+        2. The user that is currently editing the draft: `currentDraftUserProfile`.
+        This service changes the `currentDraftUserProfile`. The sales doc header id must refer to a draft item. 
+        If the caller is `currentDraftUserProfile` the change of ownership takes place immediately. Otherwise
+        a configurable amount of time must have passed since the last modification of the draft.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) | 
+        |:-:|
+        | changeDraftSalesDocOwnership |
+        | changeDraftSalesOrderOwnership |
+      operationId: changeDraftSalesDocOwnership
+      tags:
+        - Sales Document
+      x-authorities:
+        - changeDraftSalesDocOwnership
+        - changeDraftSalesOrderOwnership
+      requestBody:
+        description: The change draft ownership request.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./core.yaml#/components/schemas/ChangeDraftEntityOwnershipRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-docs/headers/{id}/lines/upsert:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+    post:
+      description: |
+        Upsert a sales document line. 
+        The line is identified by ItemId and UnitOfMeasurementId. If the line exists it will be updated, otherwise it will be created.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+      operationId: upsertSalesDocLine
+      tags:
+        - Sales Document
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+      requestBody:
+        description: The sales document line to upsert.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/UpsertSalesDocLineRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/UpsertSalesDocLineResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

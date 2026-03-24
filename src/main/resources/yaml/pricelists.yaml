@@ -1,0 +1,1012 @@
+openapi: 3.0.3
+info:
+  title: PriceLists API
+  version: "-"
+  description: APIs for Price Lists.
+tags:
+  - name: Price List
+    description: |
+      Price lists allow you to define the prices to apply to the items of customer documents.
+      A price list is characterized by the definition of the price of every single item and has a reference currency. 
+      It determines the price list to be applied to the document.
+      A price list has also a validity period and it is applicable only to documents whose date is included therein.
+
+      There are different ways of applying discounts:
+      * **Over** discounts overwrite existing ones;
+      * **Add** discounts are added to existing.
+components:
+  schemas:
+    PriceListType:
+      description: The type of price list.
+      type: string
+      enum:
+        - PriceListType.Sale
+        - PriceListType.Public
+        - PriceListType.Purchase
+        - PriceListType.Ticket
+        - PriceListType.Competitor
+    PriceList:
+      description: Price List resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "PriceList"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - code
+            - priceListTypeId
+            - defaultDiscountModeId
+          properties:
+            descr:
+              description: General description/name.
+              type: string
+            code:
+              description: Code of the entity associated with this price list.
+              type: string
+            priceListTypeId:
+              $ref: "#/components/schemas/PriceListType"
+            defaultDiscountModeId:
+              $ref: "./discountlists.yaml#/components/schemas/DiscountMode"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isDraft:
+              description: |
+                `true` when the price list is a draft, `false` otherwise.
+              type: boolean
+              readOnly: true
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            taxIncluded:
+              description: True if tax are included in the discount, false otherwise.
+              type: boolean
+            defaultMinDocAmount:
+              description: |
+                If different from zero it represents the minimum amount that the document must have in order to be 
+                issued with this price list.
+              type: number
+              format: double
+            processingStatusId:
+              $ref: "./core.yaml#/components/schemas/ProcessingStatus"
+              readOnly: true
+              default: "ProcessingStatus.Released"
+        relationships:
+          type: object
+          description: The relationships of the Price List.
+          required:
+            - organization
+            - currency
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currency:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currentDraftUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            draftOwnerUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    PriceListIncluded:
+      description: Related Organization and Currency.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    PriceListResponse:
+      description: Singular PriceList
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PriceList"
+        included:
+          $ref: "#/components/schemas/PriceListIncluded"
+    PriceListCollectionResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of `PriceList`s.
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceList"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/PriceListIncluded"
+    PriceListRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PriceList"
+    PriceListParty:
+      description: Price List Party resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "PriceListParty"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - priorityOrder
+            - sequenceNum
+          properties:
+            priorityOrder:
+              description: |
+                The order in which the price list is applied. The one with the lowest number applies first. 
+                If the number is equal, the one with the lower sequence applies.
+              type: integer
+              default: 0
+            sequenceNum:
+              description: |
+                The sequence in which the price list is shown. The lowest is initially applied.
+                The user can have the permission to choose a price list of the same priority and different sequenceNum.
+              type: integer
+              minimum: 0
+              default: 0
+            extendedCondition:
+              description: A string in JSON format that contains the extended condition.
+              type: string
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+        relationships:
+          type: object
+          description: The relationships of the Price List Party.
+          required:
+            - organization
+            - priceList
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            priceList:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            party:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            hierarchyTree:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            docType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            marketplace:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    PriceListPartyIncluded:
+      description: Included entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    PriceListPartyResponse:
+      description: Single Price List detail.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PriceListParty"
+        included:
+          $ref: "#/components/schemas/PriceListPartyIncluded"
+    PriceListPartyListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of Parties (Supplier, Customer etc) or Hierarchy Nodes of this Price List.
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceListParty"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/PriceListPartyIncluded"
+    PriceListPartyRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PriceListParty"
+    PriceListDetail:
+      description: Price List Detail resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "PriceListDetail"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - price
+            - quantityMin
+            - startDate
+            - endDate
+            - editable
+            - discountModeId
+          properties:
+            code:
+              description: Code of the Price List Detail.
+              type: string
+            price:
+              description: Price.
+              type: number
+              format: double
+            netPrice:
+              description: Net price.
+              type: number
+              format: double
+            quantityMin:
+              description: The minimum quantity.
+              type: number
+              format: double
+            quantityMax:
+              description: The maximum quantity. If null there is no maximum quantity limit.
+              type: number
+              format: double
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+              description: Starting date of the commercial condition
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+              description: Validity end date of the commercial condition
+            editable:
+              description: If true, user can modify the commercial condition.
+              type: boolean
+            priceMin:
+              description: If not null represents the minimum price that can be assigned. Requires an editable commercial condition (editable = true).
+              type: number
+              format: double
+            priceMax:
+              description: If not null represents the maximum price that can be assigned. Requires an editable commercial condition (editable = true).
+              type: number
+              format: double
+            discountMin:
+              description: |
+                If not null and if PriceMax null it represents the discount percentage to be applied to Price to determine the maximum price that can be assigned when 
+                the condition is applied, if the value is negative it represents the maximum applicable surcharge. Editable condition is required.
+              type: number
+              format: double
+            discountMax:
+              description: |
+                If not null and if PriceMin null it represents the discount percentage to be applied to Price to determine the minimum price that can be assigned when 
+                the condition is applied. It must be grater than zero and editable condition is required.
+              type: number
+              format: double
+            discountModeId:
+              description: Mode of applying the discounts. One of Overwrite, Add or Ignore. See dictionary "DiscountMode".
+              type: string
+            commissionPct:
+              description: If not null it is the commission percentage to be applied to the document at the same time as the application of the commercial condition.
+              type: number
+              format: double
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+            discounts:
+              description: List of all discounts related to this price list
+              type: array
+              items:
+                $ref: "#/components/schemas/PriceListDetailDiscount"
+            discountSummary:
+              description: |
+                Convenience field to summarize the price list details discounts, e.g. If discounts array contains the elements: 10%, 3%, 4€ 
+                the value of this field should be `10% + 3% + 4€`.
+              type: string
+        relationships:
+          type: object
+          description: The relationships of the Price List Detail.
+          required:
+            - priceList
+            - item
+            - unitOfMeasurement
+          properties:
+            priceList:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            item:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            unitOfMeasurement:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    PriceListDetailIncluded:
+      description: Related Price List, Item and Unit of Measurement.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    PriceListDetailResponse:
+      description: Single Price List detail.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PriceListDetail"
+        included:
+          $ref: "#/components/schemas/PriceListDetailIncluded"
+    PriceListDetailListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of Price List Details.
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceListDetail"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/PriceListDetailIncluded"
+    PriceListDetailRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PriceListDetail"
+    PriceListDetailDiscount:
+      description: Price List Detail Discount resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "PriceListDetailDiscount"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - priceListDetailId
+            - sequenceNum
+            - editable
+          properties:
+            priceListDetailId:
+              description: Price List Detail whom this discount is related to.
+              type: string
+            sequenceNum:
+              description: The sequence in which the discount is applied.
+              type: integer
+            code:
+              description: Discount code or name.
+              type: string
+            percentageDiscount:
+              description: If not null represents the percentage discount.
+              type: number
+              format: double
+            valueDiscount:
+              description: If not null and percentage discount is null represents the discount in unit value.
+              type: number
+              format: double
+            editable:
+              description: False by default.
+              type: boolean
+            percentageDiscountMin:
+              description: |
+                If not null represents the minimum percentage discount to compare to Percentage discount. 
+                Percentage discount and Editable condition are required and the value must be greater than zero.
+              type: number
+              format: double
+            percentageDiscountMax:
+              description: |
+                If not null represents the maximum percentage discount to compare to Percentage discount. 
+                Percentage discount and Editable condition are required and the value must be greater than zero.
+              type: number
+              format: double
+            valueDiscountMin:
+              description: Minimum value discount to compare to Value discount.
+              type: number
+              format: double
+            valueDiscountMax:
+              description: Maximum value discount to compare to Value discount.
+              type: number
+              format: double
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The price list id.
+      required: true
+      schema:
+        type: string
+    priceListId:
+      name: priceListId
+      in: path
+      description: The price list Id.
+      required: true
+      schema:
+        type: string
+    detailId:
+      name: detailId
+      in: path
+      description: The price list detail Id.
+      required: true
+      schema:
+        type: string
+paths:
+  /price-lists/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a PriceList.
+      operationId: getPriceList
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) a Price List."
+      operationId: updatePriceList
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Price List to patch.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/PriceListRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[Delete](https://jsonapi.org/format/#crud-deleting) a PriceList and all its details or Customer Price List."
+      operationId: deletePriceList
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-lists/{id}/edit:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      description: Edit a Price List.
+      operationId: editPriceList
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-lists/{id}/publish:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      description: Publish a Price List.
+      operationId: publishPriceList
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListResponse"
+        "400":
+          description: Bad request.
+          content:
+            "application/vnd.api+json":
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-lists:
+    get:
+      description: Returns a collection of Price Lists
+      operationId: listPriceLists
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: |
+            Optional filters. With the exception of the `s` filter, when used they require specification of the operand.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in the description or code.
+                type: string
+              priceListTypeId:
+                description: The type of price list to filter on; i.e. "Sale" for a sale price list.
+                type: string
+                example: "eq:PriceListType.Sale"
+              defaultDiscountModeId:
+                description: The default discount mode to filter on; i.e add discount or overwrite discount.
+                type: string
+              startDate:
+                description: Filter the response by start date.
+                type: string
+              endDate:
+                description: Filter the response by end date.
+                type: string
+              partyId:
+                description: Filter the response by party id. For e.g. supplier id.
+                type: string
+
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: PriceList collection response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListCollectionResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Create a Price List.
+      operationId: createPriceList
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: PriceList to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/PriceListRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-lists/{priceListId}/customer-accounts:
+    parameters:
+      - $ref: "#/components/parameters/priceListId"
+    get:
+      description: Get customer accounts related to the price list.
+      operationId: listPriceListCustomerAccounts
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in the description or code.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListPartyListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Create new customer account.
+      operationId: createPriceListCustomerAccount
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: CustomerPriceList to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/PriceListPartyRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListPartyResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-lists/{priceListId}/customer-accounts/{id}:
+    parameters:
+      - $ref: "#/components/parameters/priceListId"
+      - name: id
+        in: path
+        description: Customer price list relationship id.
+        required: true
+        schema:
+          type: string
+    get:
+      description: Get the single customer account related to the price list.
+      operationId: getPriceListCustomerAccount
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListPartyResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) a CustomerPriceList."
+      operationId: updateCustomerPriceList
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: CustomerPriceList to patch.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/PriceListPartyRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListPartyResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[delete](https://jsonapi.org/format/#crud-deleting) a CustomerPriceList."
+      operationId: deleteCustomerPriceList
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-lists/{priceListId}/details:
+    parameters:
+      - $ref: "#/components/parameters/priceListId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get all details related to the price list.
+      operationId: listPriceListDetails
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in the description or code.
+                type: string
+              itemId:
+                description: The details related to the given item id.
+                type: string
+              salesLineId:
+                description: Price list details related to the given line id.
+                type: string
+              brandId:
+                description: Price list details related to all the items of the given brand id.
+                type: string
+              startDate:
+                description: Price list details whose start date is equal to or later than that indicated.
+                type: string
+              endDate:
+                description: Price list details whose end date is equal to or earlier than that indicated.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListDetailListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Create new price list detail
+      operationId: createPriceListDetail
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "#/components/parameters/priceListId"
+      requestBody:
+        description: PriceListDetail to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/PriceListDetailRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListDetailResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-lists/{priceListId}/details/{detailId}:
+    parameters:
+      - $ref: "#/components/parameters/priceListId"
+      - $ref: "#/components/parameters/detailId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get single detail related to the price list.
+      operationId: getPriceListDetail
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListDetailResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) a PriceListDetail."
+      operationId: updatePriceListDetail
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: PriceListDetail to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/PriceListDetailRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListDetailResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[delete](https://jsonapi.org/format/#crud-deleting) a PriceListDetail."
+      operationId: deletePriceListDetail
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-lists/{priceListId}/suppliers:
+    parameters:
+      - $ref: "#/components/parameters/priceListId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      operationId: listPriceListSuppliers
+      description: Get suppliers related to the price list.
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in the description or code.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListPartyListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-lists/{priceListId}/suppliers/{id}:
+    parameters:
+      - $ref: "#/components/parameters/priceListId"
+      - name: id
+        in: path
+        description: Supplier - price list relationship id.
+        required: true
+        schema:
+          type: string
+    get:
+      description: Get the single supplier related to the price list.
+      operationId: getPriceListSupplier
+      tags:
+        - Price List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceListPartyResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."

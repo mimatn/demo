@@ -1,0 +1,684 @@
+openapi: 3.0.3
+info:
+  title: Payments API
+  version: "-"
+  description: Payments API
+tags:
+  - name: Payment
+    description: Payment related APIs.
+components:
+  schemas:
+    PaymentCondition:
+      description: "`PaymentCondition` resource."
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "PaymentCondition"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+            - rank
+            - percentageDiscount
+          properties:
+            code:
+              description: The code of a payment condition.
+              type: string
+              example: "PAY.COND.CODE"
+            descr:
+              description: Description of the payment condition (e.g. "Direct remittance 30 days from invoice date").
+              type: string
+            paymentConditionGroup:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: Payment group (optional). See dictionary `PaymentConditionGroup`.
+            rank:
+              description: |
+                A value that indicates the (un)reliability of the payment for the organization, 
+                a low value indicates that the payment is favorable to the organization
+              type: integer
+              format: int64
+            percentageDiscount:
+              description: Percentage discount linked to the payment condition. It can be redefined for a single installment (see PaymentConditionInstalment.Discount).
+              type: number
+              format: double
+        relationships:
+          type: object
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            paymentConditionInstalments:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    PaymentConditionIncluded:
+      description: "Related entities data: one of Organization, PaymentConditionInstalment"
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    PaymentConditionResponse:
+      description: Single `PaymentCondition`.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PaymentCondition"
+        included:
+          $ref: "#/components/schemas/PaymentConditionIncluded"
+    PaymentConditionListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of `PaymentConditions`.
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentCondition"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/PaymentConditionIncluded"
+    PaymentConditionRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PaymentCondition"
+    PaymentConditionInstalment:
+      description: "`PaymentConditionInstalment` resource."
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "PaymentConditionInstalment"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - sequenceNum
+            - dueDays
+            - dueDayTypeId
+            - percentage
+          properties:
+            sequenceNum:
+              description: The sequence number in a list of instalments of a payment condition.
+              type: integer
+            dueDays:
+              description: Days of deferral; the instalment must be payed before this date.
+              type: integer
+            dueDayTypeId:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: The type of due date. See dictionary `DueDayTypeId`.
+            percentage:
+              description: Percentage of the installment value with respect to the total payment.
+              type: number
+              format: double
+            percentageDiscount:
+              description: Percentage discount. If null, the PaymentCondition.percentageDiscount will be used.
+              type: number
+              format: double
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+        relationships:
+          type: object
+          required:
+            - paymentCondition
+          properties:
+            paymentCondition:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    PaymentConditionInstalmentIncluded:
+      description: "Related entities data: one of Organization, PaymentConditionInstalmentInstalment"
+      type: array
+      items:
+        $ref: "#/components/schemas/PaymentCondition"
+      uniqueItems: true
+    PaymentConditionInstalmentResponse:
+      description: Single `PaymentConditionInstalment`.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PaymentConditionInstalment"
+        included:
+          $ref: "#/components/schemas/PaymentConditionInstalmentIncluded"
+    PaymentConditionInstalmentListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of `PaymentConditionInstalments`.
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentConditionInstalment"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/PaymentConditionInstalmentIncluded"
+    PaymentConditionInstalmentRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PaymentConditionInstalment"
+    CustomerLedgerEntry:
+      description: Customer open items, each record is an instalment of a document.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CustomerLedgerEntry"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - externalDocType
+            - docDate
+            - dueDate
+            - payment
+          properties:
+            externalDocType:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: The document type to which this instalment refers to. See dictionary `ExternalDocType`.
+            docDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+              description: Date of the reference document of the instalment.
+            docNumber:
+              description: Number of the reference document of the instalment; a document can be present in several instalments.
+              type: string
+            dueDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+              description: Expected payment date of the instalment
+            paymentDescr:
+              description: Payment description.
+              type: string
+            sign:
+              description: |
+                +1 = the document values are positive; -1 = values are negative (e.g. credit notes).
+              type: integer
+              minimum: -1
+              maximum: 1
+            initialAmount:
+              description: Initial value of the instalment in the document currency.
+              type: number
+              format: double
+            dueAmount:
+              description: Value of the instalment to be collected, in the document currency.
+              type: number
+              format: double
+            customerCurrDueAmount:
+              description: |
+                Value of the instalment to be collected, in the customer's currency
+                (necessary to aggregate multiple instalments of the same customer in different currency).
+              type: number
+              format: double
+            organizationCurrDueAmount:
+              description: >
+                Value  of the instalment to be collected, in the organization's currency
+                (necessary to aggregate multiple instalments of the same organization in different currency).
+              type: number
+              format: double
+            cashable:
+              description: true if the instalment is cashable, false otherwise.
+              type: boolean
+              example: true
+            paymentDays:
+              description: |
+                Days to be added to DueDate to determine the date beyond which the instalment is to be considered unpaid,
+                the value can be negative (e.g. on the instalment with due date 10/1 and PaymentDays 2 is considered ok on day 12/01,
+                while it becomes unpaid on day 13/01).
+              type: integer
+            paymentDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+              description: Date of the payment
+            isPaid:
+              description: True if the paymentDate is not null, false otherwise.
+              type: boolean
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+        relationships:
+          description: |
+            The instalment is related to a "BillTo" CustomerAccount and optionally to a "SellTo" CustomerAccount;
+            initial and due amounts are expressed in the given currency.
+          type: object
+          required:
+            - billToCustomerAccount
+            - currency
+          properties:
+            billToCustomerAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            sellToCustomerAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currency:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            notes:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    CustomerLedgerEntryIncluded:
+      description: "Related entities data: one of CustomerAccount, Currency"
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    CustomerLedgerEntryResponse:
+      description: Single `CustomerLedgerEntry`.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerLedgerEntry"
+        included:
+          $ref: "#/components/schemas/CustomerLedgerEntryIncluded"
+    CustomerLedgerEntryListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of `CustomerLedgerEntries`.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerLedgerEntry"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CustomerLedgerEntryIncluded"
+    CustomerLedgerEntryRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerLedgerEntry"
+    PaymentMethod:
+      description: "`PaymentMethod` resource."
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "PaymentMethod"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - billNumberRequired
+            - exclusive
+          properties:
+            code:
+              description: Code or name of the payment method.
+              type: string
+            descr:
+              description: Payment method description.
+              type: string
+            billNumberRequired:
+              description: If true, installments using this payment method require serial number and transaction date.
+              type: boolean
+            exclusive:
+              description: If true, this method must be the only one used in the same collection document.
+              type: boolean
+            backdateDays:
+              description: Number of days allowed for the collection document to be backdated.
+              type: integer
+              minimum: 0
+            postdateDays:
+              description: Number of days that the user can indicate in the collection phase following today's date (e.g. for cash or checks).
+              type: integer
+              minimum: 0
+            valueMax:
+              description: If not null, it is the maximum cashable value in a collection document for the payment method.
+              type: number
+        relationships:
+          type: object
+          description: A payment method belongs to an organization.
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    PaymentMethodIncluded:
+      type: array
+      items:
+        $ref: "./core.yaml#/components/schemas/Organization"
+      uniqueItems: true
+    PaymentMethodResponse:
+      description: Single PaymentMethod response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PaymentMethod"
+        included:
+          $ref: "#/components/schemas/PaymentMethodIncluded"
+    PaymentMethodListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of PaymentMethod
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentMethod"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/PaymentMethodIncluded"
+  parameters:
+    paymentConditionId:
+      name: paymentConditionId
+      in: path
+      description: The payment condition id.
+      required: true
+      schema:
+        type: string
+paths:
+  /payment-conditions/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The PaymentCondition id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a `PaymentCondition`.
+      operationId: getPaymentCondition
+      tags:
+        - Payment
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PaymentConditionResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /payment-conditions:
+    get:
+      description: Returns a collection of PaymentConditions.
+      operationId: listPaymentConditions
+      tags:
+        - Payment
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              organizationId:
+                description: Filter the response by Organization id. The user must also have the permission to view the organization.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: PaymentCondition list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PaymentConditionListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /payment-conditions/{paymentConditionId}/instalments/{instalmentId}:
+    parameters:
+      - $ref: "#/components/parameters/paymentConditionId"
+      - name: instalmentId
+        in: path
+        description: The PaymentConditionInstalment id.
+        required: true
+        schema:
+          type: string
+    get:
+      description: Get a PaymentConditionInstalment.
+      operationId: getPaymentConditionInstalment
+      tags:
+        - Payment
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PaymentConditionInstalmentResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /payment-conditions/{paymentConditionId}/instalments:
+    parameters:
+      - $ref: "#/components/parameters/paymentConditionId"
+    get:
+      description: Returns a collection of PaymentConditionInstalments.
+      operationId: listPaymentConditionInstalments
+      tags:
+        - Payment
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/filterSearch"
+      responses:
+        "200":
+          description: PaymentConditionInstalment list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PaymentConditionInstalmentListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-ledger-entries/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The CustomerLedgerEntry id
+        required: true
+        schema:
+          type: string
+    get:
+      description: Get a CustomerLedgerEntry.
+      operationId: getCustomerLedgerEntry
+      tags:
+        - Payment
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerLedgerEntryResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /customer-ledger-entries:
+    get:
+      description: Returns a collection of CustomerLedgerEntries. Generic search will filter by DocNumber and PaymentCondition.
+      operationId: listCustomerLedgerEntries
+      tags:
+        - Payment
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              customerAccountId:
+                description: Filter the list by CustomerAccount.
+                type: string
+              dueDate:
+                description: Filter by due date.
+                type: string
+                example: "lt:2022-12-25"
+              isPaid:
+                description: Filter by paid status.
+                type: string
+      responses:
+        "200":
+          description: CustomerLedgerEntry list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerLedgerEntryListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /payment-methods/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The PaymentMethod id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a PaymentMethod.
+      operationId: getPaymentMethod
+      tags:
+        - Payment
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PaymentMethodResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /payment-methods:
+    get:
+      description: Returns a collection of PaymentMethods.
+      operationId: listPaymentMethods
+      tags:
+        - Payment
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                type: string
+              cashable:
+                description: Filter the response by Cashable flag.
+                type: string
+              billNumberRequired:
+                description: Filter the response by BillNumberRequired flag.
+                type: string
+              exclusive:
+                description: Filter the response by Exclusive flag.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: PaymentMethod list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PaymentMethodListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

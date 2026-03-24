@@ -1,0 +1,613 @@
+openapi: 3.0.3
+info:
+  title: Suppliers API
+  version: "-"
+tags:
+  - name: Supplier
+    description: APIs for Suppliers
+components:
+  schemas:
+    LegalEntityType:
+      description: One of `Company` or `PhysicalPerson`.
+      type: string
+      enum:
+        - LegalEntityType.Company
+        - LegalEntityType.PhysicalPerson
+    Supplier:
+      description: Supplier resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Supplier"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - supplierTypeId
+            - code
+            - name
+          properties:
+            supplierTypeId:
+              description: Supplier type. See dictionary `SupplierTypeId`.
+              type: string
+            code:
+              description: Customer's ERP code.
+              type: string
+            name:
+              description: Supplier name.
+              type: string
+            descr:
+              description: Supplier description.
+              type: string
+            taxNumber:
+              description: Supplier's tax number.
+              type: string
+            fiscalCode:
+              description: Supplier's fiscal code.
+              type: string
+            legalMail:
+              description: Legal mail (PEC).
+              type: string
+              #pattern: "^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,}$"
+            legalEntityType:
+              $ref: "#/components/schemas/LegalEntityType"
+              description: Legal entity type. See dictionary `LegalEntityType`.
+            withholdingTaxEnabled:
+              description: The supplier is subject to the payment of withholding tax.
+              type: boolean
+              default: false
+            authorityId:
+              description: See dictionary `Authority`.
+              type: string
+            taxRegime:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            addresses:
+              description: List of addresses for this supplier. The main address is the one with `sequenceNum = 0`.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/Address"
+            emails:
+              description: List of emails for this user. The main email is the one with `sequenceNum = 0`.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/Email"
+            phones:
+              description: List of phones for this user. The main phone is the one with `sequenceNum = 0`.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/Phone"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isLinkedToUser:
+              description: |
+                True if the customer is either linked to `linkedUserProfileId` (if present) or to the caller when the 
+                query param is missing. False otherwise.
+              type: boolean
+              readOnly: true
+            hasUserProfilesAssociated:
+              description: |
+                True if this supplier is associated with one or more user profiles. 
+                The attribute is managed only in the detail of a single supplier request, in listSupplier request will be ignored.
+              type: boolean
+              readOnly: true
+            hasSalesRepsAssociated:
+              description: |
+                True if this supplier is associated with one or more sales reps.
+                The attribute is managed only in the detail of a single supplier request, in listSupplier request will be ignored.
+              type: boolean
+              readOnly: true
+            entityAttributes:
+              description: The dynamic attributes that may be associated to the customer accounts.
+              type: array
+              items:
+                $ref: "./entityAttributes.yaml#/components/schemas/EntityAttributeValue"
+              default: []
+        relationships:
+          type: object
+          description: A supplier belongs to an organization.
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    SupplierIncluded:
+      description: Related organization.
+      type: array
+      items:
+        $ref: "./core.yaml#/components/schemas/Organization"
+      uniqueItems: true
+    SupplierResponse:
+      description: Single Supplier response
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Supplier"
+        included:
+          $ref: "#/components/schemas/SupplierIncluded"
+    SupplierListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of suppliers.
+          type: array
+          items:
+            $ref: "#/components/schemas/Supplier"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SupplierIncluded"
+    SupplierRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Supplier"
+    #
+    # SupplierInfo resource. Include supplier's basic info only.
+    #
+    SupplierInfo:
+      description: Supplier resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SupplierInfo"
+        id:
+          type: string
+        attributes:
+          type: object
+          properties:
+            name:
+              description: Business name of the supplier's company
+              type: string
+              example: "Mario Rossi Food & Drinks Srl"
+            code:
+              description: Code of the supplier
+              type: string
+            addresses:
+              description: List of addresses for this supplier. The main address is the one with sequenceNum=0.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/Address"
+            docsNum:
+              description: Number of the documents related to the supplier.
+              type: integer
+              minimum: 0
+    SupplierInfoListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of SupplierInfo
+          type: array
+          items:
+            $ref: "#/components/schemas/SupplierInfo"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    TargetOrganization:
+      description: The organization where the cloned supplier will be added.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "TargetOrganization"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - organizationId
+          properties:
+            organizationId:
+              description: The unique identifier of the organization where the cloned supplier will be added.
+              type: string
+    TargetOrganizationRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/TargetOrganization"
+  parameters:
+    supplierId:
+      name: supplierId
+      in: path
+      description: The supplier id
+      required: true
+      schema:
+        $ref: "./jsonapi.yaml#/components/schemas/id"
+    itemId:
+      name: itemId
+      in: path
+      description: The item id
+      required: true
+      schema:
+        $ref: "./jsonapi.yaml#/components/schemas/id"
+    suppliersFilters:
+      name: "filter"
+      in: query
+      description: Filter group for the list of Suppliers.
+      required: true
+      style: deepObject
+      schema:
+        type: object
+        properties:
+          s:
+            description: |
+              Search the given string in following attributes:
+                * code;
+                * name;
+                * descr;
+                * taxNumber.
+            type: string
+          organizationId:
+            description: Filter the response by organization id.
+            type: string
+          code:
+            description: Filter the response by supplier code.
+            type: string
+          supplierTypeId:
+            description: Filter the response by supplier type id.
+            type: string
+          lastChangeTs:
+            description: Filter the response by last change timestamp.
+            type: string
+          isLinkedToUser:
+            description: Filters suppliers considering if they are linked to the user or not.
+            type: string
+          countryId:
+            description: |
+              Filter the response by country id. IMPORTANT: Only the main address is considered (the one with `sequenceNum = 0`).
+              See dictionary `Country` for the accepted values.
+            type: string
+          regionId:
+            description: |
+              Filter the response by region id. IMPORTANT: Only the main address is considered (the one with `sequenceNum = 0`).
+              See dictionary `Region` for the accepted values.
+            type: string
+          provinceId:
+            description: |
+              Filter the response by province id. IMPORTANT: Only the main address is considered (the one with `sequenceNum = 0`).
+              See dictionary `Province` for the accepted values.
+            type: string
+          city:
+            description: |
+              Filter the response by city. IMPORTANT: Only the main address is considered (the one with `sequenceNum = 
+              0`).
+            type: string
+paths:
+  /suppliers:
+    get:
+      description: |
+        Returns a collection of Suppliers.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listSuppliers |
+      operationId: listSuppliers
+      tags:
+        - Supplier
+      x-authorities: ["listSuppliers"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/LinkedUserProfileId"
+        - $ref: "./core.yaml#/components/parameters/filterDynamic"
+        - $ref: "#/components/parameters/suppliersFilters"
+      responses:
+        "200":
+          description: Supplier list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SupplierListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Create a new Supplier.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSupplier |
+      operationId: createSupplier
+      tags:
+        - Supplier
+      x-authorities: ["createSupplier"]
+      requestBody:
+        description: Supplier to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SupplierRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201) Supplier."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SupplierResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /suppliers/{supplierId}:
+    parameters:
+      - $ref: "#/components/parameters/supplierId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a single supplier.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSupplier |
+      operationId: getSupplier
+      tags:
+        - Supplier
+      x-authorities: ["getSupplier"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SupplierResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a Supplier.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateSupplier |
+      operationId: updateSupplier
+      tags:
+        - Supplier
+      x-authorities: ["updateSupplier"]
+      requestBody:
+        description: Supplier to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SupplierRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SupplierResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /suppliers/{supplierId}/linked-user-profiles:
+    parameters:
+      - $ref: "#/components/parameters/supplierId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      summary: listLinkedUserProfiles
+      description: |
+        Returns all the user profiles linked to the given supplier.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSupplier |
+      operationId: listLinkedUserProfiles
+      tags:
+        - Supplier
+      x-authorities: ["getSupplier"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/UserProfileLiteListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /suppliers/{supplierId}/linked-sales-reps:
+    parameters:
+      - $ref: "#/components/parameters/supplierId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      summary: listLinkedSalesReps
+      description: |
+        Returns all the sales reps linked to the given supplier.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSupplier |
+      operationId: listLinkedSalesReps
+      tags:
+        - Supplier
+      x-authorities: ["getSupplier"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./salesReps.yaml#/components/schemas/SalesRepLiteListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /suppliers/{supplierId}/items:
+    parameters:
+      - $ref: "#/components/parameters/supplierId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns all items related to the given supplier.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listSupplierItems |
+      operationId: listSupplierItems
+      x-authorities: ["listSupplierItems"]
+      tags:
+        - Supplier
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            $ref: "./items.yaml#/components/schemas/ItemsCommonFilters"
+      responses:
+        "200":
+          description: Item list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./items.yaml#/components/schemas/ItemListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /suppliers/export:
+    post:
+      description: |
+        Request an export of a list of suppliers.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | exportSuppliers |
+      operationId: exportSuppliers
+      summary: exportSuppliers
+      tags:
+        - Supplier
+      x-authorities: ["exportSuppliers"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/templateIdParamRequired"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./core.yaml#/components/parameters/LinkedUserProfileId"
+        - $ref: "./core.yaml#/components/parameters/filterDynamic"
+        - $ref: "#/components/parameters/suppliersFilters"
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /suppliers/{supplierId}/clone:
+    parameters:
+      - $ref: "#/components/parameters/supplierId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        This endpoint creates a clone of an existing supplier and associates the cloned supplier with the 
+        specified target organization.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSupplier |
+      operationId: cloneSupplier
+      tags:
+        - Supplier
+      x-authorities: ["createSupplier"]
+      requestBody:
+        description: Target organization where the cloned supplier will be added.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/TargetOrganizationRequest"
+      responses:
+        "200":
+          description: The supplier was successfully cloned.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SupplierResponse"
+        "400":
+          description: Missing or invalid parameters.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

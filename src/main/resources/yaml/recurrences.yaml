@@ -1,0 +1,179 @@
+openapi: 3.0.3
+info:
+  title: Recurrence API
+  version: "-"
+tags:
+  - name: Recurrence
+    description: APIs for Recurrences.
+components:
+  schemas:
+    Recurrence:
+      description: A Recurrence
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Recurrence"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - entity
+            - descr
+            - sequenceNum
+            - recurrenceTypeId
+          properties:
+            code:
+              type: string
+            descr:
+              type: string
+            entity:
+              description: Id of the relevant entity
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            sequenceNum:
+              description: Sequence number.
+              type: integer
+            recurrenceTypeId:
+              description: Id of the relevant recurrence type
+              $ref: "./core.yaml#/components/schemas/RecurrenceType"
+            validityValue:
+              type: integer
+              description: The number of times the recurrence will be repeated, according to the selected recurrence type.
+            lastRecurrence:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            nextRecurrence:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        relationships:
+          description: Related organization.
+          type: object
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    RecurrenceIncluded:
+      description: A `Recurrence` related schemas.
+      type: array
+      items:
+        $ref: "./core.yaml#/components/schemas/Organization"
+      uniqueItems: true
+    RecurrenceListResponse:
+      type: object
+      properties:
+        data:
+          description: The list of `Recurrence`s.
+          type: array
+          items:
+            $ref: "#/components/schemas/Recurrence"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/RecurrenceIncluded"
+    RecurrenceResponse:
+      description: A single `Recurrence` response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Recurrence"
+        included:
+          $ref: "#/components/schemas/RecurrenceIncluded"
+paths:
+  /recurrence-values:
+    get:
+      description: |
+        Returns a list of all recurrence values.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) | 
+        |:-:|
+        | apiUser |
+      operationId: listRecurrenceValues
+      tags:
+        - Recurrence
+      x-authorities: ["apiUser"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Generic string filter. It refers to code and descr attributes.
+                type: string
+              code:
+                description: Filter the response by code.
+                type: string
+              entityName:
+                description: Filter the response by entity name.
+                type: string
+              entityObjectId:
+                description: Filter the response by entity object id.
+                type: string
+              lastRecurrence:
+                description: Filter the response by last recurrence date.
+                type: string
+              nextRecurrence:
+                description: Filter the response by next recurrence date.
+                type: string
+      responses:
+        "200":
+          description: Recurrences list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/RecurrenceListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /recurrence-values/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: Recurrence value Id.
+        required: true
+        schema:
+          type: string
+          description: Recurrence value Id.
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a single Recurrence.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | apiUser |
+      operationId: getRecurrenceValue
+      tags:
+        - Recurrence
+      x-authorities: ["apiUser"]
+      responses:
+        "200":
+          description: Single Recurrence response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/RecurrenceResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"

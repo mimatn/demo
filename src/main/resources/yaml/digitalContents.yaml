@@ -1,0 +1,1216 @@
+openapi: 3.0.3
+info:
+  title: Digital Contents API
+  version: "-"
+tags:
+  - name: Digital Content
+    description: |
+      Digital Content is a collection of unstructured data that constitutes multimedia content used to illustrate or enhance the description 
+      of a product, a customer, or a document.
+
+      Examples of Digital Content include product photos, a promotional video, a PDF representing the print of a sales document.
+
+      The distinctive characteristics of Digital Content are:
+      * Having a considerable size in bytes, not limited beforehand: a video size can be several gigabytes, and a high-resolution image can easily reach 
+      tens of megabytes. Therefore, a Digital Asset needs to be stored and handled with specific methods;
+      * Not being directly readable by a user: an image needs to be displayed on the screen, and to do so, its technical format and 
+      characteristics must be known; a video needs to be viewed by video software component and stored in an appropriate storage service;
+      a PDF file requires a dedicated app to be displayed and printed.
+      * It can have multiple possible representations (referred to as renditions) depending on the context in which it is displayed to illustrate 
+      the entity it refers to. For example, an image has an original version at very high resolution, and various versions with different 
+      resolutions and, above all, significantly smaller byte sizes suitable for quick display in a product list or a summary card.
+components:
+  schemas:
+    #
+    # Enums
+    #
+    RenditionStatusId:
+      description: Rendition status id. See dictionary `RenditionStatus`.
+      type: string
+      enum:
+        - RenditionStatus.WAITING_BYTES
+        - RenditionStatus.LOADED
+        - RenditionStatus.WAITING_GENERATION
+        - RenditionStatus.QUEUED_GENERATION
+        - RenditionStatus.GENERATED
+        - RenditionStatus.LOST
+        - RenditionStatus.PENDING_DELETION
+        - RenditionStatus.DELETED
+      default: RenditionStatus.WAITING_BYTES
+      readOnly: true
+      x-enum-varnames:
+        - WAITING_BYTES
+        - LOADED
+        - WAITING_GENERATION
+        - QUEUED_GENERATION
+        - GENERATED
+        - LOST
+        - PENDING_DELETION
+        - DELETED
+    StorageTypeId:
+      description: Storage type. See dictionary `StorageType`.
+      type: string
+      enum:
+        - StorageType.AzureBlob
+        - StorageType.LocalFileSystem
+    #
+    # Digital Content resources
+    #
+    DigitalContent:
+      description: Digital Content resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "DigitalContent"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+          properties:
+            code:
+              description: Digital content code.
+              type: string
+            descr:
+              description: General description/name of the digital content.
+              type: string
+            contentVersion:
+              description: Digital content version.
+              type: integer
+              minimum: 0
+              readOnly: true
+            contentLastChangeDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            versionCode:
+              description: Alphanumeric version code.
+              type: string
+            originalFileName:
+              description: The name of the original rendition of this digital content.
+              type: string
+              readOnly: true
+            originalMIMEType:
+              description: The MIME type of the original rendition of this digital content.
+              type: string
+              readOnly: true
+            renditionUrl:
+              description: |
+                URI of the rendition. Depending on the context it represents the link to download the content or to upload new content. 
+                When downloading you need to provide the `renditionTypeId` parameter in order to get the correspondent picture's link.
+              type: string
+              format: uri-reference
+              readOnly: true
+            draftMainEntity:
+              type: object
+              required:
+                - entityId
+                - entityObjectId
+              properties:
+                entityId:
+                  description: The entity id to which the digital content is related. For example, `Hierarchy`.
+                  type: string
+                entityObjectId:
+                  description: The id of the draft entity related to the main one.
+                  type: string
+        relationships:
+          type: object
+          description: A digital content can refer to a certain language.
+          required:
+            - digitalContentType
+          properties:
+            language:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            digitalContentCategory:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            digitalContentType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    DigitalContentIncluded:
+      description: Related language.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    DigitalContentListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Digital Contents
+          type: array
+          items:
+            $ref: "#/components/schemas/DigitalContent"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/DigitalContentIncluded"
+        meta:
+          type: object
+          properties:
+            MIMETypes:
+              description: Set of MIME types accepted for this entity id.
+              type: array
+              items:
+                type: string
+                uniqueItems: true
+            maxSize:
+              description: The maximum size (in bytes) of digital content that can be uploaded for this entity id.
+              type: number
+    DigitalContentResponse:
+      description: Single Digital Content response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DigitalContent"
+        included:
+          $ref: "#/components/schemas/DigitalContentIncluded"
+    DigitalContentRequest:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DigitalContent"
+    DigitalContentRequestRequired:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DigitalContent"
+    #
+    # DigitalContentType resource
+    #
+    DigitalContentType:
+      description: Digital Content Type resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "DigitalContentType"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - isProtected
+            - MIMETypes
+            - maxSize
+          properties:
+            code:
+              description: General name of the digital content type.
+              type: string
+            descr:
+              description: General description of the digital content type.
+              type: string
+            isProtected:
+              description: True if the the value is protected and can not be altered, false otherwise.
+              type: boolean
+              default: false
+            MIMETypes:
+              description: String representing a JSON array of MIME types accepted for this entity id.
+              type: string
+            maxSize:
+              description: The maximum size (in bytes) of digital content that can be uploaded for this entity id.
+              type: number
+    DigitalContentTypeResponse:
+      description: Single Digital Content Type response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DigitalContentType"
+    DigitalContentTypeListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Digital Content Types.
+          type: array
+          items:
+            $ref: "#/components/schemas/DigitalContentType"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    #
+    # DigitalContentCategory resource
+    #
+    DigitalContentCategory:
+      description: Digital Content Category resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "DigitalContentCategory"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - sequenceNum
+            - entityId
+            - mandatoryContentMin
+            - versionMandatory
+            - lastChangeDateMandatory
+          properties:
+            descr:
+              description: General description/name of the digital content category.
+              type: string
+            hint:
+              description: Hint.
+              type: string
+            sequenceNum:
+              description: Sequence number.
+              type: integer
+              minimum: 0
+              default: 0
+            entityId:
+              description: Related entity id.
+              type: string
+            mandatoryContentMin:
+              description: Minimum number of contents to load for the category when inserting new content.
+              type: integer
+              minimum: 0
+              readOnly: true
+            versionMandatory:
+              description: True if the version is mandatory when inserting new content, false otherwise.
+              type: boolean
+              default: false
+              readOnly: true
+            lastChangeDateMandatory:
+              description: True if the date is mandatory when inserting new content, false otherwise.
+              type: boolean
+              default: false
+              readOnly: true
+        relationships:
+          type: object
+          description: A category is related to one or more digital content types.
+          required:
+            - digitalContentTypes
+          properties:
+            digitalContentTypes:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    DigitalContentCategoryIncluded:
+      description: Related digital content types.
+      type: array
+      items:
+        $ref: "#/components/schemas/DigitalContentType"
+      uniqueItems: true
+    DigitalContentCategoryListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Digital Content Categories.
+          type: array
+          items:
+            $ref: "#/components/schemas/DigitalContentCategory"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/DigitalContentCategoryIncluded"
+    #
+    # Rendition resource
+    #
+    Rendition:
+      description: Digital Content rendition.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Rendition"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - digitalContentRenditionTypeId
+            - storageTypeId
+            - contentUrl
+            - MIMEType
+            - sequenceNum
+          properties:
+            digitalContentRenditionTypeId:
+              description: Digital content rendition type. See dictionary `DigitalContentRenditionType`.
+              type: string
+              example: "DigitalContentRenditionType.Original"
+            storageTypeId:
+              $ref: "#/components/schemas/StorageTypeId"
+            contentUrl:
+              description: URI of the media content. Depending on the context it represents the link to download the content or to upload new content.
+              type: string
+              format: uri-reference
+              readOnly: true
+            MIMEType:
+              description: Rendition MIME type.
+              type: string
+            sequenceNum:
+              description: Sequence number.
+              type: integer
+              minimum: 0
+              default: 0
+            originalFileName:
+              description: The original file name that this rendition represents.
+              type: string
+            renditionStatusId:
+              $ref: "#/components/schemas/RenditionStatusId"
+        relationships:
+          type: object
+          description: A rendition refers to a digital content.
+          required:
+            - digitalContent
+          properties:
+            digitalContent:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    RenditionIncluded:
+      description: Related digital content.
+      type: array
+      items:
+        $ref: "#/components/schemas/DigitalContent"
+      uniqueItems: true
+    RenditionListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Renditions.
+          type: array
+          items:
+            $ref: "#/components/schemas/Rendition"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/RenditionIncluded"
+    RenditionResponse:
+      description: Single Rendition response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Rendition"
+        included:
+          $ref: "#/components/schemas/RenditionIncluded"
+    RenditionRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Rendition"
+    #
+    # DigitalContentSequence
+    #
+    DigitalContentSequence:
+      description: Pairing of DigitalContentId and Sequence number to permit the reordering of Digital Contents related to the same entity.
+      type: object
+      required:
+        - digitalContentId
+        - sequenceNum
+      properties:
+        digitalContentId:
+          type: string
+        sequenceNum:
+          type: integer
+          minimum: 0
+          default: 0
+    DigitalContentSequenceRequest:
+      description: Request to reorder several Digital Contents in a single call.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DigitalContentSequence"
+  parameters:
+    entityId:
+      name: entityId
+      in: path
+      description: The entity id.
+      required: true
+      schema:
+        type: string
+    entityObjectId:
+      name: entityObjectId
+      in: path
+      description: The entity object id.
+      required: true
+      schema:
+        type: string
+    contentId:
+      name: contentId
+      in: path
+      description: The media content id.
+      required: true
+      schema:
+        type: string
+    renditionTypeId:
+      name: renditionId
+      in: path
+      description: The media rendition id.
+      required: true
+      schema:
+        type: string
+    typeId:
+      name: typeId
+      in: path
+      description: The digital content type id
+      required: true
+      schema:
+        type: string
+paths:
+  /contents/entities/{entityId}/{entityObjectId}:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "#/components/parameters/entityId"
+      - $ref: "#/components/parameters/entityObjectId"
+    get:
+      description: |
+        Returns a list of all digital contents for the given entity.
+
+        To access the service you need at least one of the following permissions. They are different based on the entity
+        the digital contents are linked to:
+        | Permission (one of) | Notes |
+        |:-:|:-|
+        | listItems | If linked to an Item |
+        | getItem | If linked to an Item |
+        | getItemHierarchy | If linked to a Item Hierarchy |
+        | listItemHierarchies | If linked to a Item Hierarchy |
+        | getTask | If linked to a Task |
+        | updateTask | If linked to a Task |
+        | getSurveyDocTemplate | If linked to a Survey Document |
+        | listSurveyDocTemplates | If linked to a Survey Document |
+        | listPurchaseOrderDigitalContents | If linked to a Purchase Document |
+        | getPurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | listSalesDocDigitalContents | If linked to a Sales Document |
+        | listSalesOrderDigitalContents | If linked to a Sales Order |
+      operationId: listDigitalContents
+      tags:
+        - Digital Content
+      x-authorities:
+        - listItems
+        - getItem
+        - getItemHierarchy
+        - listItemHierarchies
+        - getTask
+        - updateTask
+        - getSurveyDocTemplate
+        - listSurveyDocTemplates
+        - listPurchaseOrderDigitalContents
+        - getPurchaseOrderDigitalContent
+        - listSalesDocDigitalContents
+        - listSalesOrderDigitalContents
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - name: renditionTypeId
+          in: query
+          description: Rendition type requested. Provide this parameter to tell the server what type of rendition you need.
+          required: false
+          style: form
+          schema:
+            type: string
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              digitalContentTypeId:
+                description: Filter the response by digital content type.
+                type: string
+              startDate:
+                description: Filter the response validity start date of validity.
+                type: string
+              endDate:
+                description: Filter the response validity end date of validity.
+                type: string
+        - name: "draftMainEntity"
+          in: query
+          description: Use this parameter if the entity is managed in draft mode.
+          style: deepObject
+          schema:
+            type: object
+            required:
+              - entityId
+              - entityObjectId
+            properties:
+              draftEntityId:
+                description: The entity id. For example, `Hierarchy`.
+                type: string
+              draftEntityObjectId:
+                description: The id of the actual entity.
+                type: string
+      responses:
+        "200":
+          description: DigitalContents list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DigitalContentListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Create a digital content.
+
+        To access the service you need at least one of the following permissions. They are different based on the entity
+        the digital contents are linked to:
+        | Permission (one of) | Notes |
+        |:-:|:-|
+        | createItem | If linked to an Item |
+        | updateItem | If linked to an Item |
+        | createItemHierarchy | If linked to a Item Hierarchy |
+        | updateItemHierarchy | If linked to a Item Hierarchy |
+        | createTask | If linked to a Task |
+        | updateTask | If linked to a Task |
+        | createSurveyDocTemplate | If linked to a Survey Document |
+        | updateSurveyDocTemplate | If linked to a Survey Document |
+        | createPurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | updatePurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | createSalesOrderDigitalContent | If linked to a Sales Order |
+        | updateSalesOrderDigitalContent | If linked to a Sales Order |
+        | createSalesDocDigitalContent | If linked to a Sales Document |
+        | updateSalesDocDigitalContent | If linked to a Sales Document |
+      operationId: createDigitalContent
+      tags:
+        - Digital Content
+      x-authorities:
+        - createItem
+        - updateItem
+        - createItemHierarchy
+        - updateItemHierarchy
+        - createTask
+        - updateTask
+        - createSurveyDocTemplate
+        - updateSurveyDocTemplate
+        - createPurchaseOrderDigitalContent
+        - updatePurchaseOrderDigitalContent
+        - createSalesOrderDigitalContent
+        - updateSalesOrderDigitalContent
+        - createSalesDocDigitalContent
+        - updateSalesDocDigitalContent
+      requestBody:
+        description: Digital content metadata to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DigitalContentRequestRequired"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DigitalContentResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /contents/entities/{entityId}/{entityObjectId}/reorder:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "#/components/parameters/entityId"
+      - $ref: "#/components/parameters/entityObjectId"
+    patch:
+      description: |
+        Reorder a set of Digital Contents by updating, in a single call, their Sequence numbers.
+        Filters, response and requirements are the same as the listDigitalContents operation.
+          
+        To access the service you need at least one of the following permissions. They are different based on the entity
+        the digital contents are linked to:
+        | Permission (one of) | Notes |
+        |:-:|:-|
+        | createItem | If linked to an Item |
+        | updateItem | If linked to an Item |
+        | createItemHierarchy | If linked to a Item Hierarchy |
+        | updateItemHierarchy | If linked to a Item Hierarchy |
+        | createTask | If linked to a Task |
+        | updateTask | If linked to a Task |
+        | createSurveyDocTemplate | If linked to a Survey Document |
+        | updateSurveyDocTemplate | If linked to a Survey Document |
+        | createPurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | updatePurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | createSalesOrderDigitalContent | If linked to a Sales Order |
+        | updateSalesOrderDigitalContent | If linked to a Sales Order |
+        | createSalesDocDigitalContent | If linked to a Sales Document |
+        | updateSalesDocDigitalContent | If linked to a Sales Document |
+      operationId: updateDigitalContentSequenceNumber
+      tags:
+        - Digital Content
+      x-authorities:
+        - createItem
+        - updateItem
+        - createItemHierarchy
+        - updateItemHierarchy
+        - createTask
+        - updateTask
+        - createSurveyDocTemplate
+        - updateSurveyDocTemplate
+        - createPurchaseOrderDigitalContent
+        - updatePurchaseOrderDigitalContent
+        - createSalesOrderDigitalContent
+        - updateSalesOrderDigitalContent
+        - createSalesDocDigitalContent
+        - updateSalesDocDigitalContent
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - name: renditionTypeId
+          in: query
+          description: Rendition type requested. Provide this parameter to tell the server what type of rendition you need.
+          required: false
+          style: form
+          schema:
+            type: string
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              digitalContentTypeId:
+                description: Filter the response by digital content type.
+                type: string
+              startDate:
+                description: Filter the response validity start date of validity.
+                type: string
+              endDate:
+                description: Filter the response validity end date of validity.
+                type: string
+        - name: "draftMainEntity"
+          in: query
+          description: Use this parameter if the entity is managed in draft mode.
+          style: deepObject
+          schema:
+            type: object
+            required:
+              - entityId
+              - entityObjectId
+            properties:
+              draftEntityId:
+                description: The entity id. For example, `Hierarchy`.
+                type: string
+              draftEntityObjectId:
+                description: The id of the actual entity.
+                type: string
+      requestBody:
+        description: Digital content sequence numbers to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DigitalContentSequenceRequest"
+      responses:
+        "200":
+          description: DigitalContents list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DigitalContentListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /contents/media/{contentId}:
+    parameters:
+      - $ref: "#/components/parameters/contentId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a single digital content.
+
+        To access the service you need at least one of the following permissions. They are different based on the entity
+        the digital contents are linked to:
+        | Permission (one of) | Notes |
+        |:-:|:-|
+        | listItems | If linked to an Item |
+        | getItem | If linked to an Item |
+        | getItemHierarchy | If linked to a Item Hierarchy |
+        | listItemHierarchies | If linked to a Item Hierarchy |
+        | getTask | If linked to a Task |
+        | updateTask | If linked to a Task |
+        | getSurveyDocTemplate | If linked to a Survey Document |
+        | listSurveyDocTemplates | If linked to a Survey Document |
+        | listPurchaseOrderDigitalContents | If linked to a Purchase Document |
+        | getPurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | listSalesDocDigitalContents | If linked to a Sales Document |
+        | listSalesOrderDigitalContents | If linked to a Sales Order |
+      operationId: getDigitalContent
+      tags:
+        - Digital Content
+      x-authorities:
+        - listItems
+        - getItem
+        - getItemHierarchy
+        - listItemHierarchies
+        - getTask
+        - updateTask
+        - getSurveyDocTemplate
+        - listSurveyDocTemplates
+        - listPurchaseOrderDigitalContents
+        - getPurchaseOrderDigitalContent
+        - listSalesDocDigitalContents
+        - listSalesOrderDigitalContents
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DigitalContentResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a digital content.
+
+        To access the service you need at least one of the following permissions. They are different based on the entity
+        the digital contents are linked to:
+        | Permission (one of) | Notes |
+        |:-:|:-|
+        | createItem | If linked to an Item |
+        | updateItem | If linked to an Item |
+        | createItemHierarchy | If linked to a Item Hierarchy |
+        | updateItemHierarchy | If linked to a Item Hierarchy |
+        | createTask | If linked to a Task |
+        | updateTask | If linked to a Task |
+        | createSurveyDocTemplate | If linked to a Survey Document |
+        | updateSurveyDocTemplate | If linked to a Survey Document |
+        | createPurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | deletePurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | createSalesOrderDigitalContent | If linked to a Sales Order |
+        | deleteSalesOrderDigitalContent | If linked to a Sales Order |
+        | createSalesDocDigitalContent | If linked to a Sales Document |
+        | deleteSalesDocDigitalContent | If linked to a Sales Document |
+      operationId: deleteDigitalContent
+      tags:
+        - Digital Content
+      x-authorities:
+        - createItem
+        - updateItem
+        - createItemHierarchy
+        - updateItemHierarchy
+        - createTask
+        - updateTask
+        - createSurveyDocTemplate
+        - updateSurveyDocTemplate
+        - createPurchaseOrderDigitalContent
+        - deletePurchaseOrderDigitalContent
+        - createSalesOrderDigitalContent
+        - deleteSalesOrderDigitalContent
+        - createSalesDocDigitalContent
+        - deleteSalesDocDigitalContent
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: |
+        Update editable digital content metadata.
+
+        To access the service you need at least one of the following permissions. They are different based on the entity
+        the digital contents are linked to:
+        | Permission (one of) | Notes |
+        |:-:|:-|
+        | createItem | If linked to an Item |
+        | updateItem | If linked to an Item |
+        | createItemHierarchy | If linked to a Item Hierarchy |
+        | updateItemHierarchy | If linked to a Item Hierarchy |
+        | createTask | If linked to a Task |
+        | updateTask | If linked to a Task |
+        | createSurveyDocTemplate | If linked to a Survey Document |
+        | updateSurveyDocTemplate | If linked to a Survey Document |
+        | createPurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | updatePurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | createSalesOrderDigitalContent | If linked to a Sales Order |
+        | updateSalesOrderDigitalContent | If linked to a Sales Order |
+        | createSalesDocDigitalContent | If linked to a Sales Document |
+        | updateSalesDocDigitalContent | If linked to a Sales Document |
+      operationId: updateDigitalContent
+      tags:
+        - Digital Content
+      x-authorities:
+        - createItem
+        - updateItem
+        - createItemHierarchy
+        - updateItemHierarchy
+        - createTask
+        - updateTask
+        - createSurveyDocTemplate
+        - updateSurveyDocTemplate
+        - createPurchaseOrderDigitalContent
+        - updatePurchaseOrderDigitalContent
+        - createSalesOrderDigitalContent
+        - updateSalesOrderDigitalContent
+        - createSalesDocDigitalContent
+        - updateSalesDocDigitalContent
+      requestBody:
+        description: Digital content metadata to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DigitalContentRequestRequired"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DigitalContentResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    put:
+      description: |
+        Replaces digital content while retaining metadata (if not provided in the request body). If metadata is provided,
+        it will also be replaced. This involves deleting all associated renditions and waiting for the new original
+        rendering to be uploaded using the link provided in the response.
+
+        To access the service you need at least one of the following permissions. They are different based on the entity
+        the digital contents are linked to:
+        | Permission (one of) | Notes |
+        |:-:|:-|
+        | createItem | If linked to an Item |
+        | updateItem | If linked to an Item |
+        | createItemHierarchy | If linked to a Item Hierarchy |
+        | updateItemHierarchy | If linked to a Item Hierarchy |
+        | createTask | If linked to a Task |
+        | updateTask | If linked to a Task |
+        | createSurveyDocTemplate | If linked to a Survey Document |
+        | updateSurveyDocTemplate | If linked to a Survey Document |
+        | createPurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | updatePurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | createSalesOrderDigitalContent | If linked to a Sales Order |
+        | updateSalesOrderDigitalContent | If linked to a Sales Order |
+        | createSalesDocDigitalContent | If linked to a Sales Document |
+        | updateSalesDocDigitalContent | If linked to a Sales Document |
+      operationId: replaceDigitalContent
+      tags:
+        - Digital Content
+      x-authorities:
+        - createItem
+        - updateItem
+        - createItemHierarchy
+        - updateItemHierarchy
+        - createTask
+        - updateTask
+        - createSurveyDocTemplate
+        - updateSurveyDocTemplate
+        - createPurchaseOrderDigitalContent
+        - updatePurchaseOrderDigitalContent
+        - createSalesOrderDigitalContent
+        - updateSalesOrderDigitalContent
+        - createSalesDocDigitalContent
+        - updateSalesDocDigitalContent
+      requestBody:
+        description: Digital content to be replaced.
+        required: false
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DigitalContentRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DigitalContentResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /contents/media/{contentId}/renditions:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "#/components/parameters/contentId"
+    get:
+      description: |
+        Returns all the renditions of the given digital content.
+
+        To access the service you need at least one of the following permissions. They are different based on the entity
+        the digital contents are linked to:
+        | Permission (one of) | Notes |
+        |:-:|:-|
+        | listItems | If linked to an Item |
+        | getItem | If linked to an Item |
+        | getItemHierarchy | If linked to a Item Hierarchy |
+        | listItemHierarchies | If linked to a Item Hierarchy |
+        | getTask | If linked to a Task |
+        | updateTask | If linked to a Task |
+        | getSurveyDocTemplate | If linked to a Survey Document |
+        | listSurveyDocTemplates | If linked to a Survey Document |
+        | listPurchaseOrderDigitalContents | If linked to a Purchase Document |
+        | getPurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | listSalesDocDigitalContents | If linked to a Sales Document |
+        | listSalesOrderDigitalContents | If linked to a Sales Order |
+      operationId: listRenditions
+      tags:
+        - Digital Content
+      x-authorities:
+        - listItems
+        - getItem
+        - getItemHierarchy
+        - listItemHierarchies
+        - getTask
+        - updateTask
+        - getSurveyDocTemplate
+        - listSurveyDocTemplates
+        - listPurchaseOrderDigitalContents
+        - getPurchaseOrderDigitalContent
+        - listSalesDocDigitalContents
+        - listSalesOrderDigitalContents
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              digitalContentRenditionTypeId:
+                description: Filter the response by digital content rendition type id.
+                type: string
+              MIMEType:
+                description: Filter the response by rendition MIME type.
+                type: string
+              renditionStatusId:
+                description: Filter the response by rendition status id.
+                type: string
+      responses:
+        "200":
+          description: Renditions list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/RenditionListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Create a rendition.
+
+        To access the service you need at least one of the following permissions. They are different based on the entity
+        the digital contents are linked to:
+        | Permission (one of) | Notes |
+        |:-:|:-|
+        | createItem | If linked to an Item |
+        | updateItem | If linked to an Item |
+        | createItemHierarchy | If linked to a Item Hierarchy |
+        | updateItemHierarchy | If linked to a Item Hierarchy |
+        | createTask | If linked to a Task |
+        | updateTask | If linked to a Task |
+        | createSurveyDocTemplate | If linked to a Survey Document |
+        | updateSurveyDocTemplate | If linked to a Survey Document |
+        | createPurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | updatePurchaseOrderDigitalContent | If linked to a Purchase Document |
+        | createSalesOrderDigitalContent | If linked to a Sales Order |
+        | updateSalesOrderDigitalContent | If linked to a Sales Order |
+        | createSalesDocDigitalContent | If linked to a Sales Document |
+        | updateSalesDocDigitalContent | If linked to a Sales Document |
+      operationId: createRendition
+      tags:
+        - Digital Content
+      x-authorities:
+        - createItem
+        - updateItem
+        - createItemHierarchy
+        - updateItemHierarchy
+        - createTask
+        - updateTask
+        - createSurveyDocTemplate
+        - updateSurveyDocTemplate
+        - createPurchaseOrderDigitalContent
+        - updatePurchaseOrderDigitalContent
+        - createSalesOrderDigitalContent
+        - updateSalesOrderDigitalContent
+        - createSalesDocDigitalContent
+        - updateSalesDocDigitalContent
+      requestBody:
+        description: Request to create new rendition.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/RenditionRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/RenditionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /contents/categories:
+    get:
+      description: Returns a list of digital content categories.
+      operationId: listDigitalContentCategories
+      tags:
+        - Digital Content
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              entityId:
+                description: Filter the response by entity id (e.g. `Item`).
+                type: string
+              marketplaceId:
+                description: Filters the response by marketplace id.
+                type: string
+      responses:
+        "200":
+          description: Digital content categories list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DigitalContentCategoryListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /contents/types:
+    get:
+      description: Returns a list of digital content types.
+      operationId: listDigitalContentTypes
+      tags:
+        - Digital Content
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              digitalContentCategoryId:
+                description: Filter the response by digital content category id.
+                type: string
+      responses:
+        "200":
+          description: Digital content types list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DigitalContentTypeListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /contents/types/{typeId}:
+    parameters:
+      - $ref: "#/components/parameters/typeId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single digital content type.
+      operationId: getDigitalContentType
+      tags:
+        - Digital Content
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DigitalContentTypeResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"

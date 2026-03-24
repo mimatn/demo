@@ -1,0 +1,797 @@
+openapi: 3.0.3
+info:
+  title: Work Sessions API
+  version: "-"
+  description: APIs to manage "Work sessions" i.e. a user session in which a complex entity is modified.
+tags:
+  - name: Work Session
+    description: Work Session resource object i.e. a user session in which a complex entity is modified.
+components:
+  schemas:
+    WorkSession:
+      description: Work Session resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "WorkSession"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - workSessionStatusId
+            - transferStatusId
+          properties:
+            descr:
+              description: Work session description.
+              type: string
+            workSessionNumber:
+              description: Work session number (could not include prefix and suffix).
+              type: integer
+              readOnly: true
+            workSessionCode:
+              description: Work session code/name with prefix and suffix included.
+              type: string
+              readOnly: true
+            workSessionNumberRange:
+              description: Work session number range.
+              oneOf:
+                - $ref: "./core.yaml#/components/schemas/SimpleEntityReadOnly"
+            workSessionStatusId:
+              description: Work Session status id. See dictionary "WorkSessionStatus".
+              type: string
+              example: Open
+            startKm:
+              description: Initial km of the vehicle.
+              type: number
+              format: double
+            endKm:
+              description: Final km of the vehicle.
+              type: number
+              format: double
+            workSessionDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+            workSessionClosingDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+            transferStatusId:
+              $ref: "./documents.yaml#/components/schemas/TransferStatus"
+            lastTransferStatusUpdateTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+            vehicleWashId:
+              description: See dictionary `VehicleWash`.
+              type: string
+            numberOfDocs:
+              description: Number of documents related to the work session.
+              type: integer
+              minimum: 0
+              readOnly: true
+            numberOfCustomers:
+              description: Number of customers related to the work session.
+              type: integer
+              minimum: 0
+              readOnly: true
+            cashDepositsAmount:
+              description: Cash deposits amount.
+              type: number
+              format: double
+              readOnly: true
+            cashDepositsCount:
+              description: Cash deposits count.
+              type: integer
+              readOnly: true
+            collectionsAmount:
+              description: Collections amount.
+              type: number
+              format: double
+              readOnly: true
+            collectionsCount:
+              description: Collections count.
+              type: integer
+              readOnly: true
+            directSalesAmount:
+              description: Direct Sales amount.
+              type: number
+              format: double
+              readOnly: true
+            directSalesCount:
+              description: Direct Sales count.
+              type: integer
+              readOnly: true
+            ordersAmount:
+              description: Orders amount.
+              type: number
+              format: double
+              readOnly: true
+            ordersCount:
+              description: Orders count.
+              type: integer
+              readOnly: true
+            surveyDocsCount:
+              description: Survey documents count.
+              type: integer
+              readOnly: true
+            warehouseDocsCount:
+              description: Warehouse documents count.
+              type: integer
+              readOnly: true
+            inventoryDocsCount:
+              description: Inventory documents count.
+              type: integer
+              readOnly: true
+            purchaseDocsAmount:
+              description: Total amount of purchase documents related to the work session.
+              type: number
+              format: double
+              readOnly: true
+            purchaseDocsCount:
+              description: Total number of purchase documents related to the work session.
+              type: integer
+              readOnly: true
+            weightCounterStartValue:
+              description: Starting value of the vehicle weight counter related to the work session.
+              type: number
+              format: double
+            weightCounterEndValue:
+              description: Final value of the vehicle weight counter related to the work session.
+              type: number
+              format: double
+            weightCounterDeltaValue:
+              description: Difference between final value and initial value of the vehicle weight counter related to the work session.
+              type: number
+              format: double
+              readOnly: true
+            weightCounterCalculatedValue:
+              description: Calculated weight value based on the loaded/unloaded goods during the work session.
+              type: number
+              format: double
+              readOnly: true
+            weightCounterPercentageDeviation:
+              description: |
+                Absolute percentage deviation calculated as the difference between the calculated weight counter value 
+                and the actual counter delta, divided by the actual counter delta and multiplied by 100.
+              type: number
+              format: double
+              readOnly: true
+            capacityCounterStartValue:
+              description: Initial value of the tank capacity counter related to the working session.
+              type: number
+              format: double
+            capacityCounterEndValue:
+              description: Final value of the tank capacity counter related to the working session.
+              type: number
+              format: double
+            capacityCounterDeltaValue:
+              description: Difference between final value and initial value of the tank capacity counter related to the working session.
+              type: number
+              format: double
+              readOnly: true
+            capacityCounterCalculatedValue:
+              description: Calculated capacity value based on the loaded/unloaded goods during the work session.
+              type: number
+              format: double
+              readOnly: true
+            capacityCounterPercentageDeviation:
+              description: |
+                Absolute percentage deviation calculated as the difference between the calculated capacity counter value 
+                and the actual counter delta, divided by the actual counter delta and multiplied by 100.
+              type: number
+              format: double
+              readOnly: true
+            travelledKm:
+              description: Km travelled by the vehicle related to the work session.
+              type: number
+              format: double
+              readOnly: true
+        relationships:
+          type: object
+          description: Work Sessions relationships.
+          required:
+            - organization
+            - userProfile
+            - originalUserProfile
+            - creatorUserProfile
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            userProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            salesRep:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            device:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            vehicle:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            salesWarehouse:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            supplyingWarehouse:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            substituteUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            originalUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            creatorUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            capacityCounterUnitOfMeasurement:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            weightCounterUnitOfMeasurement:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    WorkSessionIncluded:
+      description: Related entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    WorkSessionResponse:
+      description: Single Work Session response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkSession"
+        included:
+          $ref: "#/components/schemas/WorkSessionIncluded"
+    WorkSessionListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Work Sessions.
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkSession"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/WorkSessionIncluded"
+    WorkSessionRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkSession"
+paths:
+  /work-sessions:
+    get:
+      description: |
+        Return a list of work sessions.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) | 
+        |:-:|
+        | listSalesWorkSessions |
+        | listPurchaseWorkSessions |
+      operationId: listWorkSessions
+      tags:
+        - Work Session
+      x-authorities:
+        - listSalesWorkSessions
+        - listPurchaseWorkSessions
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              workSessionStatusId:
+                description: Filter the response by work session status.
+                type: string
+              device:
+                description: Filter the response by device.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status id.
+                type: string
+              userProfile:
+                description: Filter the response by user profile.
+                type: string
+              salesRep:
+                description: Filter the response by sales rep.
+                type: string
+              vehicle:
+                description: Filter the response by vehicle.
+                type: string
+              workSessionDate:
+                description: Filter the response by work session date.
+                type: string
+              endDate:
+                description: Filter the response by end date.
+                type: string
+              cashDepositsCount:
+                description: Filter the response by cash deposit count.
+                type: string
+              collectionsCount:
+                description: Filter the response by collection count.
+                type: string
+              directSalesCount:
+                description: Filter the response by direct sale count.
+                type: string
+              ordersCount:
+                description: Filter the response by order count.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WorkSessionListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Request an export of the list of work sessions.
+      operationId: exportWorkSessions
+      tags:
+        - Work Session
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              workSessionStatusId:
+                description: Filter the response by work session status.
+                type: string
+              device:
+                description: Filter the response by device.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status id.
+                type: string
+              userProfile:
+                description: Filter the response by user profile.
+                type: string
+              salesRep:
+                description: Filter the response by sales rep.
+                type: string
+              vehicle:
+                description: Filter the response by vehicle.
+                type: string
+              workSessionDate:
+                description: Filter the response by work session date.
+                type: string
+              endDate:
+                description: Filter the response by work session date.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /work-sessions/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The Work Session id.
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Return a single work session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesWorkSession |
+        | getPurchaseWorkSession |
+      operationId: getWorkSession
+      tags:
+        - Work Session
+      x-authorities:
+        - getSalesWorkSession
+        - getPurchaseWorkSession
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WorkSessionResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: |
+        Update a work session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updatePurchaseWorkSession |
+      operationId: updateWorkSession
+      tags:
+        - Work Session
+      x-authorities:
+        - updatePurchaseWorkSession
+      requestBody:
+        description: Work Session to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/WorkSessionRequest"
+      responses:
+        "200":
+          description: Work Session updated successfully.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WorkSessionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /work-sessions/{id}/documents:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+      - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+      - $ref: "./jsonapi.yaml#/components/parameters/sort"
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - name: id
+        in: path
+        description: The Work Session id
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Return all the documents included into the given work session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesWorkSession |
+        | getPurchaseWorkSession |
+      operationId: getWorkSessionDocuments
+      tags:
+        - Work Session
+      x-authorities:
+        - getSalesWorkSession
+        - getPurchaseWorkSession
+      parameters:
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docCategoryId:
+                description: Filter the response by document category id.
+                type: string
+              docTypeId:
+                description: Filter the response by document type id.
+                type: string
+              processingStatusId:
+                description: Filter the response by processing status id.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status id.
+                type: string
+              customerAccount:
+                description: Filter the response by customer account.
+                type: string
+              supplier:
+                description: Use this filter to get documents of the given session related to a specific supplier.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocHeaderListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /work-sessions/{id}/customers:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - name: id
+        in: path
+        description: The Work Session id.
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Return all the customers included into the given work session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesWorkSession |
+        | getPurchaseWorkSession |
+      operationId: getWorkSessionCustomers
+      tags:
+        - Work Session
+      x-authorities:
+        - getSalesWorkSession
+        - getPurchaseWorkSession
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./customers.yaml#/components/schemas/CustomerInfoListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /work-sessions/{id}/suppliers:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - name: id
+        in: path
+        description: The Work Session id.
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Return all the suppliers included into the given work session.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listPurchaseWorkSessions |
+      operationId: getWorkSessionSuppliers
+      tags:
+        - Work Session
+      x-authorities:
+        - listPurchaseWorkSessions
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./suppliers.yaml#/components/schemas/SupplierInfoListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /work-sessions/kpis:
+    parameters:
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get all KPIs defined for the work sessions.
+      operationId: listWorkSessionsKPIs
+      parameters:
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              workSessionStatusId:
+                description: Filter the response by work session status.
+                type: string
+              workSessionDate:
+                description: Filter the response by work session date.
+                type: string
+              endDate:
+                description: Filter the response by work session date.
+                type: string
+              device:
+                description: Filter the response by device.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status id.
+                type: string
+              userProfile:
+                description: Filter the response by user profile.
+                type: string
+              salesRep:
+                description: Filter the response by sales rep.
+                type: string
+              vehicle:
+                description: Filter the response by vehicle.
+                type: string
+      tags:
+        - Work Session
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /work-sessions/kpis/{kpiId}:
+    parameters:
+      - name: kpiId
+        in: path
+        description: The KPI id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a single KPI defined for the work sessions.
+      operationId: getWorkSessionsKPI
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              workSessionStatusId:
+                description: Filter the response by work session status.
+                type: string
+              workSessionDate:
+                description: Filter the response by work session date.
+                type: string
+              device:
+                description: Filter the response by device.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status id.
+                type: string
+              userProfile:
+                description: Filter the response by user profile.
+                type: string
+              salesRep:
+                description: Filter the response by sales rep.
+                type: string
+              vehicle:
+                description: Filter the response by vehicle.
+                type: string
+      tags:
+        - Work Session
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /work-sessions/{id}/kpis:
+    parameters:
+      - name: id
+        in: path
+        description: The work session id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get all KPIs defined for the given work session.
+      operationId: listWorkSessionKPIs
+      tags:
+        - Work Session
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /work-sessions/{workSessionId}/kpis/{kpiId}:
+    parameters:
+      - name: workSessionId
+        in: path
+        description: The work session id.
+        required: true
+        schema:
+          type: string
+      - name: kpiId
+        in: path
+        description: The KPI id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a single KPI defined for the given work session.
+      operationId: getWorkSessionKPI
+      tags:
+        - Work Session
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."

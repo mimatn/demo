@@ -1,0 +1,737 @@
+openapi: 3.0.3
+info:
+  title: Cash Deposit Documents API
+  version: "-"
+  description: APIs for Cash Deposit Document.
+tags:
+  - name: Cash Deposit Document
+    description: Cash Deposit Document.
+components:
+  schemas:
+    #
+    # Enums
+    #
+    CashDepositStatusId:
+      description: The status of the cash deposit. See dictionary `CashDepositStatus`
+      type: string
+      enum:
+        - CashDepositStatus.Deposited
+        - CashDepositStatus.InProgress
+    #
+    # CashDepositDocHeaderAttributes (extends ./core.yaml#/components/schemas/DocHeaderAttributes)
+    #
+    CashDepositDocHeaderAttributes:
+      description: |
+        Attributes specific of a cash deposit document. Properties common in all type of documents are stored in the `DocHeaderAttributes` object.
+      type: object
+      required:
+        - cashDepositStatusId
+      properties:
+        cashDepositDestinationId:
+          description: The destination of the cash deposit. See dictionary `CashDepositDestination`.
+          type: string
+          example: CashDepositDestination.Bank
+        depositTs:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+          description: Cash deposit date and time.
+        externalRefNumber:
+          description: Optional external ref number.
+          type: string
+        cashDepositStatusId:
+          $ref: "#/components/schemas/CashDepositStatusId"
+        totalAmount:
+          description: Total amount to deposit.
+          type: number
+        salesRep:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Sales representative.
+        cashDepositedAmount:
+          description: Total cash amount which has been deposited.
+          type: number
+        previousCashMissingAmount:
+          description: Missing amount before the cash deposit.
+          type: number
+        currentCashMissingAmount:
+          description: Missing amount after the cash deposit.
+          type: number
+    CashDepositDocHeaderAttributesWithDocHeader:
+      allOf:
+        - $ref: "#/components/schemas/CashDepositDocHeaderAttributes"
+        - description: DocHeader attributes
+          type: object
+          properties:
+            docHeaderAttributes:
+              $ref: "./documents.yaml#/components/schemas/DocHeaderAttributes"
+    #
+    # CashDepositDocHeaderRelationships (extends ./core.yaml#/components/schemas/DocHeaderRelationships)
+    #
+    CashDepositDocHeaderRelationships:
+      description: Relationships specific of a cash deposit document. Properties common in all type of documents are stored in the `DocHeaderRelationships` object.
+      type: object
+      required:
+        - docHeader
+        - currency
+      properties:
+        docHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        currency:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    #
+    # CashDepositDocHeader resource
+    #
+    CashDepositDocHeader:
+      description: CashDepositDocHeader resource, contains information present in a header of a cash deposit document.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CashDepositDocHeader"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/CashDepositDocHeaderAttributesWithDocHeader"
+        relationships:
+          description: Attributes of a cash deposit document
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/DocHeaderRelationships"
+            - $ref: "#/components/schemas/CashDepositDocHeaderRelationships"
+    #
+    # CashDepositDocIncluded resource
+    #
+    CashDepositDocHeaderIncluded:
+      description: Related document header and common document header relationships
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # CashDepositDocHeaderResponse resource
+    #
+    CashDepositDocHeaderResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CashDepositDocHeader"
+        included:
+          $ref: "#/components/schemas/CashDepositDocHeaderIncluded"
+    #
+    # CashDepositDocHeaderListResponse resource
+    #
+    CashDepositDocHeaderListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of Cash deposit documents headers
+          type: array
+          items:
+            $ref: "#/components/schemas/CashDepositDocHeader"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CashDepositDocHeaderIncluded"
+    #
+    # CashDepositDocPaymentMethod resource
+    #
+    CashDepositDocPaymentMethod:
+      description: CashDepositDocPaymentMethod resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CashDepositDocPaymentMethod"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - cashDepositAmount
+            - previousCashMissingAmount
+            - cashDepositedAmount
+          properties:
+            paymentMethod:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: Payment method.
+            billNumber:
+              description: Optional serial number of the cashed security, mandatory if PaymentMethod.SerialNumRequired is true.
+              type: string
+            billDate:
+              description: Collecting date, required if PaymentMethod.SerialNumRequired is true
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            bankNumber:
+              description: Bank number.
+              type: string
+            bankBranchCode:
+              description: Bank branch code.
+              type: string
+            bankAccountName:
+              description: Bank account name.
+              type: string
+            bankName:
+              description: Bank name.
+              type: string
+            cashDepositAmount:
+              description: Total amount to be collected.
+              type: number
+            previousCashMissingAmount:
+              description: amount missing from the previous payment.
+              type: number
+            cashDepositedAmount:
+              description: Total amount paid.
+              type: number
+            changeAmount:
+              description: Change amount. Its value is given by `cashDepositAmount + previousCashMissingAmount - cashDepositedAmount`
+              type: number
+        relationships:
+          description: CashDepositDocPaymentMethod relationships.
+          type: object
+          required:
+            - cashDepositDocHeader
+            - paymentMethod
+          properties:
+            cashDepositDocHeader:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            paymentMethod:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    #
+    # CashDepositDocPaymentMethodIncluded resource
+    #
+    CashDepositDocPaymentMethodIncluded:
+      description: CashDepositDocPaymentMethod relationships
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # CashDepositDocPaymentMethodListResponse resource
+    #
+    CashDepositDocPaymentMethodListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of CashDepositDocPaymentMethod
+          type: array
+          items:
+            $ref: "#/components/schemas/CashDepositDocPaymentMethod"
+        meta:
+          description: |
+            In addition to the usual information on the total of records and pages, 
+            there is also an object whose elements indicate the total amounts of the amount attributes.
+          type: object
+          required:
+            - recordCount
+          properties:
+            recordCount:
+              type: integer
+              description: the total number of resources
+            pageCount:
+              type: integer
+              description: the total number of pages
+            totals:
+              description: Meta info. Total amounts.
+              type: object
+              properties:
+                cashDepositAmount:
+                  description: cashDepositAmount attribute total.
+                  type: number
+                previousCashMissingAmount:
+                  description: previousCashMissingAmount attribute total.
+                  type: number
+                cashDepositedAmount:
+                  description: cashDepositedAmount attribute total.
+                  type: number
+                changeAmount:
+                  description: changeAmount attribute total.
+                  type: number
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CashDepositDocPaymentMethodIncluded"
+    #
+    # CashDepositDocCollection resource
+    #
+    CollectedPaymentsByPaymentMethodAttributes:
+      type: object
+      required:
+        - paymentMethod
+        - collectedAmount
+      properties:
+        paymentMethod:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Payment method.
+        collectedAmount:
+          description: Cashed value.
+          type: number
+        cashable:
+          description: indicates whether the payment method is cashable
+          type: boolean
+          example: true
+    CollectedPaymentsByPaymentMethod:
+      description: |
+        CollectedPaymentsByPaymentMethod resource. Used as item of an array and represent the total amount collected by payment method.
+        The sum of each item's collected amount of the array correspond to the total amount of the cash deposit doc collection.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "CollectedPaymentsByPaymentMethod"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/CollectedPaymentsByPaymentMethodAttributes"
+    CashDepositCollectionDoc:
+      description: CashDepositDocCollection resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CashDepositCollectionDoc"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - collectedAmount
+            - payments
+          properties:
+            collectedAmount:
+              description: Cashed value.
+              type: number
+            payments:
+              description: The list of method payments.
+              type: array
+              items:
+                $ref: "#/components/schemas/CollectedPaymentsByPaymentMethod"
+        relationships:
+          type: object
+          description: Related collection document.
+          properties:
+            cashDepositDocHeader:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            collectionDocHeader:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CashDepositCollectionDocIncluded:
+      description: Related collection document.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    CashDepositDocCollectionListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of CashDepositDocCollection
+          type: array
+          items:
+            $ref: "#/components/schemas/CashDepositCollectionDoc"
+        meta:
+          description: |
+            In addition to the usual information on the total of records and pages, 
+            there is also an array whose elements indicate the total amounts grouped by payment method.
+          type: object
+          required:
+            - recordCount
+            - paymentMethod
+            - collectedAmount
+          properties:
+            recordCount:
+              type: integer
+              description: the total number of resources
+            pageCount:
+              type: integer
+              description: the total number of pages
+            totalsByPaymentMethod:
+              description: Meta info. Total amount grouped by payment method.
+              type: array
+              items:
+                $ref: "#/components/schemas/CollectedPaymentsByPaymentMethodAttributes"
+            totalAmount:
+              description: Total Amount. Collected amount attributes sum.
+              type: number
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CashDepositCollectionDocIncluded"
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The cash deposit doc header id
+      required: true
+      schema:
+        type: string
+paths:
+  /cash-deposit-docs/headers:
+    get:
+      description: Returns a list of cash deposit documents headers
+      operationId: listCashDepositDocHeaders
+      tags:
+        - Cash Deposit Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docDate:
+                description: Filter the response by document date.
+                type: string
+              workSessionId:
+                description: Filter the response by document's working session.
+                type: string
+              cashDepositStatusId:
+                description: Filter the response by cash deposit status.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status.
+                type: string
+              cashDepositDestinationId:
+                description: Filter the response by cash deposit destination.
+                type: string
+              device:
+                description: Filter the response by device
+                type: string
+              workSessionDate:
+                description: Filter the response by work session date
+                type: string
+              depositTs:
+                description: Filter the response by cash deposit timestamp.
+                type: string
+      responses:
+        "200":
+          description: CashDepositDocHeader collection response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CashDepositDocHeaderListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /cash-deposit-docs/payments:
+    post:
+      description: Request an export of a list of cash deposit documents payments.
+      operationId: exportCashDepositDocPayments
+      tags:
+        - Cash Deposit Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docDate:
+                description: Filter the response by document date.
+                type: string
+              workSessionId:
+                description: Filter the response by document's working session.
+                type: string
+              cashDepositStatusId:
+                description: Filter the response by cash deposit status.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status.
+                type: string
+              cashDepositDestinationId:
+                description: Filter the response by cash deposit destination.
+                type: string
+              device:
+                description: Filter the response by device
+                type: string
+              workSessionDate:
+                description: Filter the response by work session date
+                type: string
+              depositTs:
+                description: Filter the response by cash deposit timestamp.
+                type: string
+      responses:
+        "202":
+          description: Data export request accepted
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /cash-deposit-docs/headers/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Returns a single cash deposit document header.
+      operationId: getCashDepositDocHeader
+      tags:
+        - Cash Deposit Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CashDepositDocHeaderResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /cash-deposit-docs/headers/{id}/payments:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Returns the cashed payments of a cash deposit document.
+      operationId: listCashDepositDocPayments
+      tags:
+        - Cash Deposit Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CashDepositDocPaymentMethodListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /cash-deposit-docs/headers/{id}/collections:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Returns the collection of a cash deposit document.
+      operationId: listCashDepositDocCollection
+      tags:
+        - Cash Deposit Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CashDepositDocCollectionListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /cash-deposit-docs/kpis:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get all KPIs defined for the Cash deposit documents
+      operationId: listCashDepositDocumentKPIs
+      tags:
+        - Cash Deposit Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docDate:
+                description: Filter the response by document date.
+                type: string
+              workSessionId:
+                description: Filter the response by document's working session.
+                type: string
+              cashDepositStatusId:
+                description: Filter the response by cash deposit status.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status.
+                type: string
+              cashDepositDestinationId:
+                description: Filter the response by cash deposit destination.
+                type: string
+              device:
+                description: Filter the response by device
+                type: string
+              workSessionDate:
+                description: Filter the response by work session date
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /cash-deposit-docs/kpis/{kpiId}:
+    parameters:
+      - name: kpiId
+        in: path
+        description: The KPI id
+        required: true
+        schema:
+          $ref: "./jsonapi.yaml#/components/schemas/id"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a single KPI defined for the Cash deposit documents
+      operationId: getCashDepositDocumentKPI
+      tags:
+        - Cash Deposit Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docDate:
+                description: Filter the response by document date.
+                type: string
+              workSessionId:
+                description: Filter the response by document's working session.
+                type: string
+              cashDepositStatusId:
+                description: Filter the response by cash deposit status.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status.
+                type: string
+              cashDepositDestinationId:
+                description: Filter the response by cash deposit destination.
+                type: string
+              device:
+                description: Filter the response by device
+                type: string
+              workSessionDate:
+                description: Filter the response by work session date
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

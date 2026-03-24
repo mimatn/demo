@@ -1,0 +1,3086 @@
+openapi: 3.0.3
+info:
+  title: Documents API
+  version: "-"
+  description: "Common APIs and entities related to documents (document types, reasons, etc.)"
+tags:
+  - name: Document
+    description: Documents API services
+  - name: Reason
+    description: Document reasons API services
+components:
+  schemas:
+    DeliveryDateType:
+      description: |
+        One of None, Optional or Mandatory:
+          - `None` if the delivery date is not managed by the document;
+          - `Optional` if the delivery date is managed by the document but is not required;
+          - `Mandatory` if the delivery date is required.
+      type: string
+      enum:
+        - DeliveryDateType.None
+        - DeliveryDateType.Optional
+        - DeliveryDateType.Mandatory
+    PriceListMode:
+      description: |
+        One of Head or Auto:
+          - `Head` the price list in the document header is applied to all the correspondent document lines;
+          - `Auto` the price list is determinated line by line based on Customer Price List.
+      type: string
+      enum:
+        - PriceListMode.Header
+        - PriceListMode.Auto
+      x-enum-varnames:
+        - head
+        - auto
+    MinOrderAmountCheck:
+      description: |
+        If and how to check the minimum amount of an order:
+         - `None` do not check 
+         - `Always` check always
+         - `OnlyFirstOfDay` check the first document of the day for the minimum amount only.
+      type: string
+      enum:
+        - None
+        - Always
+        - OnlyFirstOfDay
+    BusinessConditionType:
+      description: How to handle business conditions in a document.
+      enum:
+        - BusinessConditionType.PriceList
+        - BusinessConditionType.PriceSearch
+    LineMatchAttribute:
+      description: |
+        Attributes used to identify the match between reading and expected document.
+        The match is between the value of the ItemInstance and the one present in the reading document line.
+      type: string
+      enum:
+        - OriginalCountryCode
+        - ProductionOrderNumber
+        - FinishingCode
+        - LocationPartyId
+    ReadingQueue:
+      description: |
+        An enum defining the queues from which it is possibile to consume serials.
+
+        Possible values are:
+          - `IdentificationUHFReading` for UHF RFID tags.
+          - `IdentificationBarcodeReading` for barcodes.
+          - `IdentificationNFCReading` for NFC tags.
+      type: string
+      enum:
+        - IdentificationUHFReading
+        - IdentificationBarcodeReading
+        - IdentificationNFCReading
+      x-enum-varnames:
+        - UHF
+        - Barcode
+        - NFC
+    PriceVisibilityMode:
+      description: Prices visibility mode for documents. See dictionary `PriceVisibilityMode`.
+      type: string
+      enum:
+        - PriceVisibilityMode.ShowAll
+        - PriceVisibilityMode.ShowInDraft
+    #
+    # DocType objects
+    #
+    DocType:
+      description: |
+        A type of document, which belongs to a document _category_.
+        Document types can be freely created as needed, while document categories are fixed and managed by the application.
+        A category will determine both the application behaviour and the document data structure.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "DocType"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+            - priceListByDeliveryDate
+            - geoLocation
+            - minOrderAmountCheckId
+            - maxDaysBackDated
+            - maxDaysPostDated
+            - businessConditionType
+          properties:
+            code:
+              description: Code/Name of the document type.
+              type: string
+            descr:
+              description: Description of the document type.
+              type: string
+            priceListByDeliveryDate:
+              description: True if the delivery date determines the reference date for the validity of the price list, false otherwise.
+              type: boolean
+              default: false
+            deliveryDateTypeId:
+              $ref: "#/components/schemas/DeliveryDateType"
+            priceListModeId:
+              $ref: "#/components/schemas/PriceListMode"
+            geoLocation:
+              description: True if the can be stored geo coordinates when registering the document, false otherwise.
+              type: boolean
+              default: false
+            minOrderAmountCheckId:
+              $ref: "#/components/schemas/MinOrderAmountCheck"
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            maxDaysBackDated:
+              description: |
+                Maximum number of days to subtract to document's date. For example, if the value is 2 and document's
+                date is 18 July 2024, the document can be backdated up to 16 July 2024 (included).
+              type: integer
+              minimum: 0
+              default: 0
+            maxDaysPostDated:
+              description: |
+                Maximum number of days to add to document's date. For example, if the value is 2 and document's
+                date is 18 July 2024, the document can be postdated up to 20 July 2024 (included).
+              type: integer
+              minimum: 0
+              default: 0
+            businessConditionType:
+              $ref: "#/components/schemas/BusinessConditionType"
+              description: The type of a business condition. See dictionary `BusinessConditionType`.
+            setLineNumber:
+              description: |
+                If true the number of the lines of the document this type is assigned to are automatically calculated.
+                Otherwise, line numbers must be manually set.
+              type: boolean
+              default: false
+            checkAvailableStockQty:
+              description: Defines if the document type requires to check the available stock quantity.
+              type: boolean
+              readOnly: true
+        relationships:
+          type: object
+          description: The relationships of a Document Type.
+          required:
+            - organization
+            - docCategory
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            docCategory:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            docNumberRange:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    DocTypeIncluded:
+      description: Related Organization, Document Category and Document Range Number.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    DocTypeResponse:
+      description: Single Document Type
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DocType"
+        included:
+          $ref: "#/components/schemas/DocTypeIncluded"
+    DocTypeListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of document types
+          type: array
+          items:
+            $ref: "#/components/schemas/DocType"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/DocTypeIncluded"
+    DocTypeRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DocType"
+    #
+    # DocCategory objects
+    #
+    DocCategory:
+      description: Document Category resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "DocCategory"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - docHeaderTypeId
+          properties:
+            descr:
+              description: Description of the document category
+              type: string
+            docHeaderTypeId:
+              description: Document header type. See dictionary "DocHeaderType".
+              type: string
+              example: "DocHeaderType.SalesDocHeader"
+    DocCategoryResponse:
+      description: Single Document Category
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DocCategory"
+    #        included:
+    #          $ref: "#/components/schemas/DocCategoryIncluded"
+    DocCategoryListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of document categories
+          type: array
+          items:
+            $ref: "#/components/schemas/DocCategory"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    DocCategoryRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DocCategory"
+    #
+    # DocNumberRange objects
+    #
+    DocNumberRange:
+      description: Document Number Range resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "DocNumberRange"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+            - entityId
+          properties:
+            code:
+              description: Code/name of the document range name
+              type: string
+            descr:
+              description: Description of the document range name
+              type: string
+            entityId:
+              description: Related entity
+              type: string
+              example: DocHeader
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+        relationships:
+          type: object
+          description: The relationships of a Document Number Range. A Document Number Range belongs to an organization.
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    DocNumberRangeIncluded:
+      description: Related Organization
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    DocNumberRangeResponse:
+      description: Single Document Number Range
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DocNumberRange"
+        included:
+          $ref: "#/components/schemas/DocNumberRangeIncluded"
+    DocNumberRangeListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of document number ranges
+          type: array
+          items:
+            $ref: "#/components/schemas/DocNumberRange"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/DocNumberRangeIncluded"
+    DocNumberRangeRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DocNumberRange"
+    #
+    # DocHeader objects
+    #
+    DocHeaderAttributes:
+      type: object
+      required:
+        - organization
+        - docType
+        - docDate
+        - transferStatusId
+      properties:
+        organization:
+          description: Related organization
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        docHeaderType:
+          description: Document header type. See dictionary "DocHeaderType".
+          $ref: "./core.yaml#/components/schemas/SimpleEntityReadOnly"
+        docType:
+          description: Document type.
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        docDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        docNumber:
+          description: |
+            Document number. In POST requests this attribute is considered **if and only if** there in no `DocNumberRangeDetail` linked to the provided `DocType`.
+            Otherwise, it is ignored because the document's number is automatically calculated.
+          type: integer
+        docCode:
+          description:
+            Document code. In POST requests this attribute is considered **if and only if** there in no `DocNumberRangeDetail` linked to the provided `DocType`.
+            Otherwise, it is ignored because the document's code is automatically calculated. Moreover, when `docNumber` is issued and considered but this field is `null`,
+            `docNumber` will be used as the code.
+          type: string
+        docNumberRange:
+          description: Document number range.
+          $ref: "./core.yaml#/components/schemas/SimpleEntityReadOnly"
+        externalRefNumber:
+          description: Document's external rif. (usually ERP order number).
+          type: string
+        processingStatusId:
+          description: Document status. See dictionary "ProcessingStatus".
+          type: string
+          readOnly: true
+          example: "ProcessingStatus.Acquired"
+        latitude:
+          description: The latitude in decimal degrees.
+          type: number
+          format: double
+          example: 45.7261575
+        longitude:
+          description: The longitude in decimal degrees.
+          type: number
+          format: double
+          example: 45.7261575
+        coordinateAccuracy:
+          description: Accuracy (in meters) of geographical coordinates. -1 if not detectable.
+          type: integer
+        transferStatusId:
+          $ref: "./documents.yaml#/components/schemas/TransferStatus"
+        customerAccount:
+          $ref: "./core.yaml#/components/schemas/SimpleEntityReadOnly"
+          description: Document customer account, if present (used in lists of generic documents). This attribute is ignored in POST/PATCH requests.
+        supplier:
+          $ref: "./core.yaml#/components/schemas/SimpleEntityReadOnly"
+          description: Document supplier, if present (used in lists of generic documents). This attribute is ignored in POST/PATCH requests.
+        lastTransferStatusUpdateTs:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+          description: This attribute is read only. When a document header is created or updated the response returns this value if transferStatusId has been changed.
+        requestedAction:
+          description: True if the user has to perform a workflow action, false otherwise.
+          type: boolean
+          readOnly: true
+        authorizationBodies:
+          description: Authorization bodies.
+          type: array
+          items:
+            $ref: "./core.yaml#/components/schemas/SimpleEntityReadOnly"
+        anomaliesCount:
+          description: Number of anomalies.
+          type: integer
+          minimum: 0
+        barcode:
+          description: Document barcode.
+          type: string
+        isDraft:
+          $ref: "./core.yaml#/components/schemas/isDraft"
+        lastChangeTs:
+          $ref: "./core.yaml#/components/schemas/lastChangeTs"
+        referenceEntityObjectId:
+          description: |
+            If the document is published it represents its draft (if any), otherwise it represents the ID of the published document.
+            It is `null` if the current entity is a new document yet to be published.
+          type: string
+          readOnly: true
+        totalGoodsWeightInKg:
+          description: Total weight in kilograms of the goods referred by the document.
+          type: number
+          format: double
+          example: 23.5
+        fulfillmentStrategyConfiguration:
+          description: A JSON representation of the fulfillment strategy configuration.
+          type: string
+        priceVisibilityModeId:
+          $ref: "./documents.yaml#/components/schemas/PriceVisibilityMode"
+    DocHeaderAttributesLite:
+      type: object
+      required:
+        - docDate
+        - docCode
+      properties:
+        docDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        docCode:
+          description: Document code.
+          type: string
+        externalRefNumber:
+          description: Document's external rif. (usually ERP order number).
+          type: string
+        barcode:
+          description: Document barcode.
+          type: string
+        totalGoodsWeightInKg:
+          description: Total weight in kilograms of the goods referred by the document.
+          type: number
+          format: double
+          example: 23.5
+    DocHeaderRelationships:
+      description: Document header relationships.
+      type: object
+      required:
+        - docCategory
+        - creatorUserProfile
+        - language
+        - originalUserProfile
+      properties:
+        docCategory:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+        creatorUserProfile:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMetaReadOnly"
+        language:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        workSession:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        vehicle:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        originalUserProfile:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        device:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        notes:
+          $ref: "./jsonapi.yaml#/components/schemas/relToManyReadOnly"
+        fulfilledDocHeaders:
+          description: The list of documents fulfilled by this one.
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+        fulfillingDocHeaders:
+          description: The list of documents that fulfill this one.
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+        checkpoint:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        currentDraftUserProfile:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        accountingPeriod:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    DocHeader:
+      description: Document header resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          example: "SalesDocHeader"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/DocHeaderAttributes"
+        relationships:
+          $ref: "#/components/schemas/DocHeaderRelationships"
+    DocHeaderIncluded:
+      description: Related entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    DocHeaderListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of DocHeaders
+          type: array
+          items:
+            $ref: "#/components/schemas/DocHeader"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/DocHeaderIncluded"
+    LinkedDocument:
+      description: Represent a linked document. Contains document basic information only.
+      type: object
+      required:
+        - id
+        - docDate
+        - docCode
+        - docCategory
+        - authorized
+      properties:
+        id:
+          description: Document header id
+          type: string
+        docDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        docCode:
+          description: Document code.
+          type: string
+        docCategory:
+          $ref: "./core.yaml#/components/schemas/SimpleEntityReadOnly"
+        authorized:
+          description: True if the user is authorized to view the document, false otherwise.
+          type: boolean
+    DocHeaderLite:
+      description: Lite version of a document header resource. Contains basic attributes only.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          example: "SalesDocHeader"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - docDate
+            - docCode
+            - docCategory
+          properties:
+            parentDocHeader:
+              $ref: "#/components/schemas/LinkedDocument"
+            docDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            docCode:
+              description: Document code.
+              type: string
+            docCategory:
+              $ref: "./core.yaml#/components/schemas/SimpleEntityReadOnly"
+            children:
+              description: Document whose parent is the specified document.
+              type: array
+              items:
+                $ref: "#/components/schemas/LinkedDocument"
+    DocHeaderLiteListResponse:
+      description: List of DocHeaders lite version.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DocHeaderLite"
+    #
+    # DocTransferStatusListResponse resource
+    #
+    DocTransferStatusListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of documents transfer statuses
+          type: array
+          items:
+            $ref: "#/components/schemas/TransferStatus"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    #
+    # ReasonDocType objects
+    #
+    ReasonDocType:
+      description: Relation between a Reason and a DocType.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "ReasonDocType"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - sequenceNum
+          properties:
+            sequenceNum:
+              description: Sequence number. The reason with sequence number 0 is the default one for this document type.
+              type: integer
+              minimum: 0
+        relationships:
+          type: object
+          description: The relationships of the Document Type Reason.
+          required:
+            - docType
+            - reason
+          properties:
+            docType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            reason:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    ReasonDocTypeIncluded:
+      description: Related document type and reason.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    ReasonDocTypeResponse:
+      description: Single ReasonDocType response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ReasonDocType"
+        included:
+          $ref: "#/components/schemas/ReasonDocTypeIncluded"
+    ReasonDocTypeListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of ReasonDocTypes
+          type: array
+          items:
+            $ref: "#/components/schemas/ReasonDocType"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/ReasonDocTypeIncluded"
+    ReasonDocTypeRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ReasonDocType"
+    #
+    # Reason objects
+    #
+    Reason:
+      description: |
+        Reason resource. A Reason explains what a document line is about, like _sale_ if the product is sold 
+        or _free gift_ if the product is not payed by the customer or _returned_ for a product that has been returned by the customer.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Reason"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+            - sequenceNum
+            - sign
+            - taxableBaseVariation
+            - taxCalculation
+            - selectable
+            - updateWarehouseItemEntry
+          properties:
+            code:
+              description: Reason code/name.
+              type: string
+            descr:
+              description: Reason description.
+              type: string
+            sequenceNum:
+              description: Sequence number.
+              type: integer
+            sign:
+              description: |
+                * 1 = document's amounts are positive; 
+                * -1 = document's amounts are negative (e.g. return of the goods).
+              type: integer
+              minimum: -1
+              maximum: 1
+            taxableBaseVariation:
+              description: |
+                * 1 = the line increases the taxable amount;
+                * 0 = the line does not affect the taxable amount;
+                * -1 = the line decreases the taxable amount.
+              type: integer
+              minimum: -1
+              maximum: 1
+            taxCalculation:
+              description: If true the VAT applied to the value of the line contributes to the total VAT.
+              type: boolean
+            selectable:
+              description: |
+                If true the reason for the line can be selected by the user when compiling the document; 
+                If false the reason is automatically assigned and cannot be changed by the user.
+              type: boolean
+            updateWarehouseItemEntry:
+              description: If true the transaction associated with the reason creates a transaction line in `WarehouseItemEntry`.
+              type: boolean
+            docTypesCount:
+              description: The number of document types related to this reason.
+              type: integer
+            blocksCount:
+              description: The number of blocks related to this reason.
+              type: integer
+        relationships:
+          type: object
+          description: A reason belongs to an organization.
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    ReasonIncluded:
+      description: Related Organization
+      type: array
+      items:
+        $ref: "./core.yaml#/components/schemas/Organization"
+      uniqueItems: true
+    ReasonResponse:
+      description: Single Reason response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Reason"
+        included:
+          $ref: "#/components/schemas/ReasonIncluded"
+    ReasonListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Reasons.
+          type: array
+          items:
+            $ref: "#/components/schemas/Reason"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/ReasonIncluded"
+    ReasonRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Reason"
+    ReasonBlockAttributes:
+      type: object
+      required:
+        - startDate
+        - endDate
+        - reasonBlockType
+      properties:
+        startDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+          description: starting date of validity
+        endDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+          description: ending date of validity
+        reasonBlockType:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Reason Block Type. See dictionary `ReasonBlockType`.
+    ReasonBlock:
+      description: ReasonBlock resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "ReasonBlock"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/ReasonBlockAttributes"
+        relationships:
+          type: object
+          required:
+            - reason
+          description: |
+            Is required:
+              * one of Customer or CustomerHierarchyNode (exclusive) or both null;
+              * one of Item or ItemHierarchyNode (exclusive) or both null.
+          properties:
+            reason:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            customer:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            item:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    ReasonBlockIncluded:
+      description: Related entities
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    ReasonBlockResponse:
+      description: Single ReasonBlock response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ReasonBlock"
+        included:
+          $ref: "#/components/schemas/ReasonBlockIncluded"
+    ReasonBlockListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of ReasonBlocks.
+          type: array
+          items:
+            $ref: "#/components/schemas/ReasonBlock"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/ReasonBlockIncluded"
+
+    ReasonBlockRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ReasonBlock"
+    ReasonBlockListRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: The list of blocks
+          type: array
+          items:
+            $ref: "#/components/schemas/ReasonBlock"
+    EntityObjectId:
+      description: An id of a generic identity
+      type: object
+      required:
+        - entityName
+        - id
+      properties:
+        entityName:
+          description: Name of the referred entity
+          type: string
+          example: CustomerAccount
+        id:
+          description: Id of the entity object
+          type: string
+    ReasonBlockInfo:
+      description: Info to validate a set of blocks, before creating them.
+      type: object
+      required:
+        - type
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "ReasonBlock"
+        attributes:
+          type: object
+          required:
+            - reasonBlock
+            - customerAccounts
+            - items
+          properties:
+            reasonBlock:
+              $ref: "#/components/schemas/ReasonBlockAttributes"
+            customerAccounts:
+              description: |
+                List of customers, where each element can be either a CustomerAccount id (`entityName="CustomerAccount"`), 
+                or an id of a node in a CustomerAccount hierarchy (`entityName="HierarchyTree")
+              type: array
+              items:
+                $ref: "#/components/schemas/EntityObjectId"
+            items:
+              description: |
+                List of products, where each element can be either an Item id (`entityName="Item"`), 
+                or an id of a node in an item hierarchy (`entityName="HierarchyTree")
+              type: array
+              items:
+                $ref: "#/components/schemas/EntityObjectId"
+    ReasonBlockValidate:
+      description: ReasonBlockValidate resource.
+      type: object
+      required:
+        - type
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "ReasonBlockValidate"
+        attributes:
+          type: object
+          required:
+            - reasonBlock
+          properties:
+            reasonBlock:
+              $ref: "#/components/schemas/ReasonBlock"
+            conflictingReasonBlockId:
+              description: The id of the conflicting reason block
+              type: string
+            conflictingAttributes:
+              $ref: "#/components/schemas/ReasonBlockAttributes"
+              description: The attributes of the conflicting reason block.
+    ReasonBlockValidateRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ReasonBlockInfo"
+    ReasonBlockValidateListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of ReasonBlocks
+          type: array
+          items:
+            $ref: "#/components/schemas/ReasonBlockValidate"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/ReasonBlockIncluded"
+    #
+    # Enums
+    #
+    FulfillmentStatus:
+      description: The fulfillment status of a document or a document line. See dictionary `FulfillmentStatus`.
+      type: string
+      enum:
+        - FulfillmentStatus.Open
+        - FulfillmentStatus.Partial
+        - FulfillmentStatus.Complete
+        - FulfillmentStatus.Cancelled
+        - FulfillmentStatus.Rejected
+        - FulfillmentStatus.NotRelevant
+    TransferStatus:
+      description: Document transfer status, tracks if a document has been transferred to an external system.
+      type: string
+      enum:
+        - TransferStatus.Error
+        - TransferStatus.InTransfer
+        - TransferStatus.OnlyLocal
+        - TransferStatus.Suspended
+        - TransferStatus.ToBeTransferred
+        - TransferStatus.Transferred
+        - TransferStatus.FromOutside
+      x-enum-varnames:
+        - error
+        - inTransfer
+        - onlyLocal
+        - suspended
+        - toBeTransferred
+        - transferred
+        - fromOutside
+    TransferStatusRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/TransferStatus"
+    #
+    # DocHeaderFilters
+    #
+    DocHeaderFilters:
+      type: object
+      properties:
+        s:
+          description: Generic text filter.
+          type: string
+          example: "A generic text"
+        processingStatusId:
+          description: A processing status.
+          type: string
+          example: "ProcessingStatus.Processed"
+        docCode:
+          description: A document code.
+          type: string
+          example: "DOC.1"
+        docCategory:
+          description: A document category.
+          type: string
+          example: "LOAD"
+        docDate:
+          description: A date.
+          type: string
+          pattern: "YYYY-MM-DD"
+          example: "2023-02-09"
+        creatorUserProfile:
+          description: A creator user profile id.
+          type: string
+          example: "USER.1"
+        transferStatusId:
+          description: A transfer status.
+          type: string
+          example: "TransferStatus.InTransfer"
+        docType:
+          description: A document type.
+          type: string
+          example: "DOC.TYPE.1"
+        device:
+          description: A device id.
+          type: string
+          example: "DEVICE.1"
+        accountingPeriod:
+          description: Filter the response by accounting period.
+          type: string
+    #
+    # DocWithItemsFilters
+    #
+    DocWithItemsFilters:
+      type: object
+      properties:
+        reason:
+          description: A reason.
+          type: string
+          example: "REASON.1"
+        item:
+          description: An item.
+          type: string
+          example: "ITEM.1"
+        fulfillmentStatusId:
+          description: A fulfillment status.
+          type: string
+          example: "FulfillmentStatus.Complete"
+        deliveryStatusId:
+          description: A delivery status.
+          type: string
+          example: "DeliveryStatus.Delivered"
+        warehouse:
+          description: A warehouse.
+          type: string
+          example: "WAREHOUSE.1"
+    #
+    # DocWithItemsHeaderFilters
+    #
+    DocWithItemsHeaderFilters:
+      description: Filters that are typical of documents which deals with items.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DocHeaderFilters"
+        - $ref: "#/components/schemas/DocWithItemsFilters"
+    #
+    # DocWithItemsLineFilters
+    #
+    DocWithItemsLineFilters:
+      type: object
+      properties:
+        s:
+          description: |
+            A generic string that filters document lines by line item's barcode, line item's code or line item's description.
+          type: string
+          example: "T-shirt bianca"
+        fulfillmentStatusId:
+          description: A fulfillment status.
+          type: string
+          example: "FulfillmentStatus.Complete"
+        reason:
+          description: A reason for a document line.
+          type: string
+          example: "Reason.Example"
+        item:
+          description: An item referred by a document line.
+          type: string
+          example: "ITEM.1"
+        deliveryStatusId:
+          description: A delivery status.
+          type: string
+          example: "DeliveryStatus.Delivered"
+        deliveryDate:
+          description: Filter the response by delivery date.
+          type: string
+    #
+    # CommonDocLineAttributes
+    #
+    CommonDocLineAttributes:
+      description: Attributes that are common in document lines and line instances.
+      type: object
+      required:
+        - docQuantity
+        - stockQuantity
+        - convFactorStockToDoc
+      properties:
+        docQuantity:
+          description: Quantity of goods handled expressed in the document's unit of measure.
+          type: number
+          format: double
+          example: 10.0
+        stockQuantity:
+          description: Quantity of goods handled expressed in the stock's unit of measure.
+          type: number
+          format: double
+          readOnly: true
+          example: 10.0
+        convFactorStockToDoc:
+          description: The conversion factor to use to transform stock quantity in document quantity.
+          type: number
+          format: double
+          readOnly: true
+          example: 1.0
+    #
+    # CommonDocLineRelationships
+    #
+    CommonDocLineRelationships:
+      description: Relationships that are common in warehouse document line and line instances.
+      type: object
+      required:
+        - docUnitOfMeasure
+        - stockItemUnitOfMeasure
+      properties:
+        docUnitOfMeasure:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        stockItemUnitOfMeasure:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMetaReadOnly"
+    #
+    # DocLineTotalsPaginationMeta
+    #
+    DocLineTotalsPaginationMeta:
+      description: A meta object that extends the basic one.
+      type: object
+      required:
+        - fulfilledQuantity
+        - expectedQuantity
+        - missingQuantity
+        - unexpectedQuantity
+      properties:
+        fulfilledQuantity:
+          description: The sum of a document lines' fulfilled quantities.
+          type: number
+          example: 50
+        expectedQuantity:
+          description: The sum of a document lines' declared quantities.
+          type: number
+          example: 120
+        missingQuantity:
+          description: The difference between `expectedTotQuantity` and `fulfilledTotQuantity`.
+          type: number
+          example: 70
+        unexpectedQuantity:
+          description: The sum of the exceeding fulfilled quantities.
+          type: number
+          example: 0
+    #
+    # DocHeaderTotals
+    #
+    DocHeaderTotals:
+      description: |
+        Contains aggregation data about document's lines. If `null` it means that the document's lines are not
+        homogeneous, i.e do not have all the same unit of measure.
+      type: object
+      required:
+        - docQuantity
+        - docFulfilledQuantity
+        - stockQuantity
+        - stockFulfilledQuantity
+        - docUnitOfMeasure
+        - stockUnitOfMeasure
+      properties:
+        docQuantity:
+          description: The sum the document's lines quantities expressed in document unit of measure.
+          type: number
+          format: double
+          example: 9.0
+        docFulfilledQuantity:
+          description: The sum of document's lines fulfilled quantities expressed in document unit of measure.
+          type: number
+          format: double
+          example: 6.0
+        stockQuantity:
+          description: The sum the document's lines quantities expressed in stock unit of measure.
+          type: number
+          format: double
+          example: 4.0
+        stockFulfilledQuantity:
+          description: The sum of document's lines fulfilled quantities expressed in stock unit of measure.
+          type: number
+          format: double
+          example: 1.0
+        docUnitOfMeasure:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        stockUnitOfMeasure:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+    #
+    # Document email recipient resource definition
+    #
+    DocEmailRecipient:
+      description: Document Email Recipient resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "DocEmailRecipient"
+        id:
+          description: Corresponds to the email id in the recipient attribute.
+          type: string
+        attributes:
+          type: object
+          properties:
+            userType:
+              description: |
+                One of:
+                * CustomerAccount;
+                * SalesRep.
+              type: string
+              pattern: "^(CustomerAccount|SalesRep)$"
+              readOnly: true
+            descr:
+              description: Recipient description. Contains a generic description or first name and second name of the user.
+              type: string
+              readOnly: true
+            recipient:
+              description: |
+                Document email recipient. The recipients of a document can be:
+                * CustomerAccount;
+                * SalesRep.
+              $ref: "./core.yaml#/components/schemas/Email"
+    DocEmailRecipientListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: List of DocEmailRecipient.
+          type: array
+          items:
+            $ref: "#/components/schemas/DocEmailRecipient"
+    InboundItem:
+      description: A reduced version of an `Item`, specific for the inbound.
+      type: object
+      required:
+        - descr
+        - code
+        - isUnexpected
+      properties:
+        descr:
+          description: A description of the item.
+          type: string
+          example: "This is a super item!"
+        code:
+          description: A code of the item.
+          type: string
+          example: "ITEM.CODE"
+        brand:
+          description: The item's brand description.
+          type: string
+          example: "Aton Brand"
+        itemSize:
+          description: The item's size description.
+          type: string
+          example: "XXL"
+        color:
+          description: The item's color description.
+          type: string
+          example: "Light green"
+        isUnexpected:
+          description: |
+            A flag that is `true` when the item does not belong to any of the inbound's source documents but
+            it has been read by mistake and included in the destination document. On the other hand, it is 
+            `false` when the item belongs to one of the source documents.
+          type: boolean
+          default: false
+          example: false
+        barcode:
+          description: A barcode of the item.
+          type: string
+          example: "ITEM.BARCODE"
+    InboundLineAttributes:
+      description: The attributes of an element involved in an inbound operation.
+      type: object
+      required:
+        - inboundItem
+        - expectedQty
+        - readQty
+        - missingQty
+        - unexpectedQty
+        - lastChangeTs
+      properties:
+        inboundItem:
+          $ref: "#/components/schemas/InboundItem"
+        expectedQty:
+          description: |
+            How many instances of the inbound item are expected to be received. This value is calculated as
+            the sum of the differences between `DocQuantity` and `FulfilledQuantity` of the source document's
+            lines where the inbound item appears.
+          type: number
+          format: double
+          minimum: 0
+          example: 20
+        readQty:
+          description: |
+            How many instances of the inbound item have already been received. This value is calculated as
+            the sum of the `DocQuantity` of the destination document's lines where the inbound item appears.
+          type: number
+          format: double
+          minimum: 0
+          example: 4
+        missingQty:
+          description: |
+            How many instances of the inbound item have **not** been received yet. This value is calculated
+            as follows: if `readQty <= expectedQty`, then `missingQty = expectedQty - readQty`. Otherwise,
+            `missingQty = 0`.
+          type: number
+          format: double
+          minimum: 0
+          example: 16
+        unexpectedQty:
+          description: |
+            How many instances of the inbound item have been received beyond the expected quantity. This value
+            is calculated as follows: if `readQty <= expectedQty`, then `unexpectedQty = 0`. Otherwise, 
+            `unexpectedQty = abs(expectedQty - readQty)`.
+          type: number
+          format: double
+          minimum: 0
+          example: 0
+        lastChangeTs:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+          description: The timestamp of the last change of the inbound line.
+    InboundLineRelationships:
+      description: The relationships of an `InboundLine`.
+      type: object
+      required:
+        - item
+      properties:
+        item:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        sourceDocument:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    InboundLine:
+      description: An element of an inbound operation.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          example: "InboundLine"
+        id:
+          description: |
+            The id of the inbound document's line. For example, if the inbound is handled with purchase documents, this
+            would be the id of a purchase line.
+          type: string
+        attributes:
+          $ref: "#/components/schemas/InboundLineAttributes"
+        relationships:
+          $ref: "#/components/schemas/InboundLineRelationships"
+    DocumentGroupingStrategy:
+      description: |
+        Specifies how the content of a document should be grouped when retrieved.
+
+        This strategy determines the structure of the returned data, such as whether to return raw lines, 
+        group items by package, or return only serials.
+
+        Options:
+          * `NoDetail`. To use when the document's body is not meaningfull, e.g. when only totals are nedded.
+          * `GroupByLine`. Returns the document's lines grouped by:
+            * Item
+            * Unit of measurement
+            * Original country code, if specified as match attribute.
+            * Production order number, if specified as match attribute.
+            * Finishing code, if specified as match attribute.
+            * Location party, if specified as match attribute.
+            * Reason, if specified as match attribute.
+            * Fulfilled document, only if fulfilled document is used as a grouping criteria.
+          * `GroupByPackage`. Returns the document's packages grouped by:
+            * Package serial
+            * Reason, only if reason is used as a grouping criteria.
+            * Fulfilled document, only if fulfilled document is used as a grouping criteria.
+          * `GroupByLinePackage`. Returns the document's packages grouped by:
+            * Package serial
+            * All the elements considered by `GroupByLine` strategy.
+          * `SerialsOnly`. Returns the serials in the document.
+      type: string
+      enum:
+        - NoDetail
+        - GroupByLine
+        - GroupByPackage
+        - GroupByLinePackage
+        - SerialsOnly
+    UnexpectedDataStrategy:
+      description: |
+        Defines how unexpected entities (i.e., items not originally listed in the document) should be handled during 
+        document processing.
+
+        This strategy allows you to control whether to ignore unexpected entries or include them in the final output.
+        Options:
+          * `IgnoreUnexpected` Ignores unexpected data and does not include them in the final output.
+          * `LogToDocument` Unexpected data are explicitly recorded in the document, typically marked or logged for 
+            visibility and further handling.
+      type: string
+      enum:
+        - IgnoreUnexpected
+        - LogToDocument
+    UnexpectedReleaseStrategy:
+      description: |
+        Defines how unexpected elements are handled during the release of a reading document.
+
+        The possible values are:
+        - `KeepUnexpected`: to use to keep unexpcted elements in the reading document.
+        - `DeleteUnexpected`: to use to delete unexpected elements from the reading document.
+      type: string
+      enum:
+        - KeepUnexpected
+        - DeleteUnexpected
+    GetReadingDocAggregatedDataSortingStrategy:
+      description: |
+        Defines how data are sorted when retrieving aggregated data of a reading document.
+
+        The possible values are:
+        - `Unexpected` (default): Sort unexpected records first. If expected and unexpected records are equal, sort by descending read date, where the first record is the last one read.
+        - `ReadingTs`: Sort by descending read date, where the first record is the last one read.
+      type: string
+      enum:
+        - Unexpected
+        - ReadingTs
+    GetLinkedDocsFilter:
+      type: object
+      properties:
+        checkpointId:
+          description: Filters the linked documents by the checkpoint they're associated to.
+          type: string
+        processingStatusId:
+          description: Filters the linked documents by their processing status.
+          type: string
+    CompileReadingDocRequestData:
+      type: object
+      required:
+        - readingQueues
+        - expectedLineReasonId
+        - expectedPackageReasonId
+      properties:
+        checkpointId:
+          type: string
+        deviceId:
+          type: string
+        readingQueues:
+          type: array
+          items:
+            $ref: "./documents.yaml#/components/schemas/ReadingQueue"
+        overwritePackageItemInstanceId:
+          type: string
+        expectedLineReasonId:
+          description: Reason Id to apply to the lines that match the expected documents.
+          type: string
+        expectedPackageReasonId:
+          description: Reason Id to apply to the packages that match the expected documents.
+          type: string
+        unexpectedLineReasonId:
+          description: Reason Id to apply to the lines that do NOT match the expected documents.
+          type: string
+        unexpectedPackageReasonId:
+          description: Reason Id to apply to the packages that do NOT match the expected documents.
+          type: string
+        operationReasonId:
+          description: Operation reason Id to apply to the instances read.
+          type: string
+        attributeFilter:
+          description: |
+            If set, it indicates for each attribute only the accepted values, using for matching operation.
+            For each attribute, there will be a list of allowed values.
+          type: object
+          properties:
+            originalCountryCode:
+              type: array
+              items:
+                type: string
+            productionOrderNumber:
+              type: array
+              items:
+                type: string
+            finishingCode:
+              type: array
+              items:
+                type: string
+            locationPartyId:
+              type: array
+              items:
+                type: string
+        unknownItemId:
+          description:
+            Id of Item to use when a read instance does not match any record in the registry
+            (required if unexpectedDataStrategy is set to LogToDocument)
+          type: string
+        unknownPackageItemId:
+          description:
+            Id of Item to use when a read package does not match any record in the registry
+            (required if unexpectedDataStrategy is set to LogToDocument)
+          type: string
+    CompileReadingDocRequest:
+      description: An object with the parameters needed to compile a reading document.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CompileReadingDocRequestData"
+    ReleaseReadingDocRequest:
+      description: An object with the parameters needed to release a reading document.
+      type: object
+      required:
+        - unexpectedReleaseStrategy
+      properties:
+        unexpectedReleaseStrategy:
+          description: An enum that defines how unexpected are handled during the release.
+          $ref: "#/components/schemas/UnexpectedReleaseStrategy"
+        forceFulfillmentStatusComplete:
+          description: |
+            When `true` the fulfillment status of the source documents linked to the target
+            reading one is set to `Complete` regardless of the reading document's quantities.
+            If `false` the fulfillment status is calculated based on the quantities.
+          type: boolean
+          default: false
+    ReadingDocIncludeCounters:
+      description: |
+        An enumeration that describes the ways of handling counters in reading documents.
+
+        Options:
+        * `Yes`. Reading document's counters are calculated and retrieved.
+        * `YesWithFilter`. Reading document's counters are calculated and retrieved.
+        considering the values used as filters.
+        * `No`. Reading document's counters are completely ignored.
+      type: string
+      enum:
+        - "Yes"
+        - YesWithFilter
+        - "No"
+    ReadingDocCounters:
+      description: An object with the global counters of a reading document.
+      type: object
+      required:
+        - expectedQty
+        - readQty
+        - missingQty
+        - unexpectedQty
+      properties:
+        expectedQty:
+          description: Sum of the expected quanties of known lines.
+          type: number
+          format: double
+          minimum: 0.0
+        readQty:
+          description: |
+            Sum of the document's quantity of know lines. If this value is
+            grater than `expectedQty`, this one is used as the maximum value.
+          type: number
+          format: double
+          minimum: 0.0
+        missingQty:
+          description: |
+            The difference between `expectedQty` and `readQty`. If `readQty` is
+            grater than `expectedQty`, missing quantity will be `0`.
+          type: number
+          format: double
+          minimum: 0.0
+        unexpectedQty:
+          description: |
+            Sum of:
+            * The document's quantity of the unexpected lines.
+            * The difference between the document's quantity and the expected quantity where
+            the former is grater than the latter.
+            * The number of notes linked to the reading document representing unknown serials.
+          type: number
+          format: double
+          minimum: 0.0
+    ReadingDocPackageCounters:
+      description: An object with the package counters of a reading document.
+      type: object
+      required:
+        - expectedQty
+        - readQty
+        - missingQty
+        - unexpectedQty
+      properties:
+        expectedQty:
+          type: number
+          format: double
+          minimum: 0.0
+        readQty:
+          type: number
+          format: double
+          minimum: 0.0
+        missingQty:
+          type: number
+          format: double
+          minimum: 0.0
+        unexpectedQty:
+          type: number
+          format: double
+          minimum: 0.0
+    ReadingDocFulfilledDocHeader:
+      description: |
+        The fulfilled document used to group elements. It is different from `null` only
+        when fulfilled document is considered as a grouping criteria.
+      type: object
+      required:
+        - id
+        - code
+        - docDate
+        - docTypeId
+      properties:
+        id:
+          description: Id of the fulfilled document.
+          type: string
+        code:
+          description: Code of the fulfilled document.
+          type: string
+        docDate:
+          description: Date of the fulfilled document.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        docTypeId:
+          description: Id of the fulfilled document's type.
+          type: string
+    CommonReadingDocGroupingAttributes:
+      description: An object containing the attributes that are common among all grouping stretegies.
+      type: object
+      required:
+        - expectedQty
+        - readQty
+        - missingQty
+        - unexpectedQty
+        - lastChangeTs
+      properties:
+        expectedQty:
+          description: Sum of the expected quanties of known lines.
+          type: number
+          format: double
+          minimum: 0.0
+        readQty:
+          description: |
+            Sum of the document's quantity of know lines. If this value is
+            grater than `expectedQty`, this one is used as the maximum value.
+          type: number
+          format: double
+          minimum: 0.0
+        missingQty:
+          description: |
+            The difference between `expectedQty` and `readQty`. If `readQty` is
+            grater than `expectedQty`, missing quantity will be `0`.
+          type: number
+          format: double
+          minimum: 0.0
+        unexpectedQty:
+          description: |
+            Sum of:
+            * The document's quantity of the unexpected lines.
+            * The difference between the document's quantity and the expected quantity where
+            the former is grater than the latter.
+            * The number of notes linked to the reading document representing unknown serials.
+          type: number
+          format: double
+          minimum: 0.0
+        lastChangeTs:
+          description:
+            The last update timestamp of the elements considered for grouping. It will be the
+            maximum timestamp among elements in the group.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+        reason:
+          description: |
+            The reason used to group elements. It is different from `null` only when reason
+            is considered as a grouping criteria.
+          allOf:
+            - $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        fulfilledDocHeader:
+          $ref: "./documents.yaml#/components/schemas/ReadingDocFulfilledDocHeader"
+    GroupItem:
+      description: The group's item.
+      type: object
+      required:
+        - id
+        - code
+        - descr
+      properties:
+        id:
+          description: The id of the item.
+          type: string
+        code:
+          description: The code of the item.
+          type: string
+        descr:
+          description: The description of the item.
+          type: string
+        brand:
+          description: The brand of the item.
+          type: string
+        size:
+          description: The size of the item.
+          type: string
+        color:
+          description: The color of the item.
+          type: string
+    GroupByLineGroup:
+      description: A group for `GroupByLine` strategy.
+      type: object
+      required:
+        - commonAttributes
+        - item
+        - unitOfMeasureId
+        - filter
+      properties:
+        commonAttributes:
+          $ref: "#/components/schemas/CommonReadingDocGroupingAttributes"
+        item:
+          $ref: "#/components/schemas/GroupItem"
+        unitOfMeasureId:
+          description: The group's unit of measure. It is the one defined for `item`.
+          type: string
+        originalCountryCode:
+          description: Not `null` only if orginal country code is a matching attribute.
+          type: string
+        productionOrderNumber:
+          description: Not `null` only if production order number is a matching attribute.
+          type: string
+        finishingCode:
+          description: Not `null` only if finishing code is a matching attribute.
+          type: string
+        locationPatyId:
+          description: Not `null` only if location party is a matching attribute.
+          type: string
+        filter:
+          description: |
+            A map that contains the filters to use to retrieve group's detail. The key
+            is the attribute, the value is the attribute's value. Possible keys are:
+            - `ìtemId`.
+            - `unitOfMeasureId`
+            - `originalCountryCode` when specified as matching attribute.
+            - `productionOrderNumber` when specified as matching attribute.
+            - `finishingCode` when specified as matching attribute.
+            - `locationPartyId` when specified as matching attribute.
+            - `reasonId` when used as a grouping criteria.
+            - `fulfilledDocHeaderId` when used as a grouping criteria.
+          type: object
+          default: {}
+          additionalProperties:
+            type: string
+    GroupByLineStrategy:
+      description: |
+        An object to use when reading document's data is grouped based on `GroupByLine` stretegy.
+      type: object
+      required:
+        - groups
+      properties:
+        groups:
+          description: The groups obtained by aggregating reading document's data.
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupByLineGroup"
+    GroupByPackageGroup:
+      description: A group for `GroupByPackage` strategy.
+      type: object
+      required:
+        - commonAttributes
+        - packageItemInstance
+        - filter
+      properties:
+        commonAttributes:
+          $ref: "#/components/schemas/CommonReadingDocGroupingAttributes"
+        packageItemInstance:
+          description: The group's package.
+          allOf:
+            - $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        filter:
+          description: |
+            A map that contains the filters to use to retrieve group's detail. The key
+            is the attribute, the value is the attribute's value. Possible keys are:
+            - `packageItemInstanceId`.
+            - `reasonId` when used as a grouping criteria.
+            - `fulfilledDocHeaderId` when used as a grouping criteria.
+          type: object
+          default: {}
+          additionalProperties:
+            type: string
+        operationReason:
+          description: |
+            The reason of an operation performed on the group's package.
+          allOf:
+            - $ref: "./core.yaml#/components/schemas/SimpleEntity"
+    GroupByPackageStrategy:
+      description: |
+        An object to use when reading document's data is grouped based on `GroupByPackage` stretegy.
+      type: object
+      required:
+        - groups
+      properties:
+        groups:
+          description: The groups obtained by aggregating reading document's data.
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupByPackageGroup"
+    GroupByLinePackageGroup:
+      description: A group for `GroupByLinePackage` strategy.
+      type: object
+      required:
+        - commonAttributes
+        - packageItemInstance
+        - item
+        - unitOfMeasureId
+        - filter
+      properties:
+        commonAttributes:
+          $ref: "#/components/schemas/CommonReadingDocGroupingAttributes"
+        packageItemInstance:
+          description: The group's package.
+          allOf:
+            - $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        item:
+          $ref: "#/components/schemas/GroupItem"
+        unitOfMeasureId:
+          description: The group's unit of measure. It is the one defined for `item`.
+          type: string
+        originalCountryCode:
+          description: Not `null` only if orginal country code is a matching attribute.
+          type: string
+        productionOrderNumber:
+          description: Not `null` only if production order number is a matching attribute.
+          type: string
+        finishingCode:
+          description: Not `null` only if finishing code is a matching attribute.
+          type: string
+        locationPatyId:
+          description: Not `null` only if location party is a matching attribute.
+          type: string
+        filter:
+          description: |
+            A map that contains the filters to use to retrieve group's detail. The key
+            is the attribute, the value is the attribute's value. Possible keys are:
+            - `packageItemInstanceId`.
+            - `ìtemId`.
+            - `unitOfMeasureId`
+            - `originalCountryCode` when specified as matching attribute.
+            - `productionOrderNumber` when specified as matching attribute.
+            - `finishingCode` when specified as matching attribute.
+            - `locationPartyId` when specified as matching attribute.
+            - `reasonId` when used as a grouping criteria.
+            - `fulfilledDocHeaderId` when used as a grouping criteria.
+          type: object
+          default: {}
+          additionalProperties:
+            type: string
+        operationReason:
+          description: |
+            The reason of an operation performed on the group's package.
+          allOf:
+            - $ref: "./core.yaml#/components/schemas/SimpleEntity"
+    GroupByLinePackageStrategy:
+      description: |
+        An object to use when reading document's data is grouped based on `GroupByLinePackage` stretegy.
+      type: object
+      required:
+        - groups
+      properties:
+        groups:
+          description: The groups obtained by aggregating reading document's data.
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupByLinePackageGroup"
+    SerialsOnlyGroup:
+      description: A group for `SerialsOnly` strategy.
+      type: object
+      required:
+        - commonAttributes
+        - itemInstance
+        - identificationUhfs
+      properties:
+        commonAttributes:
+          $ref: "#/components/schemas/CommonReadingDocGroupingAttributes"
+        itemInstance:
+          description: The group's item instance.
+          allOf:
+            - $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        item:
+          $ref: "#/components/schemas/GroupItem"
+        unitOfMeasureId:
+          description: The group's unit of measure. It is the one defined for `item`.
+          type: string
+        originalCountryCode:
+          description: Not `null` only if orginal country code is a matching attribute.
+          type: string
+        productionOrderNumber:
+          description: Not `null` only if production order number is a matching attribute.
+          type: string
+        finishingCode:
+          description: Not `null` only if finishing code is a matching attribute.
+          type: string
+        locationPatyId:
+          description: Not `null` only if location party is a matching attribute.
+          type: string
+        identificationUhfs:
+          description: |
+            A list of the UHF RFID tags associated with the instance.
+          type: array
+          items:
+            type: string
+        operationReason:
+          description: |
+            The reason of an operation performed on the group's instance.
+          allOf:
+            - $ref: "./core.yaml#/components/schemas/SimpleEntity"
+    SerialsOnlyStrategy:
+      description: |
+        An object to use when reading document's data is grouped based on `SerialsOnly` stretegy.
+      type: object
+      required:
+        - groups
+      properties:
+        groups:
+          description: The groups obtained by aggregating reading document's data.
+          type: array
+          items:
+            $ref: "#/components/schemas/SerialsOnlyGroup"
+    ReadingDocAggregatedData:
+      description: An object that contains aggregated data of a reading document.
+      type: object
+      required:
+        - type
+        - attributes
+      properties:
+        type:
+          description: A string that describes the object.
+          type: string
+          default: "ReadingDocAggregatedData"
+        attributes:
+          description: The attributes that describes reading document aggregated data.
+          type: object
+          required:
+            - counters
+            - strategies
+          properties:
+            counters:
+              description: The counters calculated for the aggregation.
+              type: object
+              properties:
+                global:
+                  description: |
+                    The global counters. It is `null` when `includeCounters` parameter
+                    is `No`. It has a value in all other cases.
+                  allOf:
+                    - $ref: "#/components/schemas/ReadingDocCounters"
+                packages:
+                  description: |
+                    The package counters. It is `null` when `includePackageCounters`
+                    parameter is `No`. It has a value in all other cases.
+                  allOf:
+                    - $ref: "#/components/schemas/ReadingDocPackageCounters"
+            strategies:
+              description: |
+                Each attribute of this object represents a grouping stretegy. Since
+                only one strategy can be used at a time, only one of these attributes
+                will be different from `null`.
+              type: object
+              properties:
+                groupByLine:
+                  $ref: "#/components/schemas/GroupByLineStrategy"
+                groupByPackage:
+                  $ref: "#/components/schemas/GroupByPackageStrategy"
+                groupByLinePackage:
+                  $ref: "#/components/schemas/GroupByLinePackageStrategy"
+                serialsOnly:
+                  $ref: "#/components/schemas/SerialsOnlyStrategy"
+    ReadingDocGetAggregatedResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ReadingDocAggregatedData"
+    UpdateReadingDocInstancesRequestData:
+      description: |
+        An object containing the document's instances to update. Only one of
+        `itemInstanceIds`, `packageItemInstanceIds`, `itemIdPackageItemInstanceIds`
+        or `itemIds` can be specified at the same time.
+      type: object
+      properties:
+        itemInstanceIds:
+          description: An array with the ids of the item instances to update.
+          type: array
+          items:
+            type: string
+        packageItemInstanceIds:
+          description: An array with the ids of the package to update.
+          type: array
+          items:
+            type: string
+        itemIdPackageItemInstanceIds:
+          description: |
+            An array with the (item, package) pairs to update.
+          type: array
+          items:
+            type: object
+            required:
+              - itemId
+              - packageItemInstanceId
+            properties:
+              itemId:
+                type: string
+              packageItemInstanceId:
+                type: string
+        itemIds:
+          description: An array with the ids of the items to update.
+          type: array
+          items:
+            type: string
+    UpdateReadingDocInstancesRequest:
+      description: The request to update document's item instances.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/UpdateReadingDocInstancesRequestData"
+    UpdatableItemInstancePropertyName:
+      description: An enum that defines an updatable item instance property.
+      type: string
+      enum:
+        - OperationReasonId
+      x-enum-varnames:
+        - OperationReason
+    DocLineStatus:
+      type: string
+      description: |
+        Indicates whether the item in the document line is part of the assortment:
+          * `NotInAssortment`: The item is not part of the assortment.
+          * `Valid`: The item is part of the assortment.
+
+        See dictionary `DocLineStatus`.
+      enum:
+        - DocLineStatus.NotInAssortment
+        - DocLineStatus.Valid
+      readOnly: true
+    UpdatableItemInstanceProperty:
+      description: An item instance's property to update.
+      type: object
+      required:
+        - name
+        - propertyValue
+      properties:
+        name:
+          $ref: "#/components/schemas/UpdatableItemInstancePropertyName"
+        propertyValue:
+          description: The value to assign to the property.
+          type: string
+    UpdateReadingDocInstancesPropertiesRequestData:
+      description: |
+        An object containing the document's instances to update and the properties'
+        values to use. Only one of `itemInstanceIds`, `packageItemInstanceIds`,
+        `itemIdPackageItemInstanceIds` or `itemIds` can be specified at the same time.
+      type: object
+      required:
+        - properties
+      properties:
+        itemInstanceIds:
+          description: An array with the ids of the item instances to update.
+          type: array
+          items:
+            type: string
+        packageItemInstanceIds:
+          description: An array with the ids of the packages to update.
+          type: array
+          items:
+            type: string
+        itemIdPackageItemInstanceIds:
+          description: |
+            An array with the (item, package) pairs to update.
+          type: array
+          items:
+            type: object
+            required:
+              - itemId
+              - packageItemInstanceId
+            properties:
+              itemId:
+                type: string
+              packageItemInstanceId:
+                type: string
+        itemIds:
+          description: An array with the ids of the items to update.
+          type: array
+          items:
+            type: string
+        properties:
+          description: A list that contains the properties to update.
+          type: array
+          minLength: 1
+          items:
+            $ref: "#/components/schemas/UpdatableItemInstanceProperty"
+    UpdateReadingDocInstancesPropertiesRequest:
+      description: The request to update document's item instances properties.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/UpdateReadingDocInstancesPropertiesRequestData"
+    ResetReadingDocRequestData:
+      description: The paramters to reset a reading document.
+      type: object
+      properties:
+        packageItemInstanceIds:
+          description: |
+            An array with the ids of the package item instances to reset. When not
+            `null` and not empty, only readings related to the specified package item
+            instances will be reset.
+          type: array
+          items:
+            type: string
+    ResetReadingDocRequest:
+      description: The request to reset a reading document.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ResetReadingDocRequestData"
+  parameters:
+    headerId:
+      name: headerId
+      in: path
+      description: The doc header id.
+      required: true
+      schema:
+        type: string
+    lineId:
+      name: lineId
+      in: path
+      description: The doc line id.
+      required: true
+      schema:
+        type: string
+    DocWithItemsHeaderFiltersParameter:
+      name: filter
+      description: Complex filters for a document headers that deals with items.
+      in: query
+      required: true
+      style: deepObject
+      schema:
+        $ref: "#/components/schemas/DocWithItemsHeaderFilters"
+    DocWithItemsLineFiltersParameter:
+      name: filter
+      description: Complex filters for document lines that deals with items.
+      in: query
+      required: true
+      style: deepObject
+      schema:
+        $ref: "#/components/schemas/DocWithItemsLineFilters"
+    filterDocCategoryRequired:
+      name: "filter[docCategoryId]"
+      in: query
+      description: Filter the response by document category id.
+      required: true
+      style: form
+      schema:
+        type: string
+    getLinkedDocsFilter:
+      name: filter
+      in: query
+      description: Optional filters to customize which documents to retrieve.
+      required: true
+      style: deepObject
+      schema:
+        $ref: "#/components/schemas/GetLinkedDocsFilter"
+    groupByFulfilledDoc:
+      name: groupByFulfilledDoc
+      description: |
+        If `true` separates either lines or packages of different source documents.
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+    groupByReason:
+      name: groupByReason
+      description: |
+        If `true` it separates either lines or packages with different reasons.
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+    groupByOperationReason:
+      name: groupByOperationReason
+      description: |
+        If `true` it separates either lines or packages with different operation reasons.
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+    includeCountersRequired:
+      name: includeCounters
+      description: |
+        How to manage document's global counters.
+
+        Options:
+          * `Yes`. Reading document's counters are calculated and retrieved.
+          * `YesWithFilter`. Reading document's counters are calculated and retrieved.
+          considering the values used as filters.
+          * `No`. Reading document's counters are completely ignored.
+      in: query
+      required: true
+      schema:
+        type: string
+    includeCounters:
+      name: includeCounters
+      description: |
+        How to manage document's global counters.
+
+        Options:
+          * `Yes`. Reading document's counters are calculated and retrieved.
+          * `YesWithFilter`. Reading document's counters are calculated and retrieved.
+          considering the values used as filters.
+          * `No`. Reading document's counters are completely ignored.
+      in: query
+      required: false
+      schema:
+        type: string
+    includePackageCountersRequired:
+      name: includePackageCounters
+      description: |
+        How to manage document's package counters.
+
+        Options:
+          * `Yes`. Reading document's counters are calculated and retrieved.
+          * `YesWithFilter`. Reading document's counters are calculated and retrieved.
+          considering the values used as filters.
+          * `No`. Reading document's counters are completely ignored.
+      in: query
+      required: true
+      schema:
+        type: string
+    includePackageCounters:
+      name: includePackageCounters
+      description: |
+        How to manage document's package counters.
+
+        Options:
+          * `Yes`. Reading document's counters are calculated and retrieved.
+          * `YesWithFilter`. Reading document's counters are calculated and retrieved.
+          considering the values used as filters.
+          * `No`. Reading document's counters are completely ignored.
+      in: query
+      required: false
+      schema:
+        type: string
+    groupingStrategy:
+      name: groupingStrategy
+      description: |
+        The grouping strategy to use for the aggregation.
+
+        Specifies how the content of a document should be grouped when retrieved.
+
+        This strategy determines the structure of the returned data, such as whether to return raw lines, 
+        group items by package, or return only serials.
+
+        Options:
+          * `NoDetail`. To use when the document's body is not meaningfull, e.g. when only totals are nedded.
+          * `GroupByLine`. Returns the document's lines grouped by:
+            * Item
+            * Unit of measurement
+            * Original country code, if specified as match attribute.
+            * Production order number, if specified as match attribute.
+            * Finishing code, if specified as match attribute.
+            * Location party, if specified as match attribute.
+            * Reason, if specified as match attribute.
+            * Fulfilled document, only if fulfilled document is used as a grouping criteria.
+          * `GroupByPackage`. Returns the document's packages grouped by:
+            * Package serial
+            * Reason, only if reason is used as a grouping criteria.
+            * Fulfilled document, only if fulfilled document is used as a grouping criteria.
+          * `GroupByLinePackage`. Returns the document's packages grouped by:
+            * Package serial
+            * All the elements considered by `GroupByLine` strategy.
+          * `SerialsOnly`. Returns the serials in the document.
+      in: query
+      required: true
+      schema:
+        type: string
+    GetReadingDocAggregatedDataSorting:
+      name: sortingStrategy
+      description: |
+        Defines how data are sorted when retrieving aggregated data of a reading document.
+
+        The possible values are:
+        - `Unexpected` (default): Sort unexpected records first. If expected and unexpected records are equal, sort by descending read date, where the first record is the last one read.
+        - `ReadingTs`: Sort by descending read date, where the first record is the last one read.
+      in: query
+      required: false
+      schema:
+        type: string
+    GetReadingDocAggregatedDataFilters:
+      name: filter
+      description: Additional filters to narrow down retrieved data.
+      in: query
+      required: true
+      schema:
+        type: object
+        properties:
+          packageItemInstanceId:
+            description: Valid only for `GroupByPackage`, `GroupByLinePackage`and `SerialsOnly` strategies.
+            type: string
+          itemId:
+            description: Valid only for `GroupByLine`, `GroupByLinePackage`and `SerialsOnly` strategies.
+            type: string
+          unitOfMeasurementId:
+            description: Valid only for `GroupByLine`, `GroupByLinePackage`and `SerialsOnly` strategies.
+            type: string
+          originalCountryCode:
+            description: |
+              Valid only for `GroupByLine`, `GroupByLinePackage`and `SerialsOnly` strategies and if
+              specified as matching attribute.
+            type: string
+          productionOrderNumber:
+            description: |
+              Valid only for `GroupByLine`, `GroupByLinePackage`and `SerialsOnly` strategies and if
+              specified as matching attribute.
+            type: string
+          finishingCode:
+            description: |
+              Valid only for `GroupByLine`, `GroupByLinePackage`and `SerialsOnly` strategies and if
+              specified as matching attribute.
+            type: string
+          locationPartyId:
+            description: |
+              Valid only for `GroupByLine`, `GroupByLinePackage`and `SerialsOnly` strategies and if
+              specified as matching attribute.
+            type: string
+          reasonId:
+            description: |
+              Valid only for `GroupByPackage`, `GroupByLine`, `GroupByLinePackage`and `SerialsOnly`
+              strategies and if reason is used as a grouping criteria.
+            type: string
+          fulfilledDocHeaderId:
+            description: |
+              Valid only for `GroupByPackage`, `GroupByLine`, `GroupByLinePackage`and `SerialsOnly`
+              strategies and if fulfilled document is used as a grouping criteria.
+            type: string
+          expectedQty:
+            description: Filters data based on document's expected quantity.
+            type: string
+          readQty:
+            description: Filters data based on document's read quantity.
+            type: string
+          missingQty:
+            description: Filters data based on document's missing quantity.
+            type: string
+          unexpectedQty:
+            description: Filters data based on document's unexpected quantity.
+            type: string
+paths:
+  /doc-types/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The document type id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a Document Type
+      operationId: getDocType
+      tags:
+        - Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DocTypeResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /doc-types:
+    get:
+      description: |
+        Returns a collection of Document types. When invoked from a marketplace, the result is restricted to the 
+        document types visible in the marketplace.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listDocTypes |
+      operationId: listDocTypes
+      tags:
+        - Document
+      x-authorities:
+        - listDocTypes
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+        - name: "filter"
+          in: query
+          description: Filter by generic string, organization, docCategory, docNumberRange
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                type: string
+              organizationId:
+                description: Filter the response by Organization id. The user must also have the permission to view the organization.
+                type: string
+              appId:
+                description: Filter the response by app.
+                type: string
+              docCategoryId:
+                description: The document category
+                type: string
+              docNumberRangeId:
+                description: The document number range
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Document Type list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DocTypeListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /doc-categories:
+    get:
+      description: Returns a collection of Document categories.
+      operationId: listDocCategories
+      tags:
+        - Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter by generic string, organization, docCategory, docNumberRange.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                type: string
+              docHeaderTypeId:
+                description: Filter the response by document header type.
+                type: string
+              organizationId:
+                description: Finds only categories linked to document types defined for the organization.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Document categories list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DocCategoryListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /doc-categories/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The document category id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a Document Category.
+      operationId: getDocCategory
+      tags:
+        - Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DocCategoryResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  #
+  # JSON:API definition for Reason services
+  #
+  /reasons/{reasonId}/doc-types:
+    parameters:
+      - name: reasonId
+        in: path
+        description: The reason id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns the document types related to the given reason and the relation properties.
+      operationId: getReasonDocTypes
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonDocTypeListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    post:
+      description: Add a document type to a given reason.
+      operationId: addReasonDocType
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: ReasonDocType to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ReasonDocTypeRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonDocTypeResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /reasons/{reasonId}/doc-types/{docTypeId}:
+    parameters:
+      - name: reasonId
+        in: path
+        description: The reason id.
+        required: true
+        schema:
+          type: string
+      - name: docTypeId
+        in: path
+        description: The document type id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a ReasonDocType relation.
+      operationId: getReasonDocType
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonDocTypeResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    delete:
+      description: "[Remove](https://jsonapi.org/format/#crud-deleting) a Document Type from a Reason."
+      operationId: deleteReasonDocType
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) the sequence number for the document type reason."
+      operationId: updateReasonDocType
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The new sequence number to assign.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ReasonDocTypeRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonDocTypeResponse"
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /reasons/{reasonId}/blocks/{blockId}:
+    parameters:
+      - name: reasonId
+        in: path
+        description: The reason id.
+        required: true
+        schema:
+          type: string
+      - name: blockId
+        in: path
+        description: The block id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a Reason Block.
+      operationId: getReasonBlock
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonBlockResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    delete:
+      description: "[Remove](https://jsonapi.org/format/#crud-deleting) a Block from a Reason"
+      operationId: deleteReasonBlock
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) the reason block."
+      operationId: updateReasonBlock
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: ReasonBlock to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ReasonBlockRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonBlockResponse"
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /reasons/{reasonId}/blocks:
+    parameters:
+      - name: reasonId
+        in: path
+        description: The reason id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns the given reason's blocks.
+      operationId: getReasonBlocks
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filters
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search by customer code/name, customer hierarchy node code/description, item code/description, item hierarchy node code/description
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonBlockListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Add blocks to a given reason. If a block is already present in the DB it will be overwritten.
+      operationId: addReasonBlocks
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: ReasonBlock to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ReasonBlockListRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonBlockListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /reasons/{reasonId}/blocks/validate:
+    parameters:
+      - name: reasonId
+        in: path
+        description: The reason id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+    post:
+      description: |
+        Given the customers and items, it checks for every combination of customer and item if it is already present; 
+        then returns all the blocks and the information of the possible conflict with the data already saved.
+        This API doesn't change the saved data.
+      operationId: validateReasonBlocks
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: ReasonBlock info and the customers and items on which to validate the blocks.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ReasonBlockValidateRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonBlockValidateListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /reasons/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The Reason id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single reason.
+      operationId: getReason
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    delete:
+      description: "[Delete](https://jsonapi.org/format/#crud-deleting) a Reason."
+      operationId: deleteReason
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) a Reason."
+      operationId: updateReason
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Reason to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ReasonRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /reasons:
+    get:
+      description: Returns a list of reasons.
+      operationId: listReasons
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter by generic string and organization
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docCategory:
+                description: Filter the response by document category id.
+                type: string
+              docType:
+                description: Filter the response by document type
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Create a Reason.
+      operationId: createReason
+      tags:
+        - Reason
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        description: Reason to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ReasonRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ReasonResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

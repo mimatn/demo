@@ -1,0 +1,306 @@
+openapi: 3.0.3
+info:
+  title: Plant API
+  version: "-"
+tags:
+  - name: Plant
+    description: APIs for Plants.
+components:
+  schemas:
+    Plant:
+      description: A Plant.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Plant"
+        id:
+          type: string
+        attributes:
+          description: Attributes of a Plant.
+          type: object
+          required:
+            - code
+            - descr
+            - plantTypeId
+          properties:
+            code:
+              description: Code of the `Plant`.
+              type: string
+            descr:
+              description: Description of the `Plant`.
+              type: string
+            plantTypeId:
+              description: Type of the `Plant`. See dictionary `PlantType`.
+              type: string
+            addresses:
+              description: List of addresses for this `Plant`. The main address is the one with `sequenceNum = 0`.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/Address"
+        relationships:
+          description: A plant belongs to an organization.
+          type: object
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    PlantIncluded:
+      description: A `Plant` related schemas.
+      type: array
+      items:
+        $ref: "./core.yaml#/components/schemas/Organization"
+      uniqueItems: true
+    PlantResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Plant"
+        included:
+          $ref: "#/components/schemas/PlantIncluded"
+    PlantListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of `Plant`.
+          type: array
+          items:
+            $ref: "#/components/schemas/Plant"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/PlantIncluded"
+    PlantDetailAttributes:
+      description: Attributes of a PlantDetail.
+      type: object
+      required:
+        - sequenceNum
+      properties:
+        sequenceNum:
+          description: Sequence number of the PlantDetail.
+          type: integer
+          minimum: 0
+          default: 0
+        installationDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+          description: PlantDetail installation date.
+        removalDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+          description: PlantDetail removal date.
+    PlantDetailRelationships:
+      description: |
+        Relationships of a PlantDetail:       
+          * plant: belonging `Plant`;
+          * asset: `Asset` related to the `PlantDetail`;     
+          * itemCategory: item `itemCategory` related to the `ItemInstance`;
+          * parentPlantDetail: parent `PlantDetail`.
+          * customerAccount: `CustomerAccount` linked to the location of the asset when referring to a customer. Otherwise is null;
+          * customerContract: `CustomerContract` related to the asset referenced in the `PlantDetail`.
+      type: object
+      required:
+        - plant
+        - asset
+      properties:
+        plant:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        asset:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        itemCategory:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        parentPlantDetail:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        customerAccount:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        customerContract:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    PlantDetailIncluded:
+      description: A `PlantDetail` related schemas.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    PlantDetail:
+      description: A Plant Detail
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "PlantDetail"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/PlantDetailAttributes"
+        relationships:
+          $ref: "#/components/schemas/PlantDetailRelationships"
+    PlantDetailsResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of `PlantDetail` belonging to a given `Plant`.
+          type: array
+          items:
+            $ref: "#/components/schemas/PlantDetail"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/PlantDetailIncluded"
+paths:
+  /plants:
+    get:
+      description: |
+        Returns a list of `Plant`.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) | 
+        |:-:|
+        | getPlants |
+      operationId: listPlants
+      summary: listPlants
+      x-authorities: ["getPlants"]
+      tags:
+        - Plant
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              customerAccount:
+                type: string
+                description: Filter the response by customer account id.
+              customerContract:
+                type: string
+                description: Filter the response by customer contract id.
+      responses:
+        "200":
+          description: Plant list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PlantListResponse"
+        "400":
+          description: "[Bad request](https://jsonapi.org/format/#fetching-resources-responses-400)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /plants/{id}:
+    get:
+      description: |
+        Returns a `Plant`.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getPlant |
+      operationId: getPlant
+      x-authorities: ["getPlant"]
+      tags:
+        - Plant
+      parameters:
+        - name: id
+          in: path
+          description: Plant Id.
+          required: true
+          schema:
+            $ref: "./jsonapi.yaml#/components/schemas/id"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Plant response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PlantResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /plants/{id}/details:
+    get:
+      description: |
+        Returns a list of `PlantDetails` for the given `Plant`.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) | 
+        |:-:|
+        | getPlant |
+      operationId: listPlantDetails
+      summary: listPlantDetails
+      x-authorities: ["getPlant"]
+      tags:
+        - Plant
+      parameters:
+        - name: id
+          in: path
+          description: Plant Id.
+          required: true
+          schema:
+            $ref: "./jsonapi.yaml#/components/schemas/id"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              customerAccount:
+                type: string
+                description: Filter the response by customer account id.
+              customerContract:
+                type: string
+                description: Filter the response by customer contract id.
+              itemCategory:
+                type: string
+                description: Filter the response by item category id.
+              installationDate:
+                type: string
+                description: Filter the response by installation date.
+              removalDate:
+                type: string
+                description: Filter the response by removal date.
+      responses:
+        "200":
+          description: Plant details list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PlantDetailsResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."

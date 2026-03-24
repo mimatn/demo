@@ -1,0 +1,213 @@
+openapi: 3.0.3
+info:
+  title: Identity API
+  version: "-"
+  description: APIs for Identity.
+tags:
+  - name: Identity
+    description: |
+      An identity is an external entity which can be authenticated and authorized to make API calls to .one system.
+      Typically, these entities can be: 
+      * Users (or remote systems) which act on their own; 
+      * Devices which operate on general features without identifying the user who is using them;
+      * Checkpoint;
+      * Whatever can be authenticated in .one system
+components:
+  schemas:
+    EnrollmentConfirmationRequest:
+      description: |
+        An object used to confirm an enrollment request. An enrollment request is confirmed when an identity is
+        associated to it.
+      type: object
+      required:
+        - identityId
+      properties:
+        identityId:
+          description: The identity to use to confirm enrollment request.
+          type: string
+          example: "IDENTITY.1"
+    IdentityAttributes:
+      description: The attributes that describes an identity resource.
+      type: object
+      required:
+        - entityId
+        - enabled
+      properties:
+        entityId:
+          description: The entity the identity refers to.
+          type: string
+          example: "Checkpoint"
+        enabled:
+          description: A flag which is true when the identity has been enabled through authorization code flow.
+          type: boolean
+          default: false
+        code:
+          description: The code of the entity the identity refers to.
+          type: string
+          example: "ENTITY.CODE"
+        description:
+          description: The description of the entity the identity refers to.
+          type: string
+          example: "Entity description"
+        lastContactTs:
+          description: When the identity last contacted the server.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+    Identity:
+      description: Whatever can be authenticated in .one system.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "Identity"
+        id:
+          description: A string that uniquely identity the object.
+          type: string
+          example: "IDENTITY.1"
+        attributes:
+          $ref: "#/components/schemas/IdentityAttributes"
+    IdentityListResponse:
+      description: An object that contains a list of `Identity` resources.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: A list of `Identity` resources.
+          type: array
+          items:
+            $ref: "#/components/schemas/Identity"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+    IdentityResponse:
+      description: An object that contains a single `Identity` resource.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Identity"
+    KeepAliveResponse:
+      description: |
+        An object that contains the inhibition timestamp for an identity. The inhibition timestamp is calculated as the
+        sum between the identity's last contact and the inhibition offset (configuration parameter) and represents the
+        instant after which the identity will be considered as inhibited.
+      type: object
+      required:
+        - inhibitionTs
+      properties:
+        inhibitionTs:
+          description: |
+            The instant after which the identity kept alive will be considered as inhibited if no further keep alive is
+            called.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+  parameters:
+    IdentityId:
+      name: id
+      in: path
+      description: An identity id.
+      required: true
+      schema:
+        type: string
+    EnrollmentRequestId:
+      name: id
+      in: path
+      description: The id of an enrollment request.
+      required: true
+      schema:
+        type: string
+    InhibitedIdentitiesFilterParameter:
+      name: filter
+      in: query
+      required: true
+      schema:
+        description: Filters for inhibited identities.
+        type: object
+        properties:
+          entityId:
+            description: Filters inhibited identities by entity id.
+            type: string
+paths:
+  /identities/inhibited:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns the list of inhibited identities. An identity is inhibited when either it has not been enabled through 
+        the code authentication flow or when it does not contact the server for more than a pre-defined time frame.
+      operationId: listInhibitedIdentities
+      tags:
+        - Identity
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "#/components/parameters/InhibitedIdentitiesFilterParameter"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/IdentityListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /identities/keep-alive:
+    patch:
+      description: Keeps alive the calling identity by avoiding session token expiration.
+      operationId: keepAlive
+      tags:
+        - Identity
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/KeepAliveResponse"
+  /enrollment/code/{code}:
+    parameters:
+      - name: code
+        description: An enrollment code.
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Confirms the enrollment request identified by the code in the path, by pairing it with the identity in the
+        request body. From this moment on, the identity will be enabled in .one system.
+      operationId: confirmEnrollment
+      tags:
+        - Identity
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: An object that contains the identity to pair with the enrollment code in the path.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/EnrollmentConfirmationRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

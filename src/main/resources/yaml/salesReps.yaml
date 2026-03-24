@@ -1,0 +1,666 @@
+openapi: 3.0.3
+info:
+  title: SalesRep API
+  version: "-"
+tags:
+  - name: Sales Rep
+    description: APIs for Sales Rep.
+components:
+  schemas:
+    SalesRep:
+      description: SalesRep resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "SalesRep"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+            - minDocAmount
+            - commissionEnabled
+            - socialContributionEnabled
+          properties:
+            code:
+              description: General code/name of the sales representative.
+              type: string
+            descr:
+              description: SalesRep description.
+              type: string
+            minDocAmount:
+              description: If not zero, it is the minimal amount that can be issued by this sales representative.
+              type: number
+              format: double
+              minimum: 0
+              default: 0
+            taxNumber:
+              description: Tax number.
+              type: string
+            fiscalCode:
+              description: Fiscal code.
+              type: string
+            salesRepTypeId:
+              description: SalesRep type id. See dictionary `SalesRepType`.
+              type: string
+            commissionEnabled:
+              description: True if the sales rep is authorized to receive sales commissions, false otherwise.
+              type: boolean
+              default: false
+            commissionStartDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            commissionEndDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            socialContributionEnabled:
+              description: True if the seller is subject to the payment of social contributions (e.g. ENASARCO), false otherwise.
+              type: boolean
+              default: false
+            socialSecurityInstitutionId:
+              description: Social security institution to which contributions are paid (e.g. ENASARCO). See dictionary `SocialSecurityInstitution`.
+              type: string
+            socialContributionStartDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            socialContributionEndDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            isLinkedToUser:
+              description: |
+                True if the customer is either linked to `linkedUserProfileId` (if present) or to the caller when the 
+                query param is missing. False otherwise.
+              type: boolean
+              readOnly: true
+              default: false
+        relationships:
+          type: object
+          description: The relationships of a SalesRep.
+          required:
+            - userProfile
+          properties:
+            userProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            supplyingWarehouse:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            salesWarehouse:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            vehicle:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            supplier:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            commissionDocType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    SalesRepIncluded:
+      description: SalesRep relationships.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SalesRepListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of SalesReps.
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesRep"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SalesRepIncluded"
+    SalesRepResponse:
+      description: Single SalesRep response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesRep"
+        included:
+          $ref: "#/components/schemas/SalesRepIncluded"
+    SalesRepRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesRep"
+    SalesRepLite:
+      description: SalesRep resource. This is a lite version containing basic information only.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SalesRepLite"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+          properties:
+            code:
+              description: General code/name of the sales representative.
+              type: string
+              maxLength: 50
+            descr:
+              description: SalesRep description.
+              type: string
+              maxLength: 100
+            salesRepTypeId:
+              description: SalesRep type id. See dictionary `SalesRepType`.
+              type: string
+    SalesRepLiteListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of SalesReps (this is a lite version of sales reps containing basic information only).
+          type: array
+          items:
+            $ref: "#/components/schemas/SalesRepLite"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The SalesRep id
+      required: true
+      schema:
+        $ref: "./jsonapi.yaml#/components/schemas/id"
+    kpiId:
+      name: kpiId
+      in: path
+      description: The KPI id
+      required: true
+      schema:
+        $ref: "./jsonapi.yaml#/components/schemas/id"
+paths:
+  /sales-reps:
+    get:
+      description: |
+        Returns a list of SalesReps.
+         
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listSalesReps |
+      operationId: listSalesReps
+      tags:
+        - Sales Rep
+      x-authorities: ["listSalesReps"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/LinkedUserProfileId"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              supplyingWarehouse:
+                description: Filter the response by supplying warehouse.
+                type: string
+              salesWarehouse:
+                description: Filter the response by sales warehouse.
+                type: string
+              vehicle:
+                description: Filter the response by vehicle.
+                type: string
+              salesRepTypeId:
+                description: Filter the response by sales rep type id.
+                type: string
+              commissionEnabled:
+                description: Filter the response by the authorization to receive sales commissions.
+                type: string
+              commissionStartDate:
+                description: Filter the response by commission start date.
+                type: string
+              commissionEndDate:
+                description: Filter the response by commission end date.
+                type: string
+              isLinkedToUser:
+                description: Filters customers considering if they are linked to the user or not.
+                type: string
+              isActive:
+                description: Filter the response by the active status. If not present, only active reps are returned.
+                type: string
+      responses:
+        "200":
+          description: SalesRep list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesRepListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      description: |
+        Create a SalesRep.
+         
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesRep |
+      operationId: createSalesRep
+      tags:
+        - Sales Rep
+      x-authorities:
+        - createSalesRep
+      requestBody:
+        description: SalesRep to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SalesRepRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesRepResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-reps/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a single SalesRep.
+         
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getSalesRep |
+      operationId: getSalesRep
+      tags:
+        - Sales Rep
+      x-authorities:
+        - getSalesRep
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesRepResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a SalesRep.
+         
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateSalesRep |
+      operationId: updateSalesRep
+      tags:
+        - Sales Rep
+      x-authorities:
+        - updateSalesRep
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      requestBody:
+        description: SalesRep to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SalesRepRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesRepResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a SalesRep.
+         
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | deleteSalesRep |
+      operationId: deleteSalesRep
+      tags:
+        - Sales Rep
+      x-authorities: ["deleteSalesRep"]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-reps/{id}/commissions/last-calculation-date:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns the date of the last commission calculation session.
+      operationId: getLastCommissionCalculationSessionDate
+      tags:
+        - Sales Rep
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                description: Last commission calculation session date.
+                type: object
+                properties:
+                  date:
+                    $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+  /sales-reps/{id}/kpis:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - name: "filter"
+        in: query
+        description: Filter group
+        required: true
+        style: deepObject
+        schema:
+          type: object
+          properties:
+            startDate:
+              description: Filter the response by the start date of the target (where applicable).
+              type: string
+            endDate:
+              description: Filter the response by the end date of the target (where applicable).
+              type: string
+    get:
+      description: Get all KPIs defined for the given sales rep.
+      operationId: listSalesRepKPIs
+      tags:
+        - Sales Rep
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+
+  /sales-reps/{id}/kpis/{kpiId}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/kpiId"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a single KPI defined for the given sales rep.
+      operationId: getSalesRepKPI
+      tags:
+        - Sales Rep
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /sales-reps/{id}/tasks:
+    get:
+      description: |
+        Returns a paginated list of tasks for the given sales rep from the last 12 months.
+
+        The list is ordered as follows:
+          * Incomplete overdue tasks, sorted by due date in ascending order (the earliest overdue task appears first);
+          * Incomplete upcoming tasks, sorted by due date in ascending order (the task with the nearest upcoming due
+          date appears first);
+          * Completed tasks, sorted by due date in descending order (the most recently due completed task appears first).
+      operationId: listSalesRepTasks
+      tags:
+        - Sales Rep
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: id
+          in: path
+          description: The Sales Rep id
+          required: true
+          schema:
+            type: string
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: |
+            Filter group. The only supported filter is `taskCompleted` which can be used to filter tasks by their
+            completion status.
+            * `taskCompleted=eq:true` returns only completed tasks. In this case the list is sorted by due date in 
+            descending order.
+            * `taskCompleted=eq:false` returns only incomplete tasks. In this case the list is sorted by due date in 
+            ascending order.
+            * If not specified, both completed and incomplete tasks are returned. The default sorting is applied.
+          required: true
+          style: deepObject
+          schema:
+            properties:
+              taskCompleted:
+                description: |
+                  Filter the response by task completion status. True for completed tasks, false for incomplete tasks.
+                type: string
+      responses:
+        "200":
+          description: Tasks list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/PartyTaskListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-reps/{id}/targets:
+    parameters:
+      - name: id
+        in: path
+        description: The sales rep id.
+        required: true
+        schema:
+          type: string
+      - name: "filter[startDate]"
+        in: query
+        description: Filter the response by start date.
+        required: true
+        style: form
+        schema:
+          type: string
+          format: date
+      - name: "filter[endDate]"
+        in: query
+        description: Filter the response by end date.
+        required: false
+        style: form
+        schema:
+          type: string
+          format: date
+      - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+      - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - name: "filter"
+        in: query
+        description: Filter group
+        required: true
+        style: deepObject
+        schema:
+          type: object
+          properties:
+            targetLimitTypeId:
+              description: Filter the response by the target limit type id.
+              type: string
+            targetCounterTypeId:
+              description: Filter the response by the target counter type id.
+              type: string
+            targetMeasurementMethodId:
+              description: Filter the response by the target measurement method id.
+              type: string
+            processingStatusId:
+              description: Filter the response by the processing status id.
+              type: string
+            succeeded:
+              description: |
+                Filter the response based on the target value if is succeeded or not.
+                * `eq:true` - succeeded
+                * `eq:false` - not succeeded
+              type: string
+    get:
+      description: |
+        Returns a list of targets associated to the given sales rep.
+          
+        The date filter entered by the user is a period defined by a start date and an end date
+        that must be compared with the validity period of the target.
+        The comparison is applied to show all targets active in the filtered period.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listTarget |
+      operationId: listSalesRepTargets
+      tags:
+        - Sales Rep
+      x-authorities:
+        - listTarget
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./target.yaml#/components/schemas/TargetValueListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sales-reps/{id}/calendar-events:
+    get:
+      description: |
+        Returns a paginated list of events for the sales rep.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listCalendars |
+      operationId: listSalesRepCalendarEvents
+      tags:
+        - Sales Rep
+      x-authorities:
+        - listCalendars
+      parameters:
+        - name: id
+          in: path
+          description: The sales rep id
+          required: true
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              startDate:
+                type: string
+                description: Filter events by start date.
+              endDate:
+                type: string
+                description: Filter events by end date.
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Sales rep calendar events list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./tasks.yaml#/components/schemas/CalendarEventListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

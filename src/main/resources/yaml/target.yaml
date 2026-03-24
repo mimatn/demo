@@ -1,0 +1,897 @@
+openapi: 3.0.3
+info:
+  title: Target API
+  version: "-"
+  description: APIs to manage targets.
+tags:
+  - name: Target
+    description: |
+      A **Target** is a specific goal that members of an organization can aim to achieve (*target*) or can consider as the maximum limit that a certain counter must not exceed (*budget*).
+
+      An example of a target could be the sales amount of a specific product line in a period, while an example of a budget could be the maximum value of discounts that an agent can grant to a group of customers for a specific item.
+
+      A target is created by a user by defining its main characteristics such as type, measurement method, and validity period.
+#
+# Components
+#
+components:
+  #
+  # Schemas
+  #
+  parameters:
+    targetId:
+      name: targetId
+      in: path
+      description: The target id
+      required: true
+      schema:
+        $ref: "./jsonapi.yaml#/components/schemas/id"
+    targetValueId:
+      name: targetValueId
+      in: path
+      description: The target value id
+      required: true
+      schema:
+        $ref: "./jsonapi.yaml#/components/schemas/id"
+  schemas:
+    TargetLimitType:
+      description: A target limit type. See Dictionary `TargetLimitType`.
+      type: string
+      enum:
+        - TargetLimitType.Budget
+        - TargetLimitType.Target
+      x-enum-varnames:
+        - budget
+        - target
+    TargetCounterType:
+      description: A target counter type. See Dictionary `TargetCounterType`.
+      type: string
+      enum:
+        - TargetCounterType.Amount
+        - TargetCounterType.Quantity
+      x-enum-varnames:
+        - amount
+        - quantity
+    TargetValueStatus:
+      description: Assignment status. See Dictionary `TargetValueStatus`.
+      type: string
+      enum:
+        - TargetValueStatus.Closed
+        - TargetValueStatus.Open
+        - TargetValueStatus.Suspended
+      x-enum-varnames:
+        - closed
+        - opened # cannot be "open" because it is a keyword in Kotlin
+        - suspended
+    TargetMeasurementMethod:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "TargetMeasurementMethod"
+        id:
+          type: string
+          description: The target's id.
+        attributes:
+          type: object
+          required:
+            - descr
+          properties:
+            descr:
+              type: string
+              description: A description of the target measurement method.
+            targetLimitTypeId:
+              $ref: "#/components/schemas/TargetLimitType"
+            targetCounterTypeId:
+              $ref: "#/components/schemas/TargetCounterType"
+    TargetMeasurementMethodListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of TargetMeasurementMethods.
+          type: array
+          items:
+            $ref: "#/components/schemas/TargetMeasurementMethod"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    Target:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Target"
+        id:
+          type: string
+          description: The target's id.
+        attributes:
+          type: object
+          required:
+            - descr
+            - startDate
+            - endDate
+            - targetLimitTypeId
+            - targetCounterTypeId
+            - targetMeasurementMethodId
+          properties:
+            code:
+              type: string
+              description: Target code.
+            descr:
+              type: string
+              description: A description of the target.
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+              description: The date when the target starts.
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+              description: The date when the target ends.
+            targetLimitTypeId:
+              $ref: "#/components/schemas/TargetLimitType"
+            targetCounterTypeId:
+              $ref: "#/components/schemas/TargetCounterType"
+            measurementConditions:
+              description: |
+                The conditions to apply for measuring the target.
+                If set to null, the target is measured by considering all values associated with the target itself.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            processingStatusId:
+              type: string
+              description: The processing status of the target.
+            actions:
+              type: array
+              description: List of actions that can be performed on the target.
+              items:
+                $ref: "./core.yaml#/components/schemas/Action"
+        relationships:
+          type: object
+          required:
+            - organization
+            - targetMeasurementMethod
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            targetMeasurementMethod:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            currency:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            hierarchyNode:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            unitOfMeasure:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            currentDraftUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    TargetValue:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "TargetValue"
+        id:
+          type: string
+          description: The target value's id.
+        attributes:
+          type: object
+          required:
+            - targetValue
+            - targetValueStatusId
+          properties:
+            targetValue:
+              type: number
+              format: double
+              description: |
+                Target value.
+
+                Quantity expressed in the target's unit of measure, if the counter type is **Quantity**.
+
+                Amount expressed in the target's currency, if the counter type is **Amount**.
+            actualValue:
+              type: number
+              format: double
+              description: The value achieved for the target.
+            deltaValue:
+              type: number
+              format: double
+              description: |
+                Difference between the actual value and the target value.
+
+                It is negative in case of failure, positive in case of success.
+            targetValueStatusId:
+              $ref: "#/components/schemas/TargetValueStatus"
+            percentage:
+              type: number
+              format: double
+              description: |
+                The percentage of achievement of the target.
+                This is considered as success depending on the value of the limit type:
+                - **Target**: success is achieved for values >= 100%
+                - **Budget**: success is achieved for values <= 100%
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+        relationships:
+          type: object
+          required:
+            - target
+            - party
+          properties:
+            target:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            party:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            customerAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            customerAccountCluster:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            item:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            itemCluster:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    TargetResponse:
+      description: Single Target response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Target"
+        included:
+          $ref: "#/components/schemas/TargetIncluded"
+    TargetValueResponse:
+      description: Single target value response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/TargetValue"
+        included:
+          $ref: "#/components/schemas/TargetValueIncluded"
+    TargetListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Targets.
+          type: array
+          items:
+            $ref: "#/components/schemas/Target"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/TargetIncluded"
+    TargetValueListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of target values.
+          type: array
+          items:
+            $ref: "#/components/schemas/TargetValue"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/TargetValueIncluded"
+    TargetIncluded:
+      description: Related entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    TargetValueIncluded:
+      description: Related entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    TargetRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Target"
+    TargetValueRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/TargetValue"
+#
+# Paths
+#
+paths:
+  /targets/measurement-methods:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a list of `TargetMeasurementMethod` resources.
+
+        | Permission (one of) |
+        |:-:|
+        | createTarget |
+        | updateTarget |
+      operationId: listTargetMeasurementMethods
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside description.
+                type: string
+      tags:
+        - Target
+      x-authorities:
+        - createTarget
+        - updateTarget
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetMeasurementMethodListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /targets:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a list of `Target` resources.
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listTarget |
+      operationId: listTargets
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside code and description.
+                type: string
+              startDate:
+                description: Filter the response by the start date of the target.
+                type: string
+              endDate:
+                description: Filter the response by the end date of the target.
+                type: string
+              targetLimitTypeId:
+                description: Filter the response by the target limit type id.
+                type: string
+              targetCounterTypeId:
+                description: Filter the response by the target counter type id.
+                type: string
+              targetMeasurementMethodId:
+                description: Filter the response by the target measurement method id.
+                type: string
+              processingStatusId:
+                description: Filter the response by the processing status id.
+                type: string
+      tags:
+        - Target
+      x-authorities:
+        - listTarget
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Creates a `Target` resource.
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createTarget |
+      operationId: createTarget
+      tags:
+        - Target
+      x-authorities:
+        - createTarget
+      requestBody:
+        description: The target to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/TargetRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /targets/{targetId}:
+    parameters:
+      - $ref: "#/components/parameters/targetId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a `Target` resources.
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getTarget |
+      operationId: getTarget
+      tags:
+        - Target
+      x-authorities:
+        - getTarget
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: |
+        Updates a `Target` resource.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateTarget |
+      operationId: updateTarget
+      tags:
+        - Target
+      x-authorities:
+        - updateTarget
+      requestBody:
+        description: The target to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/TargetRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        Deletes a `Target` resource.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createTarget |
+        | updateTarget |
+        | deleteTarget |
+      operationId: deleteTarget
+      tags:
+        - Target
+      x-authorities:
+        - createTarget
+        - updateTarget
+        - deleteTarget
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /targets/{targetId}/values:
+    parameters:
+      - $ref: "#/components/parameters/targetId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a list of `TargetValue` resources for the given target.
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getTarget |
+      operationId: listTargetValues
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              partyId:
+                description: Filter the response by the target value subject id.
+                type: string
+              customerAccountId:
+                description: Filter the response by the customer account id.
+                type: string
+              customerAccountClusterId:
+                description: Filter the response by the customer account cluster id.
+                type: string
+              itemId:
+                description: Filter the response by the item id.
+                type: string
+              itemClusterId:
+                description: Filter the response by the item cluster id.
+                type: string
+              targetValueStatusId:
+                description: Filter the response by the target value status id.
+                type: string
+              succeeded:
+                description: |
+                  Filter the response based on the target value if is succeeded or not.
+                  * `eq:true` - succeeded
+                  * `eq:false` - not succeeded
+                type: string
+      tags:
+        - Target
+      x-authorities:
+        - getTarget
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetValueListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Creates a `TargetValue` resource for the given target.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createTarget |
+        | updateTarget |
+      operationId: createTargetValue
+      tags:
+        - Target
+      x-authorities:
+        - createTarget
+        - updateTarget
+      requestBody:
+        description: The target value to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/TargetValueRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetValueResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /targets/{targetId}/values/{targetValueId}:
+    parameters:
+      - $ref: "#/components/parameters/targetId"
+      - $ref: "#/components/parameters/targetValueId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a `TargetValue` resource for the given target and target value.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getTarget |
+      operationId: getTargetValue
+      tags:
+        - Target
+      x-authorities:
+        - getTarget
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetValueResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: |
+        Updates a `TargetValue` resource.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createTarget |
+        | updateTarget |
+      operationId: updateTargetValue
+      tags:
+        - Target
+      x-authorities:
+        - createTarget
+        - updateTarget
+      requestBody:
+        description: The target value to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/TargetValueRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetValueResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        Updates the status of a `TargetValue` to *closed*.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createTarget |
+        | updateTarget |
+      operationId: closeTargetValue
+      tags:
+        - Target
+      x-authorities:
+        - createTarget
+        - updateTarget
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /targets/{targetId}/edit:
+    parameters:
+      - $ref: "#/components/parameters/targetId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Edit a `Target` resource.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateTarget |
+      operationId: editTarget
+      tags:
+        - Target
+      x-authorities:
+        - updateTarget
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /targets/{targetId}/publish:
+    parameters:
+      - $ref: "#/components/parameters/targetId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Publish a `Target` resource.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createTarget |
+        | updateTarget |
+      operationId: publishTarget
+      tags:
+        - Target
+      x-authorities:
+        - createTarget
+        - updateTarget
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/TargetResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /targets/{targetId}/parties:
+    parameters:
+      - $ref: "#/components/parameters/targetId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a list of *subjects* to associate with the target.
+
+        | Permission (one of) |
+        |:-:|
+        | createTarget |
+        | updateTarget |
+      operationId: listEligiblePartiesForTargetValue
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside code and description.
+                type: string
+      tags:
+        - Target
+      x-authorities:
+        - createTarget
+        - updateTarget
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/SimpleEntityListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /targets/{targetId}/customer-accounts:
+    parameters:
+      - $ref: "#/components/parameters/targetId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a list of *CustomerAccounts* to associate with the target.
+
+        | Permission (one of) |
+        |:-:|
+        | createTarget |
+        | updateTarget |
+      operationId: listEligibleCustomerAccountsForTargetValue
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside code and description.
+                type: string
+      tags:
+        - Target
+      x-authorities:
+        - createTarget
+        - updateTarget
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/SimpleEntityListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

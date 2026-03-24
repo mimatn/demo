@@ -1,0 +1,611 @@
+openapi: 3.0.3
+info:
+  title: Budgets API
+  version: "-"
+tags:
+  - name: Budget
+    description: APIs for Budgets and Budget Targets
+components:
+  schemas:
+    #
+    # Enums
+    #
+    BudgetTypeId:
+      description: |
+        The goal of a budget can be to exceed a certain threshold or not to exceed a certain limit. See dictionary `BudgetType`.
+      type: string
+      enum:
+        - BudgetType.Limit
+        - BudgetType.Threshold
+    BudgetTargetAmountTypeId:
+      description: Budget reference value to compare with the target. See dictionary `BudgetTargetAmountType`.
+      type: string
+      enum:
+        - BudgetTargetAmountTypeId.GiftAmount
+        - BudgetTargetAmountTypeId.NetAmount
+    BudgetTargetStatusId:
+      description: Budget target status. See dictionary `BudgetTargetStatus`.
+      type: string
+      enum:
+        - BudgetTargetStatus.Active
+        - BudgetTargetStatus.Closed
+        - BudgetTargetStatus.Suspended
+    BudgetTargetEditModeId:
+      description: Budget target status. See dictionary `BudgetTargetEditMode`.
+      type: string
+      enum:
+        - BudgetTargetEditMode.All
+        - BudgetTargetEditMode.DateRange
+        - BudgetTargetEditMode.None
+    #
+    # Budget resource definition
+    Budget:
+      description: Budget resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Budget"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - budgetTypeId
+            - budgetTargetAmountTypeId
+            - startDate
+            - endDate
+            - budgetTargetStatusId
+            - budgetTargetEditModeId
+          properties:
+            code:
+              description: Code of the budget.
+              type: string
+            descr:
+              description: General description/name of the budget.
+              type: string
+            budgetTypeId:
+              $ref: "#/components/schemas/BudgetTypeId"
+            budgetTargetAmountTypeId:
+              $ref: "#/components/schemas/BudgetTargetAmountTypeId"
+            value:
+              description: Budget value assigned to the user
+              type: number
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            budgetTargetStatusId:
+              $ref: "#/components/schemas/BudgetTargetStatusId"
+            budgetTargetEditModeId:
+              $ref: "#/components/schemas/BudgetTargetEditModeId"
+            quantity:
+              description: Budget Target quantity
+              type: number
+              format: double
+            usedValue:
+              description: Budget used value
+              type: number
+            usedQuantity:
+              description: Budget used quantity
+              type: integer
+            numOfTargetChildren:
+              description: The number of descendants Budget Targets
+              type: number
+              readOnly: true
+        relationships:
+          type: object
+          description: The relationships of a Budget.
+          required:
+            - organization
+            - hierarchy
+            - hierarchyNode
+            - userProfile
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            hierarchy:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            hierarchyNode:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            userProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            parentBudgetTarget:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currency:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            itemEntitySet:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            customerEntitySet:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            reasons:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    BudgetIncluded:
+      description: Related entities.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    BudgetListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Budgets
+          type: array
+          items:
+            $ref: "#/components/schemas/Budget"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/BudgetIncluded"
+    BudgetResponse:
+      description: Single Budget response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Budget"
+        included:
+          $ref: "#/components/schemas/BudgetIncluded"
+    BudgetTrend:
+      description: Budget trend over time.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "BudgetTrend"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - year
+            - month
+            - budget
+          properties:
+            year:
+              description: Reference year.
+              type: integer
+            month:
+              description: Reference month number.
+              type: integer
+              minimum: 1
+              maximum: 12
+            budget:
+              description: Reference budget value.
+              type: number
+              format: double
+    BudgetTrendResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: Budget trend values response.
+          type: array
+          items:
+            $ref: "#/components/schemas/BudgetTrend"
+    BudgetRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Budget"
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The budget id
+      required: true
+      schema:
+        $ref: "./jsonapi.yaml#/components/schemas/id"
+    startParam:
+      name: "start"
+      in: query
+      description: Retrieve the most recent data from this date. The date must be in the format `yyyy-MM-dd`.
+      required: true
+      style: form
+      schema:
+        type: string
+        pattern: "^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])$"
+        example: "2022-01-31"
+    endParam:
+      name: "end"
+      in: query
+      description: Retrieve the older data from this date. The date must be in the format `yyyy-MM-dd`.
+      required: true
+      style: form
+      schema:
+        type: string
+        pattern: "^\\d{4}\\-(0[1-9]|1[012])\\-(0[1-9]|[12][0-9]|3[01])$"
+        example: "2022-01-31"
+    kpiId:
+      name: kpiId
+      in: path
+      description: The KPI id
+      required: true
+      schema:
+        type: string
+    filters:
+      name: "filter"
+      in: query
+      description: Filter group
+      required: true
+      style: deepObject
+      schema:
+        type: object
+        properties:
+          s:
+            description: Search the given string; searches inside the descr attribute
+            type: string
+          budgetTypeId:
+            description: Filter the response by Budget Type Id
+            type: string
+          startDate:
+            description: Find the Budget Targets valid from the given date
+            type: string
+          endDate:
+            description: Find the Budget Targets valid until the given date
+            type: string
+          budgetTargetStatusId:
+            description: Filter the response by Budget Target Status Id
+            type: string
+          userProfile:
+            description: Find the Budget Targets by User Profile
+            type: string
+paths:
+  #
+  # JSON:API definition for Budget services
+  #
+  /budgets:
+    get:
+      description: Returns a list of all budgets.
+      operationId: listBudgets
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside the descr attribute
+                type: string
+              budgetTypeId:
+                description: Filter the response by Budget Type Id
+                type: string
+              startDate:
+                description: Find the Budget Targets valid from the given date
+                type: string
+              endDate:
+                description: Find the Budget Targets valid until the given date
+                type: string
+              budgetTargetStatusId:
+                description: Filter the response by Budget Target Status Id
+                type: string
+              userProfile:
+                description: Find the Budget Targets by User Profile
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Budget list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BudgetListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Create a Budget
+      operationId: createBudget
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Budget to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/BudgetRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BudgetResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /budgets/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single budget target.
+      operationId: getBudgetTarget
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BudgetResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) a Budget"
+      operationId: updateBudgetTarget
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Budget to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/BudgetRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BudgetResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[Delete](https://jsonapi.org/format/#crud-deleting) a Budget"
+      operationId: deleteBudgetTarget
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /budgets/{id}/trend:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/startParam"
+      - $ref: "#/components/parameters/endParam"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns the trend of the budget over time between start and end dates.
+      operationId: getBudgetTrend
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BudgetTrendResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /budgets/{id}/targets:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of all the descendant budget targets.
+      operationId: listBudgetTargets
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside the descr attribute
+                type: string
+              budgetTypeId:
+                description: Filter the response by Budget Type Id
+                type: string
+              startDate:
+                description: Find the Budget Targets valid from the given date
+                type: string
+              endDate:
+                description: Find the Budget Targets valid until the given date
+                type: string
+              budgetTargetStatusId:
+                description: Filter the response by Budget Target Status Id
+                type: string
+              userProfile:
+                description: Find the Budget Targets by User Profile
+                type: string
+      responses:
+        "200":
+          description: Budget Targets list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BudgetListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /budgets/{id}/kpis:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get all KPIs defined for the given budget.
+      operationId: listBudgetKPIs
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /budgets/{id}/kpis/{kpiId}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "#/components/parameters/kpiId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a single KPI defined for the given budget.
+      operationId: getBudgetKPI
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /budgets/kpis:
+    parameters:
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get all KPIs defined for the budgets.
+      operationId: listBudgetsKPIs
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside the descr attribute
+                type: string
+              budgetTypeId:
+                description: Filter the response by Budget Type Id
+                type: string
+              startDate:
+                description: Find the Budget Targets valid from the given date
+                type: string
+              endDate:
+                description: Find the Budget Targets valid until the given date
+                type: string
+              budgetTargetStatusId:
+                description: Filter the response by Budget Target Status Id
+                type: string
+              userProfile:
+                description: Find the Budget Targets by User Profile
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /budgets/kpis/{kpiId}:
+    parameters:
+      - $ref: "#/components/parameters/kpiId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a single KPI defined for the budgets.
+      operationId: getBudgetsKPI
+      tags:
+        - Budget
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"

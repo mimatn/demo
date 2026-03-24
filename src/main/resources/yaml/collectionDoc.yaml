@@ -1,0 +1,820 @@
+openapi: 3.0.3
+info:
+  title: Collection Documents API
+  version: "-"
+  description: APIs for Collection Document, mainly used in onSales solution.
+tags:
+  - name: Collection Document
+    description: Collection Document.
+components:
+  schemas:
+    CollectionDepositStatus:
+      description: Specify the status of a collection deposit.
+      type: string
+      readOnly: true
+      enum:
+        - CollectionDepositStatus.Deposited
+        - CollectionDepositStatus.NotDeposited
+        - CollectionDepositStatus.PartiallyDeposited
+      x-enum-varnames:
+        - Deposited
+        - NotDeposited
+        - PartiallyDeposited
+    #
+    # CollectionDocHeaderAttributes (extends ./core.yaml#/components/schemas/DocHeaderAttributes)
+    #
+    CollectionDocHeaderAttributes:
+      description: Attributes specific of a collection document. Properties common in all type of documents are stored in the `DocHeaderAttributes` object.
+      type: object
+      required:
+        - customerAccount
+        - totalAmount
+      properties:
+        collectionDepositStatusId:
+          $ref: "#/components/schemas/CollectionDepositStatus"
+        salesRep:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Document customer's agent.
+        customerAccount:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Bill to customer account.
+        totalAmount:
+          description: Total amount.
+          type: number
+    CollectionDocHeaderAttributesWithDocHeader:
+      allOf:
+        - $ref: "#/components/schemas/CollectionDocHeaderAttributes"
+        - description: DocHeader attributes
+          type: object
+          properties:
+            docHeaderAttributes:
+              $ref: "./documents.yaml#/components/schemas/DocHeaderAttributes"
+    #
+    # CollectionDocHeader relationships
+    #
+    CollectionDocHeaderRelationships:
+      description: Collection document header extends DocHeader.
+      type: object
+      required:
+        - docHeader
+        - currency
+      properties:
+        docHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        currency:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    #
+    # CollectionDocHeader resource
+    #
+    CollectionDocHeader:
+      description: CollectionDocHeader resource, contains information present in a header of a collection document.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CollectionDocHeader"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/CollectionDocHeaderAttributesWithDocHeader"
+        relationships:
+          description: Attributes of a collection document
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/DocHeaderRelationships"
+            - $ref: "#/components/schemas/CollectionDocHeaderRelationships"
+    #
+    # CollectionDocIncluded resource
+    #
+    CollectionDocHeaderIncluded:
+      description: Related document header and common document header relationships
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # CollectionDocHeaderResponse resource
+    #
+    CollectionDocHeaderResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CollectionDocHeader"
+        included:
+          $ref: "#/components/schemas/CollectionDocHeaderIncluded"
+    #
+    # CollectionDocHeaderListResponse resource
+    #
+    CollectionDocHeaderListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of Collection documents headers
+          type: array
+          items:
+            $ref: "#/components/schemas/CollectionDocHeader"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CollectionDocHeaderIncluded"
+    #
+    # CollectionDocLedgerEntry resource
+    #
+    CollectionDocLedgerEntry:
+      description: CollectionDocLedgerEntry resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CollectionDocLedgerEntry"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - sequenceNumber
+            - externalDocTypeId
+            - docDate
+            - docNumber
+            - dueDate
+            - paymentDescr
+            - sign
+            - initialAmount
+            - dueAmount
+            - collectedAmount
+            - partiallyPaid
+          properties:
+            sequenceNumber:
+              description: Sequence number.
+              type: integer
+            externalDocTypeId:
+              description: External document type. See dictionary `ExternalDocType`.
+              type: string
+            docDate:
+              description: Date of the reference document of the installment.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            docNumber:
+              description: Document Number.
+              type: string
+            dueDate:
+              description: Expected installment payment date.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            paymentDescr:
+              description: Payment description.
+              type: string
+            sign:
+              description: +1 = document values are positive -1 = values are negative (e.g. credit notes).
+              type: integer
+              minimum: -1
+              maximum: 1
+            initialAmount:
+              description: Initial value of the installment in the currency of the document.
+              type: number
+            dueAmount:
+              description: Value to be collected of the installment in the currency of the document.
+              type: number
+            collectedAmount:
+              description: Cashed value.
+              type: number
+            partiallyPaid:
+              description: True if collected, false otherwise.
+              type: boolean
+              default: false
+        relationships:
+          description: CollectionDocLedgerEntry relationships.
+          type: object
+          required:
+            - collectionDoc
+            - billToCustomerAccount
+          properties:
+            collectionDoc:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            customerLedgerEntry:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            docHeader:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            billToCustomerAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            sellToCustomerAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    #
+    # CollectionDocLedgerEntry resource
+    #
+    CollectionDocLedgerEntryIncluded:
+      description: CollectionDocLedgerEntry relationships
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # CollectionDocLedgerEntryListResponse resource
+    #
+    CollectionDocLedgerEntryListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of CollectionDocLedgerEntry
+          type: array
+          items:
+            $ref: "#/components/schemas/CollectionDocLedgerEntry"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CollectionDocLedgerEntryIncluded"
+    #
+    # CollectionDocPaymentMethod resource
+    #
+    CollectionDocPaymentMethod:
+      description: CollectionDocPaymentMethod resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CollectionDocPaymentMethod"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - sequenceNum
+            - collectedAmount
+          properties:
+            sequenceNum:
+              description: Sequence number.
+              type: integer
+            collectedAmount:
+              description: Collected amount.
+              type: number
+            billNumber:
+              description: Optional serial number of the cashed security, mandatory if PaymentMethod.SerialNumRequired is true.
+              type: string
+            billDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+              description: Collecting date, required if PaymentMethod.SerialNumRequired is true
+            bankNumber:
+              description: Bank number.
+              type: string
+            bankBranchCode:
+              description: Bank branch code.
+              type: string
+            bankAccountName:
+              description: Bank account name.
+              type: string
+            bankName:
+              description: Bank name.
+              type: string
+            transactionData:
+              description: Data returned by the system in case of electronic payment.
+              type: string
+        relationships:
+          description: CollectionDocPaymentMethod relationships.
+          type: object
+          required:
+            - collectionDoc
+            - paymentMethod
+          properties:
+            collectionDoc:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            paymentMethod:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            cashDepositDocPaymentMethod:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            notes:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    #
+    # CollectionDocPaymentMethod resource
+    #
+    CollectionDocPaymentMethodIncluded:
+      description: CollectionDocPaymentMethod relationships
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # CollectionDocPaymentMethodListResponse resource
+    #
+    CollectionDocPaymentMethodListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of CollectionDocPaymentMethod
+          type: array
+          items:
+            $ref: "#/components/schemas/CollectionDocPaymentMethod"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CollectionDocPaymentMethodIncluded"
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The collection doc header id
+      required: true
+      schema:
+        type: string
+    filters:
+      name: "filter"
+      in: query
+      description: Filter group
+      required: true
+      style: deepObject
+      schema:
+        type: object
+        properties:
+          s:
+            description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+            type: string
+          docDate:
+            description: Filter the response by document date.
+            type: string
+          creatorUserProfileId:
+            description: Filter the response by creator user profile.
+            type: string
+          workSessionId:
+            description: Filter the response by document's working session.
+            type: string
+          processingStatusId:
+            description: Filter the response by document's processing status.
+            type: string
+          collectionDepositStatusId:
+            description: Filter the response by document's deposit status.
+            type: string
+          ledgerEntryExternalDocTypeId:
+            description: Filter the response by ledger entry external document type Id.
+            type: string
+          ledgerEntryDocNumber:
+            description: Filter the response by ledger entry Doc Number Id.
+            type: string
+          customerAccountId:
+            description: Filter the response by customer account.
+            type: string
+          transferStatusId:
+            description: Filter the response by transfer status.
+            type: string
+          device:
+            description: Filter the response by device.
+            type: string
+paths:
+  /collection-docs/headers/{id}/ledger-entries:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Returns the ledger entries of a collection document.
+      operationId: listCollectionDocLedgerEntries
+      tags:
+        - Collection Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CollectionDocLedgerEntryListResponse"
+  /collection-docs/headers/{id}/payments:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Returns the collected payments of a collection document.
+      operationId: listCollectionDocPayments
+      tags:
+        - Collection Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CollectionDocPaymentMethodListResponse"
+  /collection-docs/headers/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Returns a single collection document header.
+      operationId: getCollectionDocHeader
+      tags:
+        - Collection Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CollectionDocHeaderResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /collection-docs/headers:
+    get:
+      description: Returns a list of collection documents headers
+      operationId: listCollectionDocHeaders
+      tags:
+        - Collection Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docDate:
+                description: Filter the response by document date.
+                type: string
+              creatorUserProfileId:
+                description: Filter the response by creator user profile.
+                type: string
+              workSessionId:
+                description: Filter the response by document's working session.
+                type: string
+              processingStatusId:
+                description: Filter the response by document's processing status.
+                type: string
+              collectionDepositStatusId:
+                description: Filter the response by document's deposit status.
+                type: string
+              ledgerEntryExternalDocTypeId:
+                description: Filter the response by ledger entry external document type Id.
+                type: string
+              ledgerEntryDocNumber:
+                description: Filter the response by ledger entry Doc Number Id.
+                type: string
+              customerAccountId:
+                description: Filter the response by customer account.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status.
+                type: string
+              device:
+                description: Filter the response by device.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: CollectionDocHeader collection response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CollectionDocHeaderListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /collection-docs/ledger-entries:
+    post:
+      description: Request an export of a list of collection documents ledger entries.
+      operationId: exportCollectionDocLedgerEntries
+      tags:
+        - Collection Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+          # Keeps the filters from /collection-docs/headers
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docDate:
+                description: Filter the response by document date.
+                type: string
+              creatorUserProfileId:
+                description: Filter the response by creator user profile.
+                type: string
+              workSessionId:
+                description: Filter the response by document's working session.
+                type: string
+              processingStatusId:
+                description: Filter the response by document's processing status.
+                type: string
+              collectionDepositStatusId:
+                description: Filter the response by document's deposit status.
+                type: string
+              ledgerEntryExternalDocTypeId:
+                description: Filter the response by ledger entry external document type Id.
+                type: string
+              ledgerEntryDocNumber:
+                description: Filter the response by ledger entry Doc Number Id.
+                type: string
+              customerAccountId:
+                description: Filter the response by customer account.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status.
+                type: string
+              device:
+                description: Filter the response by device.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "202":
+          description: Data export request accepted
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /collection-docs/payments:
+    post:
+      description: Request an export of a list of collection documents payments.
+      operationId: exportCollectionDocPayments
+      tags:
+        - Collection Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+          # Keeps the filters from /collection-docs/headers
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docDate:
+                description: Filter the response by document date.
+                type: string
+              creatorUserProfileId:
+                description: Filter the response by creator user profile.
+                type: string
+              workSessionId:
+                description: Filter the response by document's working session.
+                type: string
+              processingStatusId:
+                description: Filter the response by document's processing status.
+                type: string
+              collectionDepositStatusId:
+                description: Filter the response by document's deposit status.
+                type: string
+              ledgerEntryExternalDocTypeId:
+                description: Filter the response by ledger entry external document type Id.
+                type: string
+              ledgerEntryDocNumber:
+                description: Filter the response by ledger entry Doc Number Id.
+                type: string
+              customerAccountId:
+                description: Filter the response by customer account.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status.
+                type: string
+              device:
+                description: Filter the response by device.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "202":
+          description: Data export request accepted
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /collection-docs/kpis/{kpiId}:
+    parameters:
+      - name: kpiId
+        in: path
+        description: The KPI id
+        required: true
+        schema:
+          $ref: "./jsonapi.yaml#/components/schemas/id"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a single KPI defined for the Collection documents
+      operationId: getCollectionDocumentKPI
+      tags:
+        - Collection Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docDate:
+                description: Filter the response by document date.
+                type: string
+              creatorUserProfileId:
+                description: Filter the response by creator user profile.
+                type: string
+              workSessionId:
+                description: Filter the response by document's working session.
+                type: string
+              processingStatusId:
+                description: Filter the response by document's processing status.
+                type: string
+              collectionDepositStatusId:
+                description: Filter the response by document's deposit status.
+                type: string
+              ledgerEntryExternalDocTypeId:
+                description: Filter the response by ledger entry external document type Id.
+                type: string
+              ledgerEntryDocNumber:
+                description: Filter the response by ledger entry Doc Number Id.
+                type: string
+              customerAccountId:
+                description: Filter the response by customer account.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status.
+                type: string
+              device:
+                description: Filter the response by device.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /collection-docs/kpis:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get all KPIs defined for the Collection documents
+      operationId: listCollectionDocumentKPIs
+      tags:
+        - Collection Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              docDate:
+                description: Filter the response by document date.
+                type: string
+              creatorUserProfileId:
+                description: Filter the response by creator user profile.
+                type: string
+              workSessionId:
+                description: Filter the response by document's working session.
+                type: string
+              processingStatusId:
+                description: Filter the response by document's processing status.
+                type: string
+              collectionDepositStatusId:
+                description: Filter the response by document's deposit status.
+                type: string
+              ledgerEntryExternalDocTypeId:
+                description: Filter the response by ledger entry external document type Id.
+                type: string
+              ledgerEntryDocNumber:
+                description: Filter the response by ledger entry Doc Number Id.
+                type: string
+              customerAccountId:
+                description: Filter the response by customer account.
+                type: string
+              transferStatusId:
+                description: Filter the response by transfer status.
+                type: string
+              device:
+                description: Filter the response by device.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

@@ -1,0 +1,95 @@
+openapi: 3.0.3
+info:
+  title: Identifiers related APIs.
+  version: "-"
+  description: APIs to manage identifiers.
+tags:
+  - name: Identifier
+    description: |
+      In general, an identifier is an object that allows to uniquely identify another one.
+      Supported identifiers are:
+      * `UHF`. They are UHF (Ultra-High Frequency) RFID electronic tags that transmit data
+      wirelessly using radio waves in the UHF frequency band.
+      * `NFC`. An NFC (Near Field Communication) tag is a small, passive device that stores
+      data and communicates wirelessly with NFC-enabled devices (like smartphones) when
+      brought within close proximity.
+      * `Barcode`. A barcode is a visual representation of data in the form of parallel lines
+      (linear barcode) or patterns (2D barcode, like QR codes) that can be read by optical
+      scanners.
+components:
+  schemas:
+    IdentificationUHFReading:
+      description: An UHF tag to upload to the reading queue.
+      type: object
+      required:
+        - epc
+        - readingTs
+      properties:
+        epc:
+          description: The EPC (Electronic Product Code) of the UHF tag.
+          type: string
+        readingTs:
+          description: When the UHF tag has been read.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+        rssi:
+          description: |
+            It indicates how strong or weak the signal is at the receiver's end and is
+            commonly used in wireless communication. It is expressed in (dBm).
+          type: number
+          format: double
+        port:
+          description: |
+            The device's port that read the UHF tag. A device can have several ports (or
+            antennas) each acquiring different sets of tags.
+          type: integer
+          minimum: 0
+    UploadIdentificationUHFRequest:
+      description: The UHF tags to upload.
+      type: object
+      required:
+        - identificationReadings
+      properties:
+        deviceId:
+          description: |
+            To use when the identity uploading UHF tags is not a `Device`. When provided
+            it overrides `networkAddress` attribute.
+          type: string
+        networkAddress:
+          description: |
+            The IP address of the device that read UHF tags. It is used when the identity
+            uploading UHF tags is not a `Device` and when `deviceId` is `null`.
+          type: string
+        identificationReadings:
+          description: An array of the UHF tags to upload.
+          type: array
+          items:
+            $ref: "#/components/schemas/IdentificationUHFReading"
+paths:
+  /identification-uhf/readings:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        This API allows to add the UHF tags in request's body to the UHF readings queue.
+      operationId: uploadIdentificationUHFReadings
+      tags:
+        - Identifier
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: An object containing the UHF tags to upload to the reading queue.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/UploadIdentificationUHFRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

@@ -1,0 +1,690 @@
+openapi: 3.0.3
+info:
+  title: Authorization Workflow API
+  version: "-"
+tags:
+  - name: Authorization Workflow
+    description: APIs for Authorization Workflows.
+components:
+  schemas:
+    #
+    # AuthorizationBody resources
+    #
+    AuthorizationBody:
+      description: AuthorizationBody resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "AuthorizationBody"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+          properties:
+            code:
+              description: Authorization Body code.
+              type: string
+            descr:
+              description: Authorization Body description.
+              type: string
+    AuthorizationBodyResponse:
+      description: Single AuthorizationBody response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/AuthorizationBody"
+    AuthorizationBodyListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: List of AuthorizationBody
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthorizationBody"
+    #
+    # AuthorizationAction resources
+    #
+    AuthorizationAction:
+      description: AuthorizationAction resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "AuthorizationAction"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - text
+            - descr
+            - terminateWorkflow
+            - confirmationRequired
+            - noteRequired
+          properties:
+            text:
+              description: Text displayed on the button related to this action.
+              type: string
+            descr:
+              description: Action's description.
+              type: string
+            terminateWorkflow:
+              description: True if the action terminates the authorization workflow.
+              type: boolean
+            confirmationRequired:
+              description: True if the action has to be confirmed by the user. While confirming the user can insert a note.
+              type: boolean
+            noteRequired:
+              description: True if the a note is required (only if confirmationRequired is true).
+              type: boolean
+            workflowApproved:
+              description: |
+                The value is considered if and only if TerminateWorkflow is true.
+                If true the action assigned to the step ends the workflow successfully, false otherwise.
+              type: boolean
+            processingStatusId:
+              description: A processing status.
+              type: string
+              example: "ProcessingStatus.Processed"
+            textColor:
+              description: A string that defines the text color of the text displayed on the button.
+              type: string
+              example: "#000000"
+    AuthorizationActionListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: List of AuthorizationAction
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthorizationAction"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    #
+    # EntityAuthorizationWorkflowStep resources
+    #
+    EntityAuthorizationWorkflowStep:
+      description: EntityAuthorizationWorkflowStep resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "EntityAuthorizationWorkflowStep"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - masterEntityObject
+            - entityObject
+            - isStart
+            - authorizationBody
+            - startTs
+          properties:
+            masterEntityObject:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: Master entity. For example `SalesDocHeader`.
+            entityObject:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: Entity related to the master entity. For example `SalesDocLine`.
+            conditionText:
+              description: Text to display containing placeholders that has to be replaced with `conditionTextVariables`.
+              type: string
+            conditionTextVariables:
+              description: A JSON string representing the parameters that should be replaced in the condition text's placeholders
+              type: string
+            isStart:
+              description: True if the step is the first one of the workflow.
+              type: boolean
+              default: true
+            authorizationBody:
+              description: The office responsible for this authorization request
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            startTs:
+              description: Creation timestamp of the request.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+            expirationTs:
+              description: Expiration timestamp of the request. Is not null if and only if `maxWaitingTime` is not null.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+            maxWaitingTime:
+              description: |
+                Maximum waiting time for request management, after this period the authorization management engine 
+                assigns the action defined in `defaultAuthorizationAction`.
+              $ref: "./dataTypes.yaml#/components/schemas/apiTime"
+            defaultActionId:
+              description: The action automatically performed when `maxWaitingTime` is over.
+              type: string
+            authorizationTs:
+              description: Timestamp when the action is executed.
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+            terminateWorkflow:
+              description: True if the action terminates the workflow.
+              type: boolean
+            confirmationRequired:
+              description: True if the action needs to be confirmed by the used.
+              type: boolean
+            noteRequired:
+              description: True if the a note is required to confirm the action (if `confirmationRequired` is `true`)
+              type: boolean
+            authorizationActionNote:
+              description: User's note.
+              type: string
+            workflowApproved:
+              description: True if the the step's action close the workflow successfully, `false` otherwise.
+              type: boolean
+        relationships:
+          type: object
+          description: The relationships of a EntityAuthorizationWorkflowStep.
+          required:
+            - authorizationWorkflowSteps
+          properties:
+            authorizationWorkflowStep:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            authorizationActions:
+              $ref: "./jsonapi.yaml#/components/schemas/relToManyWithMeta"
+            userProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    EntityAuthorizationWorkflowStepIncluded:
+      description: Related entities
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    EntityAuthorizationWorkflowStepResponse:
+      description: Single EntityAuthorizationWorkflowStep response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/EntityAuthorizationWorkflowStep"
+        included:
+          $ref: "#/components/schemas/EntityAuthorizationWorkflowStepIncluded"
+    EntityAuthorizationWorkflowStepListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of EntityAuthorizationWorkflowStep
+          type: array
+          items:
+            $ref: "#/components/schemas/EntityAuthorizationWorkflowStep"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/EntityAuthorizationWorkflowStepIncluded"
+    #
+    # AuthorizationWorkflow
+    #
+    AuthorizationWorkflow:
+      description: AuthorizationWorkflow resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "AuthorizationWorkflow"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - masterEntityId
+            - startDate
+            - endDate
+          properties:
+            descr:
+              description: AuthorizationWorkflow description.
+              type: string
+            masterEntityId:
+              description: The entity related to this authorization workflow.
+              type: string
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        relationships:
+          type: object
+          description: The relationships of a AuthorizationWorkflow.
+          required:
+            - organization
+            - authorizationEvent
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            authorizationEvent:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    AuthorizationWorkflowIncluded:
+      description: AuthorizationWorkflow relationships.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    AuthorizationWorkflowListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of AuthorizationWorkflow
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthorizationWorkflow"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/AuthorizationWorkflowIncluded"
+    #
+    # AuthorizationWorkflowStep (these resources is used as included relationship in EntityAuthorizationWorkflowStep
+    #
+    AuthorizationWorkflowStep:
+      description: AuthorizationWorkflowStep resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "AuthorizationWorkflowStep"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - isStart
+            - authorizationBody
+          properties:
+            descr:
+              description: AuthorizationWorkflowStep description.
+              type: string
+            isStart:
+              description: True if this step is the initial one for the workflow.
+              type: boolean
+            authorizationBody:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            maxWaitingTime:
+              $ref: "./dataTypes.yaml#/components/schemas/apiTime"
+        relationships:
+          type: object
+          description: The relationships of a AuthorizationWorkflowStep.
+          required:
+            - authorizationWorkflow
+          properties:
+            authorizationWorkflow:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            defaultAuthorizationAction:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    AuthorizationWorkflowStepIncluded:
+      description: AuthorizationWorkflowStep relationships.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    AuthorizationWorkflowStepListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of AuthorizationWorkflowStep.
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthorizationWorkflowStep"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/AuthorizationWorkflowStepIncluded"
+  parameters:
+    bodyId:
+      name: bodyId
+      in: path
+      description: The authorization body id.
+      required: true
+      schema:
+        $ref: "./jsonapi.yaml#/components/schemas/id"
+    stepId:
+      name: stepId
+      in: path
+      description: The step id.
+      required: true
+      schema:
+        $ref: "./jsonapi.yaml#/components/schemas/id"
+    actionId:
+      name: actionId
+      in: path
+      description: The action id.
+      required: true
+      schema:
+        $ref: "./jsonapi.yaml#/components/schemas/id"
+paths:
+  /auth-workflows:
+    get:
+      description: Returns a list of authorization workflows.
+      operationId: listAuthorizationWorkflows
+      tags:
+        - Authorization Workflow
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+      responses:
+        "200":
+          description: AuthorizationWorkflow list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationWorkflowListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /auth-workflows/auth-bodies:
+    get:
+      description: Returns a list of authorization bodies.
+      operationId: listAuthorizationBodies
+      tags:
+        - Authorization Workflow
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              userProfileId:
+                description: Filter the response by user profile id. The list will contain only the authorization bodies of which the user is member.
+                type: string
+      responses:
+        "200":
+          description: AuthorizationBody list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationBodyListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /auth-workflows/auth-bodies/{bodyId}:
+    parameters:
+      - $ref: "#/components/parameters/bodyId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single AuthorizationBody.
+      operationId: getAuthorizationBody
+      tags:
+        - Authorization Workflow
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationBodyResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /auth-workflows/auth-steps:
+    get:
+      description: Returns a list of AuthorizationWorkflowStep.
+      operationId: listAuthorizationWorkflowStep
+      tags:
+        - Authorization Workflow
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+      responses:
+        "200":
+          description: AuthorizationWorkflowStep list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationWorkflowStepListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /auth-workflows/actions:
+    get:
+      description: Returns a list of authorization actions.
+      operationId: listAuthorizationActions
+      tags:
+        - Authorization Workflow
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+      responses:
+        "200":
+          description: AuthorizationAction list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationActionListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /auth-workflows/steps:
+    get:
+      description: Returns a list of entity authorization workflow steps.
+      operationId: listEntityAuthorizationWorkflowSteps
+      tags:
+        - Authorization Workflow
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              authorizationBody:
+                description: Filter the response by authorization body.
+                type: string
+              masterEntityName:
+                description: Filter the response by master entity name.
+                type: string
+              masterEntityId:
+                description: Filter the response by master entity id.
+                type: string
+              entityName:
+                description: Filter the response by entity name.
+                type: string
+              entityId:
+                description: Filter the response by entity id.
+                type: string
+      responses:
+        "200":
+          description: EntityAuthorizationWorkflowStep list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EntityAuthorizationWorkflowStepListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Perform multiple actions for multiple given workflow step.
+      operationId: performWorkflowActions
+      tags:
+        - Authorization Workflow
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              type: array
+              items:
+                type: object
+                required:
+                  - stepId
+                  - actionId
+                properties:
+                  stepId:
+                    description: Entity authorization workflow step id.
+                    type: string
+                  actionId:
+                    description: Authorization action id.
+                    type: string
+                  note:
+                    description: Authorization action note.
+                    type: string
+      responses:
+        "201":
+          description: "[Performed](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EntityAuthorizationWorkflowStepListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /auth-workflows/steps/{stepId}:
+    parameters:
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "#/components/parameters/stepId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single EntityAuthorizationWorkflowStep.
+      operationId: getEntityAuthorizationWorkflowStep
+      tags:
+        - Authorization Workflow
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EntityAuthorizationWorkflowStepResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"

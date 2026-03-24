@@ -1,0 +1,796 @@
+openapi: 3.0.3
+info:
+  title: Price Condition API
+  version: "-"
+tags:
+  - name: Price Condition
+    description: APIs for Price Conditions and PriceSearch.
+components:
+  schemas:
+    ConditionValueType:
+      description: It is the condition value type contained in the PriceSearch. See dictionary `ConditionValueType`.
+      type: string
+      enum:
+        - ConditionValueType.Price
+        - ConditionValueType.ValueDiscount
+        - ConditionValueType.PercDiscount
+        - ConditionValueType.PromoValue
+        - ConditionValueType.PromoPerc
+        - ConditionValueType.PriceLimitBasePrice
+        - ConditionValueType.PriceLimitPercent
+        - ConditionValueType.ReasonBlock
+        - ConditionValueType.ReasonUnblock
+        - ConditionValueType.ReasonBlockHide
+        - ConditionValueType.ReasonBlockWarning
+    PriceSearchGroup:
+      description: PriceSearchGroup resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "PriceSearchGroup"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - sequenceNum
+            - editable
+          properties:
+            code:
+              description: Code of the price search group.
+              type: string
+            descr:
+              description: Description of the price search group.
+              type: string
+            sequenceNum:
+              description: Sequence number of the price search group.
+              type: integer
+              default: 0
+            editable:
+              description: Indicates if the price search group is editable.
+              type: boolean
+              default: false
+    PriceSearchGroupListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of PriceSearchGroups
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceSearchGroup"
+    PriceSearch:
+      description: PriceSearch resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "PriceSearch"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - searchKeyNrOfColumns
+            - conditionEditable
+          properties:
+            searchKey1:
+              $ref: "#/components/schemas/SearchKey"
+            searchKey2:
+              $ref: "#/components/schemas/SearchKey"
+            searchKey3:
+              $ref: "#/components/schemas/SearchKey"
+            searchKey4:
+              $ref: "#/components/schemas/SearchKey"
+            searchKey5:
+              $ref: "#/components/schemas/SearchKey"
+            searchKey6:
+              $ref: "#/components/schemas/SearchKey"
+            searchKey7:
+              $ref: "#/components/schemas/SearchKey"
+            searchKey8:
+              $ref: "#/components/schemas/SearchKey"
+            descr:
+              description: Description.
+              type: string
+            searchKeyNrOfColumns:
+              description: PriceSearch number of columns.
+              type: integer
+            conditionValueTypeId:
+              $ref: "#/components/schemas/ConditionValueType"
+            conditionEditable:
+              type: boolean
+        relationships:
+          type: object
+          required:
+            - priceSearchGroup
+          properties:
+            priceSearchGroup:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    PriceSearchListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of PriceSearch
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceSearch"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/PriceSearchIncluded"
+    PriceSearchIncluded:
+      description: "Related resources to include in the response."
+      type: array
+      items:
+        $ref: "#/components/schemas/PriceSearchGroup"
+      uniqueItems: true
+    SearchKey:
+      description: SearchKey resource.
+      type: object
+      properties:
+        entityId:
+          description: Entity to which the rule refers.
+          type: string
+        attributeId:
+          description: Attribute to which the rule refers.
+          type: string
+        attributeDescr:
+          description: Attribute description.
+          type: string
+        size:
+          description: Size.
+          type: integer
+    SearchKeyValue:
+      description: SearchKeyValue resource.
+      type: object
+      properties:
+        entityId:
+          description: Entity to which the rule refers.
+          type: string
+        attributeId:
+          description: Attribute to which the rule refers.
+          type: string
+        value:
+          description: Attribute value in PriceCondition.
+          type: string
+    PriceCondition:
+      description: PriceCondition resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "PriceCondition"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - startDate
+            - endDate
+            - priceConditionGroup
+            - value
+          properties:
+            searchKey1Value:
+              $ref: "#/components/schemas/SearchKeyValue"
+            searchKey2Value:
+              $ref: "#/components/schemas/SearchKeyValue"
+            searchKey3Value:
+              $ref: "#/components/schemas/SearchKeyValue"
+            searchKey4Value:
+              $ref: "#/components/schemas/SearchKeyValue"
+            searchKey5Value:
+              $ref: "#/components/schemas/SearchKeyValue"
+            searchKey6Value:
+              $ref: "#/components/schemas/SearchKeyValue"
+            searchKey7Value:
+              $ref: "#/components/schemas/SearchKeyValue"
+            searchKey8Value:
+              $ref: "#/components/schemas/SearchKeyValue"
+            # This dictionary is not taken from the cache as it changes very often, so it is of type SimpleEntity.
+            priceConditionGroup:
+              description: Price condition group.
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            editable:
+              type: boolean
+            value:
+              type: number
+              format: double
+            valueMin:
+              type: number
+              format: double
+            valueMax:
+              type: number
+              format: double
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            lastChangeUserProfile:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        relationships:
+          type: object
+          required:
+            - priceSearchGroup
+            - priceSearch
+            - currency
+          properties:
+            priceSearchGroup:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            priceSearch:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            currency:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    PriceConditionListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of PriceCondition
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceCondition"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/PriceConditionIncluded"
+    PriceConditionRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PriceCondition"
+    PriceConditionResponse:
+      description: Single PriceCondition response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/PriceCondition"
+        included:
+          $ref: "#/components/schemas/PriceConditionIncluded"
+    PriceConditionIncluded:
+      description: "Related resources to include in the response."
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    PriceConditionDescrListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: List of `PriceConditionDescr`.
+          type: array
+          items:
+            $ref: "./core.yaml#/components/schemas/SimpleEntity"
+    PriceSearchAttributeValuesListResponse:
+      description: An object with a list of values for a price condition attribute.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of values for the given attribute.
+          type: array
+          items:
+            $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+  parameters:
+    attributeId:
+      name: attributeId
+      in: path
+      description: The id of a price search attribute.
+      required: true
+      schema:
+        type: string
+    PriceSearchAttributeValuesFilters:
+      name: "filter"
+      in: query
+      description: Filter group.
+      required: true
+      style: deepObject
+      schema:
+        type: object
+        properties:
+          s:
+            description: Filters attribute's values on their description.
+            type: string
+paths:
+  /price-search-groups:
+    get:
+      description: Returns a list of PriceSearchGroups.
+      operationId: listPriceSearchGroups
+      tags:
+        - Price Condition
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: "Search the given string inside the following attributes: descr"
+                type: string
+      responses:
+        "200":
+          description: PriceSearchGroup list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceSearchGroupListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-searches:
+    get:
+      description: Returns a list of PriceSearch.
+      operationId: listPriceSearches
+      tags:
+        - Price Condition
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter[priceSearchGroupId]"
+          in: query
+          description: Filter the response by price search group id.
+          required: true
+          style: form
+          schema:
+            type: string
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: "Search the given string inside the following attributes: descr"
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: PriceSearch list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceSearchListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-conditions:
+    get:
+      description: |
+        Returns a list of PriceCondition.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listPriceCondition |
+      operationId: listPriceConditions
+      tags:
+        - Price Condition
+      x-authorities: ["listPriceCondition"]
+      parameters:
+        - name: "filter[priceSearchId]"
+          in: query
+          description: Filter the response by price search id.
+          required: true
+          style: form
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter[active]"
+          in: query
+          description: Filter response based on conditions where the date is active on the current day.
+          required: false
+          style: form
+          schema:
+            type: boolean
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              priceConditionDescrId:
+                description: Filter the response by price condition description id.
+                type: string
+              startDate:
+                description: Filter the response by start date.
+                type: string
+              endDate:
+                description: Filter the response by end date.
+                type: string
+              searchKey1Value:
+                description: Filter the response by search key 1 value.
+                type: string
+              searchKey2Value:
+                description: Filter the response by search key 2 value.
+                type: string
+              searchKey3Value:
+                description: Filter the response by search key 3 value.
+                type: string
+              searchKey4Value:
+                description: Filter the response by search key 4 value.
+                type: string
+              searchKey5Value:
+                description: Filter the response by search key 5 value.
+                type: string
+              searchKey6Value:
+                description: Filter the response by search key 6 value.
+                type: string
+              searchKey7Value:
+                description: Filter the response by search key 7 value.
+                type: string
+              searchKey8Value:
+                description: Filter the response by search key 8 value.
+                type: string
+              conditionValue:
+                description: Filter the response by condition value.
+                type: string
+      responses:
+        "200":
+          description: PriceCondition list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceConditionListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Create a new PriceCondition.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createPriceCondition |
+      operationId: createPriceCondition
+      tags:
+        - Price Condition
+      x-authorities: ["createPriceCondition"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        description: PriceCondition to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/PriceConditionRequest"
+      responses:
+        "200":
+          description: Price condition data.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceConditionResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-conditions/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: Price condition id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a single PriceCondition.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getPriceCondition |
+      operationId: getPriceCondition
+      tags:
+        - Price Condition
+      x-authorities: ["getPriceCondition"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceConditionResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a PriceCondition.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updatePriceCondition |
+      operationId: updatePriceCondition
+      tags:
+        - Price Condition
+      x-authorities: ["updatePriceCondition"]
+      requestBody:
+        description: PriceCondition to patch.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/PriceConditionRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceConditionResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a PriceCondition.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | deletePriceCondition |
+      operationId: deletePriceCondition
+      tags:
+        - Price Condition
+      x-authorities: ["deletePriceCondition"]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-conditions/export:
+    post:
+      description: |
+        Request an export of a list of price conditions.
+        When exporting, all data is exported, not just the filtered ones.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | exportPriceCondition |
+      operationId: exportPriceConditions
+      tags:
+        - Price Condition
+      x-authorities: ["exportPriceCondition"]
+      parameters:
+        - name: "filter[priceSearchId]"
+          in: query
+          description: Filter the response by price search id.
+          required: true
+          style: form
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              priceConditionDescrId:
+                description: Filter the response by price condition description id.
+                type: string
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-searches/{priceSearchId}/price-condition-descr:
+    parameters:
+      - name: priceSearchId
+        in: path
+        description: Price search id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of price condition descriptions of a price search.
+      operationId: listPriceConditionDescriptions
+      tags:
+        - Price Condition
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: PriceConditionDescr list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceConditionDescrListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-searches/{priceSearchId}/price-condition-descr/{priceConditionDescrId}:
+    parameters:
+      - name: priceSearchId
+        in: path
+        description: Price search id.
+        required: true
+        schema:
+          type: string
+      - name: priceConditionDescrId
+        in: path
+        description: Price condition description id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Request an import of a list of price conditions. The import file must be in Excel format.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | importPriceCondition |
+      operationId: importPriceConditions
+      tags:
+        - Price Condition
+      x-authorities: ["importPriceCondition"]
+      requestBody:
+        required: true
+        content:
+          application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+            schema:
+              type: string
+              format: binary
+          application/vnd.ms-excel:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "202":
+          description: Data import request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a Price condition description.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | deletePriceCondition |
+      operationId: deletePriceConditionDescription
+      tags:
+        - Price Condition
+      x-authorities: ["deletePriceCondition"]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /price-search-keys/attributes/{attributeId}/values:
+    parameters:
+      - $ref: "#/components/parameters/attributeId"
+    get:
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/PriceSearchAttributeValuesFilters"
+      description: Returns the values that can be used for the given attribute in a price search.
+      operationId: listPriceSearchAttributeValues
+      summary: listPriceSearchAttributeValues
+      tags:
+        - Price Condition
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: An object with a list of values for the given attribute.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/PriceSearchAttributeValuesListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

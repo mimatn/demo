@@ -1,0 +1,1432 @@
+openapi: 3.0.3
+info:
+  title: Clusters API
+  version: "-"
+tags:
+  - name: Cluster
+    description: |
+      APIs for Clusters.
+      An user can create and edit product groups and assign them to customers or customer groups (nodes of the hierarchy) and 
+      optionally to a document type.
+components:
+  schemas:
+    #
+    # Enums
+    #
+    ClusterTypeId:
+      description: The cluster type. See dictionary `ClusterType`.
+      type: string
+      enum:
+        - ClusterType.Values
+    ClusterEntityTypeId:
+      description: It is the entity type contained in the cluster. See dictionary `ClusterEntityType`.
+      type: string
+      enum:
+        - ClusterEntityType.CustomerAccount
+        - ClusterEntityType.Item
+    #
+    # Cluster resource definition
+    #
+    Cluster:
+      description: Cluster resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Cluster"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - clusterEntityTypeId
+            - clusterTypeId
+            - descr
+            - startDate
+            - endDate
+          properties:
+            code:
+              description: General code/name of the cluster.
+              type: string
+            clusterEntityTypeId:
+              $ref: "#/components/schemas/ClusterEntityTypeId"
+            clusterTypeId:
+              $ref: "#/components/schemas/ClusterTypeId"
+            clusterGroupId:
+              description: Optional cluster group id.
+              type: string
+            descr:
+              description: Cluster description.
+              type: string
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            entityCount:
+              description: Number of entities assigned to the cluster.
+              type: integer
+              minimum: 0
+              readOnly: true
+            creationDate:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+        relationships:
+          type: object
+          description: |
+            The relationships of a Cluster. A Cluster refers to an organization and draft user profile.
+          required:
+            - organization
+            - creatorUserProfile
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            creatorUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currentDraftUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    ClusterIncluded:
+      description: "Related cluster organization"
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    ClusterListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Clusters
+          type: array
+          items:
+            $ref: "#/components/schemas/Cluster"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/ClusterIncluded"
+    ClusterResponse:
+      description: Single Cluster response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Cluster"
+        included:
+          $ref: "#/components/schemas/ClusterIncluded"
+    ClusterRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Cluster"
+    ClusterWithValuesRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ClusterWithValues"
+    ClusterWithValues:
+      description: Cluster with values resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "ClusterWithValues"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - clusterEntityTypeId
+            - clusterTypeId
+            - descr
+            - startDate
+            - endDate
+            - clusterValues
+          properties:
+            code:
+              description: General code/name of the cluster.
+              type: string
+            clusterEntityTypeId:
+              $ref: "#/components/schemas/ClusterEntityTypeId"
+            clusterTypeId:
+              $ref: "#/components/schemas/ClusterTypeId"
+            clusterGroupId:
+              description: Optional cluster group id.
+              type: string
+            descr:
+              description: Cluster description.
+              type: string
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            clusterValues:
+              description: List of cluster values.
+              type: array
+              uniqueItems: true
+              items:
+                $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        relationships:
+          type: object
+          description: |
+            The relationships of a ClusterWithValues.
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    #
+    # ClusterValue resource definition
+    #
+    ClusterValue:
+      description: ClusterValue resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "ClusterValue"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - entityObject
+            - startDate
+            - endDate
+            - mandatoryForSurvey
+          properties:
+            entityObject:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: |
+                A related entity. 
+                It could be either an item or an item hierarchy node for item clusters.
+                A customer account for customer clusters.
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            mandatoryForSurvey:
+              description: True if the item has to be included in a survey document, false otherwise.
+              type: boolean
+              default: false
+            linked:
+              description: True if the cluster value is already linked to the cluster, false otherwise.
+              type: boolean
+              readOnly: true
+        relationships:
+          type: object
+          description: |
+            The relationships of a ClusterValue. A ClusterValue refers to a Cluster.
+          required:
+            - cluster
+          properties:
+            cluster:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            item:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    ClusterValueIncluded:
+      description: "ClusterValue related cluster"
+      type: array
+      items:
+        $ref: "#/components/schemas/Cluster"
+      uniqueItems: true
+    ClusterValueResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ClusterValue"
+        included:
+          $ref: "#/components/schemas/ClusterValueIncluded"
+    ClusterValueListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of ClusterValues
+          type: array
+          items:
+            $ref: "#/components/schemas/ClusterValue"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/ClusterValueIncluded"
+    ClusterValueRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ClusterValue"
+    ClusterMultiValueRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClusterValue"
+    #
+    # CustomerItemSelection resource definition
+    #
+    CustomerItemSelection:
+      description: CustomerItemSelection resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CustomerItemSelection"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - entityObject
+          properties:
+            entityObject:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: |
+                Related entity. Entity to which the EntityObjectId refers; a customer item selection can have CustomerAccounts or 
+                a node in a hierarchy of CustomerAccounts.
+        relationships:
+          type: object
+          description: |
+            The relationships of a CustomerItemSelection. A CustomerItemSelection refers to a Cluster and can relate to a document type.
+          required:
+            - cluster
+          properties:
+            cluster:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            docType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            customerAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            hierarchyNode:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            entitySet:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CustomerItemSelectionIncluded:
+      description: "ClusterValue related cluster and document type"
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    CustomerItemSelectionResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerItemSelection"
+        included:
+          $ref: "#/components/schemas/CustomerItemSelectionIncluded"
+    CustomerItemSelectionListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of CustomerItemSelection
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerItemSelection"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CustomerItemSelectionIncluded"
+    CustomerItemSelectionRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerItemSelection"
+    EligibleCustomerAccountListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: |
+            The list of CustomerAccounts eligible for this cluster. 
+            For every customer the attribute linkId specifies the id of the link, or null if not linked.
+          type: array
+          items:
+            $ref: "./customers.yaml#/components/schemas/LinkableCustomerAccount"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    EligibleItemForClusterValue:
+      description: Item already linked or that can be linked to a Cluster.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "EligibleItemForClusterValue"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+            - itemType
+            - brand
+            - salesLine
+          properties:
+            code:
+              description: A code to distinguish the item.
+              type: string
+              example: "ABC-1234"
+            descr:
+              description: A general description of the item.
+              type: string
+              example: "T-shirt in Jersey di lino"
+            brand:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: The `Item`'s brand identifier. For more information see _Brand_ dictionary.
+            salesLine:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: The sales line. See _SalesLine_ dictionary. It limits the products that can be inserted in a document and it impacts the binding between customers and users.
+            year:
+              description: Creation date of the item. It defines the collection together with season and line.
+              type: string
+              nullable: true
+              example: "2022"
+            season:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: The `Item`'s season identifier. For more information see _Season_ dictionary.
+              nullable: true
+            itemCategory:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: The item category Id. See dictionary `ItemCategory`
+            itemType:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: A string that describes the type of the `Item`. For more details see `ItemType` dictionary.
+            linked:
+              description: True if the cluster value is already linked to the cluster, false otherwise.
+              type: boolean
+              readOnly: true
+        relationships:
+          type: object
+          description: The relationships of an Item eligible for cluster value.
+          properties:
+            clusterValue:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            itemStatus:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            tags:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    EligibleCustomerAccountForClusterValue:
+      description: CustomerAccount already linked or that can be linked to a Cluster.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "EligibleCustomerAccountForClusterValue"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - name
+            - customerStatusId
+          properties:
+            code:
+              description: Code of the customer in the ERP system. This value is included in a generic search.
+              type: string
+            name:
+              description: Business name of the customer's company
+              type: string
+              example: "Mario Rossi Food & Drinks Srl"
+            descr:
+              description: Additional description of the customer (for example a shop sign)
+              type: string
+              example: "BAR SPORT"
+            taxNumber:
+              description: The tax number. Usually the "VAT" number.
+              type: string
+              example: "02479320265"
+            customerStatusId:
+              description: Customer status. See dictionary "CustomerStatus"
+              type: string
+              example: "Active"
+            ministerialCode:
+              description: Ministerial code.
+              type: string
+            address:
+              description: The customer's address.
+              type: string
+            email:
+              description: The customer's email.
+              type: string
+            phone:
+              description: The customer's phone number.
+              type: string
+            linked:
+              description: True if the cluster value is already linked to the cluster, false otherwise.
+              type: boolean
+              readOnly: true
+        relationships:
+          type: object
+          description: |
+            The relationships of an CustomerAccount eligible for cluster value.
+          properties:
+            clusterValue:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    EligibleItemForClusterValueIncluded:
+      description: "EligibleItemForClusterValue relationships"
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    EligibleCustomerAccountForClusterValueIncluded:
+      description: "EligibleCustomerAccountForClusterValue relationships"
+      type: array
+      items:
+        $ref: "./core.yaml#/components/schemas/Organization"
+      uniqueItems: true
+    EligibleItemForClusterValueResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/EligibleItemForClusterValue"
+        included:
+          $ref: "#/components/schemas/EligibleItemForClusterValueIncluded"
+    EligibleItemForClusterValueListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of EligibleItemForClusterValue
+          type: array
+          items:
+            $ref: "#/components/schemas/EligibleItemForClusterValue"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/EligibleItemForClusterValueIncluded"
+    EligibleCustomerAccountForClusterValueListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of EligibleCustomerAccountForClusterValue
+          type: array
+          items:
+            $ref: "#/components/schemas/EligibleCustomerAccountForClusterValue"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/EligibleCustomerAccountForClusterValueIncluded"
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The cluster id
+      required: true
+      schema:
+        type: string
+    clusterId:
+      name: clusterId
+      in: path
+      description: The cluster id
+      required: true
+      schema:
+        type: string
+    filterClusterEntityTypeId:
+      name: "filter[clusterEntityTypeId]"
+      in: query
+      description: Filter the response by cluster entity type.
+      required: true
+      style: form
+      schema:
+        type: string
+    itemFilters:
+      name: "filter"
+      in: query
+      description: Filter group
+      required: true
+      style: deepObject
+      schema:
+        properties:
+          s:
+            description: Search the given string in code, descr and shortDescr attributes.
+            type: string
+          entityObjectId:
+            description: Filter the response by item.
+            type: string
+          startDate:
+            description: Filter the response by start date.
+            type: string
+          endDate:
+            description: Filter the response by end date.
+            type: string
+          mandatoryForSurvey:
+            description: Filter the response by considering if an item is mandatory or not for the survey.
+            type: string
+          linked:
+            description: |
+              * If `nn:` (not-null), retrieves only the clusters **already linked**;
+              * if `nl:` (null), retrieves only the clusters that are **not linked**;
+              * if not specified, retrieves **all** clusters.
+            type: string
+          itemStatus:
+            description: Filter the response by item status.
+            type: string
+          brand:
+            description: Filter the response by brand.
+            type: string
+          salesLine:
+            description: Filter the response by sales line.
+            type: string
+          year:
+            description: Filter the response by year.
+            type: string
+          season:
+            description: Filter the response by season.
+            type: string
+          itemType:
+            description: Filter the response by item type.
+            type: string
+          itemCategory:
+            description: Filter the response by item category.
+            type: string
+          tag:
+            description: Filter the response by item tag.
+            type: string
+    clusterCustomerAccountFilters:
+      name: "filter"
+      in: query
+      description: Filter group
+      required: true
+      style: deepObject
+      schema:
+        properties:
+          s:
+            description: Search the given string in the customer's name, code, tax number, ministerial code.
+            type: string
+          linked:
+            description: |
+              * If `nn:` (not-null), retrieves only the customer accounts **already linked**;
+              * if `nl:` (null), retrieves only the customer accounts that are **not linked**;
+              * if not specified, retrieves **all** customer accounts.
+            type: string
+paths:
+  /clusters:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of clusters.
+      operationId: listClusters
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/filterClusterEntityTypeId"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              clusterTypeId:
+                description: Filter the response by cluster type.
+                type: string
+              startDate:
+                description: Filter the response by start date.
+                type: string
+              endDate:
+                description: Filter the response by end date.
+                type: string
+              clusterGroupId:
+                description: Filter the response by cluster group.
+                type: string
+              entityObjectId:
+                description: Filter the response by entity object id.
+                type: string
+              customerAccount:
+                description: |
+                  Filter the response by customer account (only _eq_ operator). 
+                  Rreturn all clusters assigned to a customer, either directly or as a result of a customer's node membership.
+                type: string
+              surveyDocTemplateId:
+                description: Filter the response by survey document template.
+                type: string
+      responses:
+        "200":
+          description: Cluster list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ClusterListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Create a Cluster
+      operationId: createCluster
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Cluster to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ClusterRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ClusterResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single cluster.
+      operationId: getCluster
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ClusterResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) a Cluster"
+      operationId: updateCluster
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Cluster to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ClusterRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ClusterResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[Delete](https://jsonapi.org/format/#crud-deleting) a Cluster"
+      operationId: deleteCluster
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}/edit:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Edit a Cluster
+      operationId: editCluster
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ClusterResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}/publish:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Publish a Cluster
+      operationId: publishCluster
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ClusterResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}/clone:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Clone a Cluster. Creates a brand new cluster same as the cloned one.
+      operationId: cloneCluster
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ClusterResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}/values:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Create a new relation between a cluster and an entity object.
+      operationId: createClusterValue
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: ClusterValue to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ClusterValueRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ClusterValueResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}/items:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: |
+        Returns a list of items linked or not to the cluster.
+        Based on the use of the `linked` filter, it is possible to obtain:
+          * all items linked to the cluster;
+          * all items not linked to the cluster;
+          * all items linked and not linked to the cluster.
+      operationId: listEligibleItemsForClusterValue
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "#/components/parameters/itemFilters"
+      responses:
+        "200":
+          description: EligibleItemForClusterValue list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EligibleItemForClusterValueListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}/items/export:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: exportEligibleItemsForClusterValue
+      description: |
+        Request an export of a list of items linked or not to given cluster.
+        Based on the use of the `linked` filter, it is possible to obtain:
+          * all items linked to the cluster;
+          * all items not linked to the cluster;
+          * all items linked and not linked to the cluster.
+      operationId: exportEligibleItemsForClusterValue
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/templateIdParamRequired"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/itemFilters"
+      responses:
+        "202":
+          description: Data export request accepted
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}/customer-accounts:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: |
+        Returns a list of customer accounts linked or not to the cluster.
+        Based on the use of the `linked` filter, it is possible to obtain:
+        * all customer accounts linked to the cluster;
+        * all customer accounts not linked to the cluster;
+        * all customer accounts linked and not linked to the cluster.
+      operationId: listEligibleCustomerAccountsForClusterValue
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "#/components/parameters/clusterCustomerAccountFilters"
+      responses:
+        "200":
+          description: EligibleCustomerAccountForClusterValue list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EligibleCustomerAccountForClusterValueListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}/customer-accounts/export:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      summary: exportEligibleCustomerAccountsForClusterValue
+      description: |
+        Request an export of a list of customer accounts linked or not to given cluster.
+        Based on the use of the `linked` filter, it is possible to obtain:
+        * all customer accounts linked to the cluster;
+        * all customer accounts not linked to the cluster;
+        * all customer accounts linked and not linked to the cluster.
+      operationId: exportEligibleCustomerAccountsForClusterValue
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/templateIdParamRequired"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/clusterCustomerAccountFilters"
+      responses:
+        "202":
+          description: Data export request accepted
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{clusterId}/values/{valueId}:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "#/components/parameters/clusterId"
+      - name: valueId
+        in: path
+        description: Cluster value id
+        required: true
+        schema:
+          $ref: "./jsonapi.yaml#/components/schemas/id"
+    get:
+      description: Returns a single cluster values.
+      operationId: getClusterValue
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: ClusterValues list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ClusterValueResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a ClusterValue.
+      operationId: updateClusterValue
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: ClusterValue to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ClusterValueRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ClusterValueResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[delete](https://jsonapi.org/format/#crud-deleting) a ClusterValue"
+      operationId: deleteClusterValue
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}/customer-item-selections:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of customer item selection.
+      operationId: listCustomerItemSelection
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              entityObjectId:
+                description: Filter the response by entity object id.
+                type: string
+              docType:
+                description: Filter the response by document type.
+                type: string
+      responses:
+        "200":
+          description: CustomerItemSelection list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerItemSelectionListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Create a new relation between a cluster and a customer account or a node in a customer hierarchy
+      operationId: createCustomerItemSelection
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: CustomerItemSelection to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CustomerItemSelectionRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerItemSelectionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{clusterId}/customer-item-selections/{id}:
+    parameters:
+      - $ref: "#/components/parameters/clusterId"
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single customer item selection relationship.
+      operationId: getCustomerItemSelection
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: id
+          in: path
+          description: EntityObjectId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CustomerItemSelection response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerItemSelectionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: "[Update](https://jsonapi.org/format/#crud-updating) a CustomerItemSelection"
+      operationId: updateCustomerItemSelection
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: CustomerItemSelection to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CustomerItemSelectionRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerItemSelectionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[delete](https://jsonapi.org/format/#crud-deleting) a CustomerItemSelection"
+      operationId: deleteCustomerItemSelection
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{clusterId}/customer-item-selections/links:
+    parameters:
+      - $ref: "#/components/parameters/clusterId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a collection of CustomerAccounts that are eligible to be linked to the given Cluster or are already linked.
+        Retrieved customers belong to the same organization as the Cluster.
+      operationId: listEligibleCustomerAccountsForCustomerItemSelection
+      tags:
+        - "Cluster"
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                type: string
+              linked:
+                description: |
+                  * If `nn:` (not-null), retrieves only the customers **already linked** to the Cluster;
+                  * if `nl:` (null), retrieves only the customers that are **not linked** to the Cluster;
+                  * if not specified, retrieves **all** customers.
+                type: string
+      responses:
+        "200":
+          description: Eligible CustomerAccount list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EligibleCustomerAccountListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/entity-set:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      summary: createClusterFromEntitySet
+      description: Create a new cluster from an entity set. (e.g. a set of customer accounts)
+      operationId: createClusterFromEntitySet
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Cluster with values to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ClusterWithValuesRequest"
+      responses:
+        "202":
+          description: Cluster creation request accepted
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /clusters/{id}/multi-values:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Adds multiple values to a cluster.
+      operationId: addClusterValues
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: ClusterValues to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ClusterMultiValueRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[delete](https://jsonapi.org/format/#crud-deleting) ClusterValues"
+      operationId: deleteClusterValues
+      tags:
+        - Cluster
+      x-authorities:
+        - apiUser
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              description: A list of entity objects to delete from the cluster.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/SimpleEntity"
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

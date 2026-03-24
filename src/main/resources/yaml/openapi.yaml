@@ -1,0 +1,1972 @@
+openapi: 3.0.3
+info:
+  title: Aton .one APIs
+  version: "84.4.0"
+  description: |
+    **.one** is the new virtual table that brings together an organization’s stakeholders, breaking down the information 
+    silos that often make collaboration between teams difficult.  
+
+    It is conceived as a single digital hub that embraces the entire supply chain: it gathers all the data necessary for 
+    the functioning of sales and the distribution of consumer goods, whether for companies distributing wholesale or 
+    retail.  
+
+    It consists of a set of applications that meet the needs of different stakeholders and enable:  
+
+    - **Having a comprehensive view of the entire customer base and the history of their transactions:** sales orders, 
+    purchase orders, invoices, shipping documents, tickets, scheduled tasks.  
+    - **Building relationships with customers and managing the entire business development process:** new customers, 
+    upselling, and cross-selling.  
+    - **Enriching the company’s asset base with product data:** pricing, commercial terms, trade promotion management, 
+    campaign activation, accompanying materials to certify quality, support post-sale services or logistics distribution.  
+    - **Organizing retail commerce, both at headquarters and at points of sale:** planning reordering operations, 
+    inventory in all its forms, tracking all support activities within the store, managing tasks assigned to individuals 
+    or workgroups, sales assistance, sales management.  
+    - **Ensuring product traceability along the supply chain for wholesale and retail.**  
+    - **Facilitating collaboration between people by promoting information exchange and responding to needs expressed 
+    in natural language, thanks to functionalities enabled by artificial intelligence.**
+  contact:
+    name: Aton S.p.A. Società Benefit
+    email: info@aton.com
+    url: https://aton.com/en/
+tags:
+  # Unfortunately it's not possible AFAIK to reference an external tag, so:
+  # COPY HERE THE TAG DESCRIPTIONS, in alphabetical order
+  - name: Access Gate
+    description: A physical gate which connects two zones.
+
+  - name: Accounting Period
+    description: Accounting Period.
+
+  - name: Access Group
+    description: Categories that group badge holders and that determine if they are allowed or not to go through a gate.
+
+  - name: Access Journal
+    description: The journal of all accesses in an access control system.
+
+  - name: App
+    description: Applications of the onSales Next suite.
+
+  - name: App Event
+    description: |
+      Log application events of an object (e.g. SFA app created document at…, contact X was created by VAN app at…).
+      The table logs high-level events, it should not be thought of as a detailed application log.
+
+  - name: Asset
+    description: Asset
+
+  - name: Authorization Workflow
+    description: Authorization Workflow.
+
+  - name: Badge Holder
+    description: A person who owns a badge.
+
+  - name: Budget
+    description: Budget
+
+  - name: Business Hours
+    description: |
+      Endpoints related to retrieving business operating hours by weekday.
+      Each day can contain multiple time slots, with support for indicating whether the business is open on holidays.
+
+  - name: Calendar
+    description: Calendar
+
+  - name: Cash Deposit Document
+    description: Cash deposit document
+
+  - name: Certificate
+    description: APIs for Certificate resources
+
+  - name: Checkpoint
+    description: |
+      The set of APIs related to checkpoints. A checkpoint is a RFID point of read which is used to detect RFID tags.
+      Concretely, it can be a gate or a fixed station.
+
+      In general, several Device-Port pairs correspond to a Checkpoint while, a Device-Port pair uniquely identifies a 
+      Checkpoint.
+
+  - name: Cluster
+    description: |
+      A user can create and edit product groups and assign them to customers or customer groups (nodes of the hierarchy) 
+      and optionally to a document type.
+
+  - name: Collection Document
+    description: Collection document
+
+  - name: Comment
+    description: APIs for Comments
+
+  - name: Commission
+    description: Commission
+
+  - name: Country
+    description: Countries of the onSales Next suite
+
+  - name: Currency
+    description: Currencies of the onSales Next suite.
+
+  - name: Customer
+    description: |
+      A Customer has a representation independent from the organization, called 'Customer' and one which depends on the 
+      organization, which is called 'CustomerAccount' and can be thought as an extension of the Customer.
+      Some attributes are defined only for the Customer resource, which can exist by its own, 
+      while a CustomerAccount always refers to a Customer and includes its attributes and its relationships.
+
+      A customer has a 'customer type', like 'sell to', 'bill to', 'deliver to' and may have a hierarchical structure 
+      (see relationship parentCustomer). 
+      For example two 'sell to' customers can have the same 'bill to' parent, which models the use case when the invoice 
+      for the goods ordered by the 'sell to' customer is payed by the 'bill to' parent customer.
+
+  - name: Customer Contact
+    description: |
+      This functionality allows users to manage a client's contacts, specifically the individuals associated with a 
+      client. It centralizes all contact information, collecting and storing it in a single, accessible location to 
+      make management and reference easier. It also enhances communication by enabling more effective and personalized 
+      interactions with clients through emails, phone calls, messages, and other channels.
+
+      The functionality tracks all interactions with clients, including meetings, calls, emails, and notes, providing a 
+      complete overview of the relationship. 
+
+      Additionally, it records the consents given by each contact regarding data processing purposes and tracks any 
+      consents provided.
+
+  - name: Customer Contract
+    description: Commodatum customer contracts that imply an asset assignment.
+
+  - name: Custom View
+    description: |
+      Represents the concept of "custom view" of a page that includes a table. The custom view represents the configuration
+      of the columns to display, the order in which they should appear, and the filters applied. 
+      The user can save this settings as a "custom view" and assign them a name. Custom views can be both private or shared
+      with other users.
+
+  - name: Device
+    description: |
+      The Device object represents an electronic device where one or more apps can typically be installed 
+      and where each of these can be run by a user.
+
+      The Device object has the attributes defined in the Device table 
+      to which a read-only property is added that indicates the number of Apps installed on the device.
+
+      It has no intrinsic relationships: the links with the Apps installed on the device and the users 
+      who use the Apps of the device can be obtained by calling respectively the listDeviceApps services 
+      belonging to this API listUserProfileDevices of the UserProfile API.
+
+      The object does not support draft mode, the creation or modification operations are therefore applied directly to 
+      the public object.
+
+  - name: Dictionary
+    description: |
+      A general Dictionary is a list of code-description pairs, where the description is in a specific language.
+
+      Dictionaries are very useful in a UI when only a list of choices has to be shown to the user 
+      and the description is usually sufficient for the user to chose the desired options.
+
+  - name: Digital Content
+    description: |
+      Digital Content is a collection of unstructured data that constitutes multimedia content used to illustrate or 
+      enhance the description of a product, a customer, or a document.
+
+      Examples of Digital Content include product photos, a promotional video, a PDF representing the print of a sales 
+      document.
+
+      The distinctive characteristics of Digital Content are:
+      * Having a considerable size in bytes, not limited beforehand: a video size can be several gigabytes, and a 
+      high-resolution image can easily reach tens of megabytes. Therefore, a Digital Asset needs to be stored and 
+      handled with specific methods;
+      * Not being directly readable by a user: an image needs to be displayed on the screen, and to do so, its technical format and 
+      characteristics must be known; a video needs to be viewed by video software component and stored in an appropriate storage service;
+      a PDF file requires a dedicated app to be displayed and printed.
+      * It can have multiple possible representations (referred to as renditions) depending on the context in which it is displayed to illustrate 
+      the entity it refers to. For example, an image has an original version at very high resolution, and various versions with different 
+      resolutions and, above all, significantly smaller byte sizes suitable for quick display in a product list or a summary card.
+
+  - name: Discount List
+    description: |
+      The discount lists allow you to define the commercial discount conditions, to be applied to a set of products for 
+      a group of customers. The rules for applying a discount list depend mainly on the customers to whom the price list
+      is assigned and on the period of validity.
+
+  - name: Document
+    description: |
+      APIs to manage documents, including document types and document line reasons.
+      A type of document  (DocType), belongs to a document _category_.
+      While document types can be freely created as needed, the document categories are fixed and managed by the application.
+      A category will determine both the application behaviour and the document data structure.
+      A document type can have lines of different 'reasons': the Reason specify which is the "effect" of the document 
+      line on different areas: value of the document, taxes, item stock, etc.
+
+  - name: Email Verification
+    description: APIs for email verification.
+
+  - name: Entity Attribute
+    description: |
+      Provides APIs to manage attributes in a generic way. 
+
+      An `EntityAttribute` is a generic description of an attribute of a generic entity.
+      It may refer to a real column in the database or a "virtual" one and has a DataType.
+      When describing a virtual attribute, it is also called a "dynamic" attribute, since it is only known at runtime, 
+      not a compile time.
+
+      A `Sheet` is a group of EntityAttributes.
+      Referring to products, customers, document types, etc. it groups a set of additional attributes of an entity and 
+      provides an order. It is used for viewing and editing purposes. 
+
+      When an `EntityAttribute` is used in a `Sheet`, it is called a `SheetEntityAttribute` and has additional 
+      properties that describes it (like editable, mandatory, etc.), which are useful to show and modify the value in a 
+      user interface.
+
+  - name: Entity Set
+    description: |
+      A dynamic set allows you to define a search expression that returns a set of elements of an entity 
+      (for example a list of customers that satisfy a set of conditions). 
+      Dynamic sets are used when it is necessary to define a set of customers or products based on their characteristics. 
+      The dynamism depends on the fact that the elements included in the set are determined when the extraction of the 
+      set is requested and depend on the given values.
+
+  - name: Grey Market Survey
+    description: Grey Market Survey
+
+  - name: Hierarchy
+    description: |
+      APIs to manage hierarchical structures. 
+      Hierarchies allow you to create hierarchical trees of generic entities. 
+
+      ### How a Hierarchy is structured
+
+      Each node in a hierarchy can have at most one parent and can have multiple child nodes.
+      Children can be other nodes (which does not have a specific type, they are just nodes)
+      or be a generic entity, of the type `entityName`, specified by the hierarchy.
+
+      For example we want to represent a hierarchy of customers, so `entityName = CustomerAccount`.
+      The root node is "Italy", which has children nodes "North" and "South". 
+      "North" has an associated list of entities of type "CustomerAccount", like "C001", "C002", "C003" 
+      (the customers in the northern part of Italy), 
+      while "South" has another list of entities: "C015", "C016" the customers in the southern part of Italy.
+
+      In the above example, "Italy", "North", "South" are just nodes with an id and a description, 
+      while "C001", "C002", etc. are customer, i.e. objects of type "CustomerAccount".
+
+      Every node can be related also to other specific objects, depending on the use of the hierarchy.
+      For example, in a hierarchy that models a sales network, the entities pointed by "entityName" are the customers, 
+      so `entityName = CustomerAccount` and every node is associated with one user, which are the sales reps or their 
+      chiefs (area managers, brand managers and so on).
+
+      To continue with the above example, we may associate the user "Paolo Rossi" to the node "Italy": he is the area 
+      manager for Italy.
+      Then we associate the user "Giovanna Bianchi" to the node "North" and "Matteo Verdi" to the node "South": 
+      they are the sales reps that manage the customers in the north and south, respectively.
+
+      ### How to modify a Hierarchy
+
+      A Hierarchy is a complex entity: to modify it, the user must enter the "edit mode", by calling the _edit_ API.
+      The system will return a draft copy of the entity, which can be modified and saved, even if the editing is partial.
+      The draft copy will only be visible to the user that is editing the object, while other users will continue to see the published version.
+      When the user has finished to modify the object, he must call the _publish_ API to request the publication.
+      Depending on the application configuration, a valid object may be directly published, or it can require the revision
+      of other users: in this case the publish action starts an approval workflow.
+
+  - name: Identifier
+    description: |
+      In general, an identifier is an object that allows to uniquely identify another one.
+      Supported identifiers are:
+      * `UHF`. They are UHF (Ultra-High Frequency) RFID electronic tags that transmit data
+      wirelessly using radio waves in the UHF frequency band.
+      * `NFC`. An NFC (Near Field Communication) tag is a small, passive device that stores
+      data and communicates wirelessly with NFC-enabled devices (like smartphones) when
+      brought within close proximity.
+      * `Barcode`. A barcode is a visual representation of data in the form of parallel lines
+      (linear barcode) or patterns (2D barcode, like QR codes) that can be read by optical
+      scanners.
+
+  - name: Identity
+    description: |
+      An identity is an external entity which can be authenticated and authorized to make API calls to .one system.
+      Typically, these entities can be: users (or remote systems) which act on their own; devices which operate on
+      general features without identifying the user who is using them.
+
+  - name: Inventory Document
+    description: Inventory Document.
+
+  - name: Item
+    description: Item
+
+  - name: Item Catalog
+    description: .one B2B Item Catalog related APIs.
+
+  - name: Item Category
+    description: The category of an item defines the set of attributes that all items of that category have.
+
+  - name: Item Allergen
+    description: ItemAllergens related APIs.
+
+  - name: Item Packaging Part
+    description: ItemPackagingPart related APIs.
+
+  - name: Item Instance
+    description: Item Instance related APIs.
+
+  - name: Item Nutrition Fact
+    description: |
+      Nutrition facts of an item. An item can have a related list of nutrition facts, if this is specified in the item 
+      category. See `hasNutritionFacts` attribute in `ItemCategory` entity.
+
+  - name: Item Supplier
+    description: Suppliers of an item. An item can have a related list of suppliers.
+
+  - name: Item Related
+    description: Suppliers of an item. An item can have a related list of related items.
+
+  - name: Job
+    description: Job
+
+  - name: Language
+    description: Languages of the onSales Next suite.
+
+  - name: Note
+    description: Note
+
+  - name: Notification
+    description: |
+      The .one platform provides the various application modules with communication channels that allow them to send 
+      messages.  
+      For each instance of .one it is possible to configure multiple communication channels, each of which is identified 
+      by a unique id.  
+      Each communication channel has a configuration file that contains the parameters necessary to send messages via 
+      the channel itself.
+
+  - name: Organization
+    description: The Organization is the higher level that groups the entities managed by the application.
+
+  - name: Party
+    description: Party related APIs.
+
+  - name: Payment
+    description: Payment related APIs.
+
+  - name: Permission
+    description: |
+      Users are granted permissions through the roles assigned to them within the .one system.  
+      Permissions control access to APIs and define the available menu items and features for each application.  
+      An application permission specifies how a user can interact with a given feature.
+      In particular, permissions determine:
+        - whether an API service can be invoked;
+        - whether a specific operation within an application feature can be performed (e.g., creating a new user in the 
+      page listing the users of an organization);
+        - whether a specific menu item is visible.
+
+  - name: Plant
+    description: Plant related APIs.
+
+  - name: Price Condition
+    description: Price Condition
+
+  - name: Price List
+    description: |
+      Price lists allow you to define the prices to apply to the items of customer documents.
+      A price list is characterized by the definition of the price of every single item and has a reference currency. 
+      It determines the price list to be applied to the document.
+      A price list has also a validity period and it is applicable only to documents whose date is included therein.
+
+      There are different ways of applying discounts:
+      * **Over** discounts overwrite existing ones;
+      * **Add** discounts are added to existing.
+
+  - name: Privacy Agreement
+    description: |
+      This functionality allows users to manage privacy agreements, which are legal documents that outline how an 
+      organization collects, uses, and protects personal data. It provides a centralized location for storing and 
+      managing these agreements, making it easier to ensure compliance with data protection regulations.
+
+      The functionality tracks the status of each privacy agreement, including whether it has been requested, given, 
+      refused, or withdrawn. It also allows users to view the details of each agreement, including its code, description, 
+      and body.
+
+  - name: Purchase Document
+    description: Purchase Document.
+
+  - name: Reason
+    description: |
+      Every document line must have a "reason", which explains what the line is about, like "sale" if the product is sold 
+      or "free gift" if the product is not payed by the customer or "returned" for a product that has been returned by 
+      the customer.
+
+  - name: Recurrence
+    description: Recurrence of an entity (inspection item, task etc...).
+
+  - name: Report
+    description: |
+      The .one reporting engine produces reports from Jasper format templates designed using the JasperSoft Studio tool.
+      A report is typically a `PDF` file that is produced and then made available to the user. In addition to the `PDF` 
+      format, the engine also allows you to obtain reports in different formats, as `.xlsx`.
+      Finally, the `ReportFormatType.DirectPrint` which allows you to define the format defined to printers (typically 
+      thermal bar code label and receipt printers etc...)
+
+  - name: Role
+    description: |
+      User role. Every role is essentially a collection of permissions. 
+
+      Since a user can have one or more roles, then the resulting list of associated permissions is the union of the 
+      permissions of all roles.
+
+  - name: Sales Department
+    description: Sales department
+
+  - name: Sales Document
+    description: Sales document
+
+  - name: Sales Rep
+    description: Sales representative
+
+  - name: Sheet
+    description: |
+      Referring to products, customers, document types etc. groups a set of additional attributes of an entity and provides an order. 
+      It is used for viewing and editing purposes.
+
+  - name: Sales Point
+    description: Sales Point
+
+  - name: Statistics
+    description: |
+      The .one data model offers flexible structures for collecting datasets to support various statistical analyses.
+
+      Each analysis, associated with a specific phenomenon, is defined by a statistical type (`StatType`), which 
+      determines whether measures are expressed as quantities (using a defined unit of measurement) or as amounts 
+      (using a specified currency).  
+
+      Statistics can be targeted to different locations, such as dashboards, customer profiles, or item records, 
+      as defined by the `StatTargetLocation` dictionary. 
+
+      Depending on the nature of the data, each statistic can be visualized with the most suitable chart type. 
+
+      For instance, overlapping line charts are ideal for comparing sales trends to targets, while pie charts are better 
+      suited for showing sales distribution by customer group.
+
+  - name: Supplier
+    description: Supplier
+
+  - name: Survey Document
+    description: |
+      Survey documents are used to collect information through the completion of questionnaires. These questionnaires 
+      can contain a series of questions, ranging from customer qualification to specific surveys, such as the arrangement 
+      of items in a supermarket.
+      A Survey document may consist of multiple parts, called "sections," each of which is used to gather various types 
+      of data. For example, in a supermarket survey, there might be sections for store information, for counter items, 
+      and for items displayed on shelves, each with their own specific questions.
+      To specify how the Survey document should be structured, a "template" is used, consisting of a header and several 
+      section templates, of which at least one must be defined.
+
+  - name: Survey Document Section
+    description: |
+      A Survey document section is a part of a Survey document that contains a set of questions. Each section is based 
+      on a template section, which defines the questions that will be asked.
+
+  - name: Survey Document Template
+    description: |
+      A Survey document template is a model that defines the structure of a Survey document. It consists of a header and 
+      several section templates, each of which defines the questions that will be asked in a section of the Survey document.
+
+  - name: Tag
+    description: |
+      Tags can be used to highlight information, making specific entities (e.g. items) easily identifiable within a list 
+      or enabling filtering options. They also offer a way to create custom filters when retrieving a list of entities.
+
+  - name: Tag Association
+    description: |
+      Tag association is meant to bind some identifiers to an `Item` such that it will be uniquely identified 
+      by onTag system.
+
+  - name: Tag Generation
+    description: |
+      Tag generation is the action of creating tags identifiers using Aton's algorithm.
+      This operation must ensure that each tag is unique such that the item the tag is associated with can be uniquely 
+      identified.
+
+  - name: Target
+    description: |
+      A **Target** is a specific goal that members of an organization can aim to achieve (*target*) or can consider as the maximum limit that a certain counter must not exceed (*budget*).
+
+      An example of a target could be the sales amount of a specific product line in a period, while an example of a budget could be the maximum value of discounts that an agent can grant to a group of customers for a specific item.
+
+      A target is created by a user by defining its main characteristics such as type, measurement method, and validity period.
+
+  - name: Task
+    description: Task
+
+  - name: Taxes
+    description: Taxes
+
+  - name: Ticket
+    description: |
+      A ticket allows a report or issue to be assigned to a specific `Party`. 
+      This report must then be acknowledged, managed, and resolved until it is officially closed.
+
+  - name: Unit Of Measurement
+    description: Unit of measurement.
+
+  - name: User Message
+    description: |
+      Messages are a form of communication that .one users can use to contact other users of the platform.
+      Messages are created and exchanged only within the .one platform Apps.
+
+  - name: User Profile
+    description: |
+      User of the onSales Next system, i.e. a person or machine authorized to perform operations on the solution's Apps.
+
+      Application users are defined at the instance level and therefore do not refer to a specific tenant.
+
+      The UserProfile object defines the personal data of the user, but does not contain its authentication data. 
+      The latter are defined in the systems delegated to authentication and are therefore stored externally.
+
+      The authentication request for the user profile is then handled from time to time by the authentication system 
+      which checks the credentials in its authentication system and returns the check to onSales Next 
+      if the credentials provided are correct.
+
+  - name: Vehicle
+    description: Vehicle
+
+  - name: Warehouse
+    description: Warehouses
+
+  - name: Warehouse Document
+    description: Warehouse documents
+
+  - name: Widget
+    description: Dashboard widgets
+
+  - name: Work Session
+    description: Work Sessions
+
+  - name: Zone
+    description: A delimited area in the space. Zones can be hierarchically organized.
+paths:
+  #
+  # JSON:API definition for Job services
+  #
+  /jobs/{id}:
+    $ref: "./jobs.yaml#/paths/~1jobs~1{id}"
+  #
+  # JSON:API definition for UserProfile services
+  #
+  /user-profiles/{id}/permissions:
+    $ref: "./core.yaml#/paths/~1user-profiles~1{id}~1permissions"
+  /user-profiles/{id}:
+    $ref: "./core.yaml#/paths/~1user-profiles~1{id}"
+  /user-profiles/{id}/devices:
+    $ref: "./core.yaml#/paths/~1user-profiles~1{id}~1devices"
+  /user-profiles/{id}/hierarchies:
+    $ref: "./core.yaml#/paths/~1user-profiles~1{id}~1hierarchies"
+  /user-profiles/{id}/linked-profiles:
+    $ref: "./core.yaml#/paths/~1user-profiles~1{id}~1linked-profiles"
+  /user-profiles/{id}/contacts:
+    $ref: "./core.yaml#/paths/~1user-profiles~1{id}~1contacts"
+  /user-profiles/{id}/reset-password:
+    $ref: "./core.yaml#/paths/~1user-profiles~1{id}~1reset-password"
+  /user-profiles/who-am-i:
+    $ref: "./core.yaml#/paths/~1user-profiles~1who-am-i"
+  /user-profiles:
+    $ref: "./core.yaml#/paths/~1user-profiles"
+  /user-profiles/sign-up:
+    $ref: "./core.yaml#/paths/~1user-profiles~1sign-up"
+  /user-profiles/remote-access:
+    $ref: "./core.yaml#/paths/~1user-profiles~1remote-access"
+  /user-profiles-widgets:
+    $ref: "./core.yaml#/paths/~1user-profiles-widgets"
+  /user-profiles-widgets/{id}:
+    $ref: "./core.yaml#/paths/~1user-profiles-widgets~1{id}"
+  /user-profiles/{id}/kpis:
+    $ref: "./core.yaml#/paths/~1user-profiles~1{id}~1kpis"
+  /user-profiles/{id}/kpis/{kpiId}:
+    $ref: "./core.yaml#/paths/~1user-profiles~1{id}~1kpis~1{kpiId}"
+  /user-profile-stats:
+    $ref: "./core.yaml#/paths/~1user-profile-stats"
+  /user-profile-stats/{statId}:
+    $ref: "./core.yaml#/paths/~1user-profile-stats~1{statId}"
+  /user-registration-requests:
+    $ref: "./core.yaml#/paths/~1user-registration-requests"
+  /user-registration-requests/{id}:
+    $ref: "./core.yaml#/paths/~1user-registration-requests~1{id}"
+  #
+  # JSON:API definition for App services
+  #
+  /apps:
+    $ref: "./core.yaml#/paths/~1apps"
+  /apps/{id}:
+    $ref: "./core.yaml#/paths/~1apps~1{id}"
+  /apps/{id}/custom-views:
+    $ref: "./core.yaml#/paths/~1apps~1{id}~1custom-views"
+  /apps/{appId}/custom-views/{viewId}:
+    $ref: "./core.yaml#/paths/~1apps~1{appId}~1custom-views~1{viewId}"
+  /apps/{id}/devices:
+    $ref: "./core.yaml#/paths/~1apps~1{id}~1devices"
+  #
+  # JSON:API definition for Role services
+  #
+  /roles/{id}/permissions:
+    $ref: "./core.yaml#/paths/~1roles~1{id}~1permissions"
+  /roles/{id}:
+    $ref: "./core.yaml#/paths/~1roles~1{id}"
+  /roles:
+    $ref: "./core.yaml#/paths/~1roles"
+  #
+  # JSON:API definition for Organization services
+  #
+  /organizations/{id}:
+    $ref: "./core.yaml#/paths/~1organizations~1{id}"
+  /organizations:
+    $ref: "./core.yaml#/paths/~1organizations"
+  #
+  # JSON:API definition for dictionary services
+  #
+  /dict/{entityName}/{id}:
+    $ref: "./core.yaml#/paths/~1dict~1{entityName}~1{id}"
+  /dict/{entityName}:
+    $ref: "./core.yaml#/paths/~1dict~1{entityName}"
+  /dict/cache/reload:
+    $ref: "./core.yaml#/paths/~1dict~1cache~1reload"
+  /dict/entities:
+    $ref: "./core.yaml#/paths/~1dict~1entities"
+  /dict/entities/{entityName}/{id}:
+    $ref: "./core.yaml#/paths/~1dict~1entities~1{id}"
+  #
+  # JSON:API definition for Hierarchy services
+  #
+  /hierarchies/{id}:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{id}"
+  /hierarchies/{id}/edit:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{id}~1edit"
+  /hierarchies/{id}/publish:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{id}~1publish"
+  /hierarchies:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies"
+  #
+  # JSON:API definition for Hierarchy > HierarchyNode services
+  #
+  /hierarchies/{hierarchyId}/hierarchy-nodes:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/children:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1children"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/hierarchy-node-user-profiles:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1hierarchy-node-user-profiles"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/hierarchy-node-user-profiles/{id}:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1hierarchy-node-user-profiles~1{id}"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/customer-accounts:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1customer-accounts"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/items:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1items"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/customer-accounts/links:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1customer-accounts~1links"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/items/links:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1items~1links"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/entities:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1entities"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/descendant-user-profiles:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1descendant-user-profiles"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/tags:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1tags"
+  /hierarchies/{hierarchyId}/eligible-attributes:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1eligible-attributes"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/entity-attributes:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1{hierarchyId}~1hierarchy-nodes~1{nodeId}~1entity-attributes"
+  /hierarchies/nodes:
+    $ref: "./hierarchies.yaml#/paths/~1hierarchies~1nodes"
+  #
+  # JSON:API definition for PriceCondition resources
+  #
+  /price-search-groups:
+    $ref: "./priceCondition.yaml#/paths/~1price-search-groups"
+  /price-searches:
+    $ref: "./priceCondition.yaml#/paths/~1price-searches"
+  /price-conditions:
+    $ref: "./priceCondition.yaml#/paths/~1price-conditions"
+  /price-conditions/{id}:
+    $ref: "./priceCondition.yaml#/paths/~1price-conditions~1{id}"
+  /price-conditions/export:
+    $ref: "./priceCondition.yaml#/paths/~1price-conditions~1export"
+  /price-searches/{priceSearchId}/price-condition-descr:
+    $ref: "./priceCondition.yaml#/paths/~1price-searches~1{priceSearchId}~1price-condition-descr"
+  /price-searches/{priceSearchId}/price-condition-descr/{priceConditionDescrId}:
+    $ref: "./priceCondition.yaml#/paths/~1price-searches~1{priceSearchId}~1price-condition-descr~1{priceConditionDescrId}"
+  /price-search-keys/attributes/{attributeId}/values:
+    $ref: "./priceCondition.yaml#/paths/~1price-search-keys~1attributes~1{attributeId}~1values"
+  #
+  # JSON:API definition for PriceList services
+  #
+  /price-lists/{id}:
+    $ref: "./pricelists.yaml#/paths/~1price-lists~1{id}"
+  /price-lists/{id}/edit:
+    $ref: "./pricelists.yaml#/paths/~1price-lists~1{id}~1edit"
+  /price-lists/{id}/publish:
+    $ref: "./pricelists.yaml#/paths/~1price-lists~1{id}~1publish"
+  /price-lists:
+    $ref: "./pricelists.yaml#/paths/~1price-lists"
+  #
+  # JSON:API definition for PriceList > CustomerPriceList services
+  #
+  /price-lists/{priceListId}/customer-accounts/{id}:
+    $ref: "./pricelists.yaml#/paths/~1price-lists~1{priceListId}~1customer-accounts~1{id}"
+  /price-lists/{priceListId}/customer-accounts:
+    $ref: "./pricelists.yaml#/paths/~1price-lists~1{priceListId}~1customer-accounts"
+  #
+  # JSON:API definition for PriceList > Supplier services
+  #
+  /price-lists/{priceListId}/suppliers:
+    $ref: "./pricelists.yaml#/paths/~1price-lists~1{priceListId}~1suppliers"
+  /price-lists/{priceListId}/suppliers/{id}:
+    $ref: "./pricelists.yaml#/paths/~1price-lists~1{priceListId}~1suppliers~1{id}"
+  #
+  # JSON:API definition for PriceList > PriceListDetail services
+  #
+  /price-lists/{priceListId}/details/{detailId}:
+    $ref: "./pricelists.yaml#/paths/~1price-lists~1{priceListId}~1details~1{detailId}"
+  /price-lists/{priceListId}/details:
+    $ref: "./pricelists.yaml#/paths/~1price-lists~1{priceListId}~1details"
+  #
+  # JSON:API definition for onTag services
+  #
+  /generations:
+    $ref: "./ontag/sourcing.yaml#/paths/~1generations"
+  /generations/{id}:
+    $ref: "./ontag/sourcing.yaml#/paths/~1generations~1{id}"
+  /generations/{id}/download:
+    $ref: "./ontag/sourcing.yaml#/paths/~1generations~1{id}~1download"
+  /series:
+    $ref: "./ontag/sourcing.yaml#/paths/~1series"
+  /tag-associations:
+    $ref: "./ontag/sourcing.yaml#/paths/~1tag-associations"
+  /tag-associations/{id}:
+    $ref: "./ontag/sourcing.yaml#/paths/~1tag-associations~1{id}"
+  /identifications/uhfs/{epc}:
+    $ref: "./ontag/sourcing.yaml#/paths/~1identifications~1uhfs~1{epc}"
+  /identifications/uhfs/{epc}/warehouse-item-entries:
+    $ref: "./ontag/sourcing.yaml#/paths/~1identifications~1uhfs~1{epc}~1warehouse-item-entries"
+  /identifications/uhfs/qr-code:
+    $ref: "./ontag/sourcing.yaml#/paths/~1identifications~1uhfs~1qr-code"
+  /identifications/nfcs/{fullContent}:
+    $ref: "./ontag/sourcing.yaml#/paths/~1identifications~1nfcs~1{fullContent}"
+  /identifications/nfcs/{fullContent}/warehouse-item-entries:
+    $ref: "./ontag/sourcing.yaml#/paths/~1identifications~1nfcs~1{fullContent}~1warehouse-item-entries"
+  /identifications/barcodes/{fullContent}:
+    $ref: "./ontag/sourcing.yaml#/paths/~1identifications~1barcodes~1{fullContent}"
+  /identifications/barcodes/{fullContent}/warehouse-item-entries:
+    $ref: "./ontag/sourcing.yaml#/paths/~1identifications~1barcodes~1{fullContent}~1warehouse-item-entries"
+  #
+  # JSON:API definition for onTag services
+  #
+  /checkpoints:
+    $ref: "./checkpoints.yaml#/paths/~1checkpoints"
+  /checkpoints/{id}:
+    $ref: "./checkpoints.yaml#/paths/~1checkpoints~1{id}"
+  /checkpoints/{id}/power:
+    $ref: "./checkpoints.yaml#/paths/~1checkpoints~1{id}~1power"
+  /checkpoints/{id}/readings:
+    $ref: "./checkpoints.yaml#/paths/~1checkpoints~1{id}~1readings"
+  /checkpoints/{id}/reset:
+    $ref: "./checkpoints.yaml#/paths/~1checkpoints~1{id}~1reset"
+  /checkpoints/{id}/tag-associations:
+    $ref: "./checkpoints.yaml#/paths/~1checkpoints~1{id}~1tag-associations"
+  /checkpoint-identifications/:
+    $ref: "./checkpoints.yaml#/paths/~1checkpoint-identifications"
+  /checkpoint-identifications/{id}:
+    $ref: "./checkpoints.yaml#/paths/~1checkpoint-identifications~1{id}"
+  /checkpoints/{id}/doc-headers/{headerId}/inbound:
+    $ref: "./checkpoints.yaml#/paths/~1checkpoints~1{id}~1doc-headers~1{headerId}~1inbound"
+  #
+  # JSON:API definition for Language services
+  #
+  /languages/{id}:
+    $ref: "./core.yaml#/paths/~1languages~1{id}"
+  /languages:
+    $ref: "./core.yaml#/paths/~1languages"
+  #
+  # JSON:API definition for DiscountList services
+  #
+  /discount-lists/{id}:
+    $ref: "./discountlists.yaml#/paths/~1discount-lists~1{id}"
+  /discount-lists:
+    $ref: "./discountlists.yaml#/paths/~1discount-lists"
+  #
+  # JSON:API definition for DiscountList > CustomerDiscountList services
+  #
+  /discount-lists/{discountListId}/customer-accounts:
+    $ref: "./discountlists.yaml#/paths/~1discount-lists~1{discountListId}~1customer-accounts"
+  /discount-lists/{discountListId}/customer-accounts/{id}:
+    $ref: "./discountlists.yaml#/paths/~1discount-lists~1{discountListId}~1customer-accounts~1{id}"
+  /discount-lists/{discountListId}/customer-accounts/links:
+    $ref: "./discountlists.yaml#/paths/~1discount-lists~1{discountListId}~1customer-accounts~1links"
+  #
+  # JSON:API definition for DiscountList > DiscountListDetail services
+  #
+  /discount-lists/{discountListId}/details/{detailId}:
+    $ref: "./discountlists.yaml#/paths/~1discount-lists~1{discountListId}~1details~1{detailId}"
+  /discount-lists/{discountListId}/details:
+    $ref: "./discountlists.yaml#/paths/~1discount-lists~1{discountListId}~1details"
+  /discount-lists/{id}/edit:
+    $ref: "./discountlists.yaml#/paths/~1discount-lists~1{id}~1edit"
+  /discount-lists/{id}/publish:
+    $ref: "./discountlists.yaml#/paths/~1discount-lists~1{id}~1publish"
+  #
+  # JSON:API definition for Currency services
+  #
+  /currencies/{id}:
+    $ref: "./core.yaml#/paths/~1currencies~1{id}"
+  /currencies:
+    $ref: "./core.yaml#/paths/~1currencies"
+
+  #
+  # JSON:API definition for DocType services
+  #
+  /doc-types/{id}:
+    $ref: "./documents.yaml#/paths/~1doc-types~1{id}"
+  /doc-types:
+    $ref: "./documents.yaml#/paths/~1doc-types"
+  #
+  # JSON:API definition for DocCategory services
+  #
+  /doc-categories/{id}:
+    $ref: "./documents.yaml#/paths/~1doc-categories~1{id}"
+  /doc-categories:
+    $ref: "./documents.yaml#/paths/~1doc-categories"
+  #
+  # JSON:API definition for Sheet services
+  #
+  /sheets/{id}:
+    $ref: "./entityAttributes.yaml#/paths/~1sheets~1{id}"
+  /sheets/{sheetId}/edit:
+    $ref: "./entityAttributes.yaml#/paths/~1sheets~1{sheetId}~1edit"
+  /sheets/{sheetId}/publish:
+    $ref: "./entityAttributes.yaml#/paths/~1sheets~1{sheetId}~1publish"
+  /sheets:
+    $ref: "./entityAttributes.yaml#/paths/~1sheets"
+  /sheets/{sheetId}/attributes:
+    $ref: "./entityAttributes.yaml#/paths/~1sheets~1{sheetId}~1attributes"
+  /sheets/{sheetId}/survey-sections:
+    $ref: "./entityAttributes.yaml#/paths/~1sheets~1{sheetId}~1survey-sections"
+  /sheets/{sheetId}/attributes/{attributeId}:
+    $ref: "./entityAttributes.yaml#/paths/~1sheets~1{sheetId}~1attributes~1{attributeId}"
+  /entities/{entityName}/{entityObjectId}/sheets:
+    $ref: "./entityAttributes.yaml#/paths/~1entities~1{entityName}~1{entityObjectId}~1sheets"
+  /entities/{entityName}/{entityObjectId}/sheets/{id}:
+    $ref: "./entityAttributes.yaml#/paths/~1entities~1{entityName}~1{entityObjectId}~1sheets~1{id}"
+  /entities/{entityName}/{entityObjectId}/sheet-attributes/{id}:
+    $ref: "./entityAttributes.yaml#/paths/~1entities~1{entityName}~1{entityObjectId}~1sheet-attributes~1{id}"
+  /entities/{entityName}/attributes:
+    $ref: "./entityAttributes.yaml#/paths/~1entities~1{entityName}~1attributes"
+  /entities/{entityName}/attributes-options:
+    $ref: "./entityAttributes.yaml#/paths/~1entities~1{entityName}~1attributes-options"
+  /entities/{entityName}/attributes-definitions:
+    $ref: "./entityAttributes.yaml#/paths/~1entities~1{entityName}~1attributes-definitions"
+  /entities/{entityName}/data-types:
+    $ref: "./entityAttributes.yaml#/paths/~1entities~1{entityName}~1data-types"
+  #
+  # JSON:API definition for UnitOfMeasurement services
+  #
+  /units-of-measurement/{id}:
+    $ref: "./core.yaml#/paths/~1units-of-measurement~1{id}"
+  /units-of-measurement:
+    $ref: "./core.yaml#/paths/~1units-of-measurement"
+  #
+  # JSON:API definition for Items services
+  #
+  /items/{id}:
+    $ref: "./items.yaml#/paths/~1items~1{id}"
+  /items/{id}/edit:
+    $ref: "./items.yaml#/paths/~1items~1{id}~1edit"
+  /items/{id}/publish:
+    $ref: "./items.yaml#/paths/~1items~1{id}~1publish"
+  /items/{id}/clone:
+    $ref: "./items.yaml#/paths/~1items~1{id}~1clone"
+  /items/{id}/draft-ownership:
+    $ref: "./items.yaml#/paths/~1items~1{id}~1draft-ownership"
+  /items/{id}/full:
+    $ref: "./items.yaml#/paths/~1items~1{id}~1full"
+  /items:
+    $ref: "./items.yaml#/paths/~1items"
+  /items/export:
+    $ref: "./items.yaml#/paths/~1items~1export"
+  /items/availability:
+    $ref: "./items.yaml#/paths/~1items~1availability"
+  /items/availability/{availabilityId}:
+    $ref: "./items.yaml#/paths/~1items~1availability~1{availabilityId}"
+  /items/kpis:
+    $ref: "./items.yaml#/paths/~1items~1kpis"
+  /items/kpis/{kpiId}:
+    $ref: "./items.yaml#/paths/~1items~1kpis~1{kpiId}"
+  /items/{id}/kpis:
+    $ref: "./items.yaml#/paths/~1items~1{id}~1kpis"
+  /items/{itemId}/units-of-measurement/{unitOfMeasurementId}:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1units-of-measurement~1{unitOfMeasurementId}"
+  /items/{itemId}/units-of-measurement:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1units-of-measurement"
+  /items/units-of-measurement:
+    $ref: "./items.yaml#/paths/~1items~1units-of-measurement"
+  /items/{itemId}/tags/{tagId}:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1tags~1{tagId}"
+  /items/{itemId}/tags:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1tags"
+  /items/barcodes:
+    $ref: "./items.yaml#/paths/~1items~1barcodes"
+  /items/barcodes/{barcodeId}:
+    $ref: "./items.yaml#/paths/~1items~1barcodes~1{barcodeId}"
+  /items/sheets:
+    $ref: "./items.yaml#/paths/~1items~1sheets"
+  /items/tags:
+    $ref: "./items.yaml#/paths/~1items~1tags"
+  #
+  # JSON:API definition for Item Category services
+  #
+  /item-categories:
+    $ref: "./items.yaml#/paths/~1item-categories"
+  /item-categories/{id}:
+    $ref: "./items.yaml#/paths/~1item-categories~1{id}"
+  /item-categories/{id}/units-of-measurement:
+    $ref: "./items.yaml#/paths/~1item-categories~1{id}~1units-of-measurement"
+  #
+  # JSON:API definition for Allergen services
+  #
+  /allergens:
+    $ref: "./items.yaml#/paths/~1allergens"
+  /allergens/{allergenId}:
+    $ref: "./items.yaml#/paths/~1allergens~1{allergenId}"
+  #
+  # JSON:API definition for ItemAllergen services
+  #
+  /items/{itemId}/allergens:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1allergens"
+  /item/{itemId}/containments/{allergenContainmentTypeId}/allergens/{allergenId}/:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1containments~1{allergenContainmentTypeId}~1allergens~1{allergenId}"
+  #
+  # JSON:API definition for ItemPackagingPart services
+  #
+  /items/{itemId}/packaging-parts:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1packaging-parts"
+  /item/{itemId}/packaging-parts/{packagingPartId}:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1packaging-parts~1{packagingPartId}"
+  #
+  # JSON:API definition for Item minimum stock levels services
+  #
+  /items/{id}/minimum-stock-levels:
+    $ref: "./items.yaml#/paths/~1items~1{id}~1minimum-stock-levels"
+  /items/{itemId}/minimum-stock-levels/{minStockLevelId}:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1minimum-stock-levels~1{minStockLevelId}"
+  #
+  # JSON:API definition for ItemStatus services
+  #
+  /item-statuses:
+    $ref: "./items.yaml#/paths/~1item-statuses"
+  #
+  # JSON:API definition for ItemInstance
+  #
+  /item-instances:
+    $ref: "./items.yaml#/paths/~1item-instances"
+  /item-instances/assets:
+    $ref: "./items.yaml#/paths/~1item-instances~1assets"
+  /item-instances/assets/{assetId}:
+    $ref: "./items.yaml#/paths/~1item-instances~1assets~1{assetId}"
+  /item-instances/assets/export:
+    $ref: "./items.yaml#/paths/~1item-instances~1assets~1export"
+  /item-instances/availability:
+    $ref: "./items.yaml#/paths/~1item-instances~1availability"
+  /item-instances/sheets:
+    $ref: "./items.yaml#/paths/~1item-instances~1sheets"
+  /item-instances/{id}:
+    $ref: "./items.yaml#/paths/~1item-instances~1{id}"
+  /item-instances/{id}/line-instances:
+    $ref: "./items.yaml#/paths/~1item-instances~1{id}~1line-instances"
+  /item-instances/{id}/warehouse-item-entries:
+    $ref: "./items.yaml#/paths/~1item-instances~1{id}~1warehouse-item-entries"
+  #
+  # JSON:API definition for NutritionFact services
+  #
+  /nutrition-facts:
+    $ref: "./items.yaml#/paths/~1nutrition-facts"
+  /nutrition-facts/{id}:
+    $ref: "./items.yaml#/paths/~1nutrition-facts~1{id}"
+  #
+  # JSON:API definition for ItemNutritionFact services
+  #
+  /items/{itemId}/nutrition-facts:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1nutrition-facts"
+  /items/{itemId}/nutrition-facts/{nutritionFactId}:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1nutrition-facts~1{nutritionFactId}"
+  #
+  # JSON:API definition for ItemSupplier services
+  #
+  /items/{itemId}/suppliers:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1suppliers"
+  /item/{itemId}/suppliers/{supplierId}:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1suppliers~1{supplierId}"
+  #
+  # JSON:API definition for ItemRelated services
+  #
+  /items/{originalItemId}/relations/{relationTypeId}/related/{relatedItemId}:
+    $ref: "./items.yaml#/paths/~1items~1{originalItemId}~1relations~1{relationTypeId}~1related~1{relatedItemId}"
+  /items/{originalItemId}/relations/{relationTypeId}:
+    $ref: "./items.yaml#/paths/~1items~1{originalItemId}~1relations~1{relationTypeId}"
+  #
+  /items/{id}/marketplaces:
+    $ref: "./items.yaml#/paths/~1items~1{id}~1marketplaces"
+  /items/{itemId}/marketplaces/{marketplaceId}:
+    $ref: "./items.yaml#/paths/~1items~1{itemId}~1marketplaces~1{marketplaceId}"
+  /items/marketplaces:
+    $ref: "./items.yaml#/paths/~1items~1marketplaces"
+
+  #
+  #
+  # JSON:API definition for Device services
+  #
+  /devices/{id}:
+    $ref: "./devices.yaml#/paths/~1devices~1{id}"
+  /devices/{id}/apps:
+    $ref: "./devices.yaml#/paths/~1devices~1{id}~1apps"
+  /devices/{id}/installable-apps:
+    $ref: "./devices.yaml#/paths/~1devices~1{id}~1installable-apps"
+  /devices/{deviceId}/apps/{appId}:
+    $ref: "./devices.yaml#/paths/~1devices~1{deviceId}~1apps~1{appId}"
+  /devices:
+    $ref: "./devices.yaml#/paths/~1devices"
+  #
+  # JSON:API definition for Customer services
+  #
+  /customers/{id}:
+    $ref: "./customers.yaml#/paths/~1customers~1{id}"
+  /customers:
+    $ref: "./customers.yaml#/paths/~1customers"
+  /customers/{id}/status:
+    $ref: "./customers.yaml#/paths/~1customers~1{id}~1status"
+  /customers/{id}/contacts:
+    $ref: "./customerContacts.yaml#/paths/~1customers~1{id}~1contacts"
+  /customers/{customerId}/contacts/{contactId}:
+    $ref: "./customerContacts.yaml#/paths/~1customers~1{customerId}~1contacts~1{contactId}"
+  /customers/{customerId}/contacts/{contactId}/swap:
+    $ref: "./customerContacts.yaml#/paths/~1customers~1{customerId}~1contacts~1{contactId}~1swap"
+  /customers/{id}/calendar-events:
+    $ref: "./customers.yaml#/paths/~1customers~1{id}~1calendar-events"
+  /customer-accounts/{id}/history:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{id}~1history"
+  /customer-accounts/{id}:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{id}"
+  /customer-accounts:
+    $ref: "./customers.yaml#/paths/~1customer-accounts"
+  /customer-accounts/export:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1export"
+  /customer-accounts/{id}/kpis:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{id}~1kpis"
+  /customer-accounts/{customerAccountId}/kpis/{kpiId}:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{customerAccountId}~1kpis~1{kpiId}"
+  /customer-accounts/{id}/clusters:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{id}~1clusters"
+  /customer-accounts/sheets:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1sheets"
+  /customer-accounts/{id}/edit:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{id}~1edit"
+  /customer-accounts/{id}/publish:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{id}~1publish"
+  /customer-accounts/{id}/tasks:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{id}~1tasks"
+  /customer-accounts/tags:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1tags"
+  /customer-accounts/tasks:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1tasks"
+  /customer-accounts/{customerAccountId}/tags/{tagId}:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{customerAccountId}~1tags~1{tagId}"
+  /customer-accounts/{customerAccountId}/tags:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{customerAccountId}~1tags"
+  /customer-accounts/{customerAccountId}/sales-order-eligibility:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1{customerAccountId}~1sales-order-eligibility"
+  /customer-accounts/bulk-update/data-upload:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1bulk-update~1data-upload"
+  /customer-accounts/bulk-update:
+    $ref: "./customers.yaml#/paths/~1customer-accounts~1bulk-update"
+  /customers/types:
+    $ref: "./customers.yaml#/paths/~1customers~1types"
+  /customers/types/{customerTypeId}:
+    $ref: "./customers.yaml#/paths/~1customers~1types~1{customerTypeId}"
+  #
+  # Privacy Agreements
+  #
+  /privacy-purposes:
+    $ref: "./core.yaml#/paths/~1privacy-purposes"
+  /parties/{id}/privacy-agreements:
+    $ref: "./core.yaml#/paths/~1parties~1{id}~1privacy-agreements"
+  #
+  # JSON:API definition for CustomerContract services
+  #
+  /customer-contracts:
+    $ref: "./customerContracts.yaml#/paths/~1customer-contracts"
+  /customer-contracts/{id}:
+    $ref: "./customerContracts.yaml#/paths/~1customer-contracts~1{id}"
+  /customer-contracts/export:
+    $ref: "./customerContracts.yaml#/paths/~1customer-contracts~1export"
+  /customer-contracts/assets:
+    $ref: "./customerContracts.yaml#/paths/~1customer-contracts~1assets"
+  #
+  # JSON:API definition for Tag services
+  #
+  /tags/{id}:
+    $ref: "./core.yaml#/paths/~1tags~1{id}"
+  /tags:
+    $ref: "./core.yaml#/paths/~1tags"
+  /entities/{entityId}/{entityObjectId}/tags:
+    $ref: "./core.yaml#/paths/~1entities~1{entityId}~1{entityObjectId}~1tags"
+  #
+  # JSON:API definition for Payment services
+  #
+  /payment-conditions/{id}:
+    $ref: "./payments.yaml#/paths/~1payment-conditions~1{id}"
+  /payment-conditions:
+    $ref: "./payments.yaml#/paths/~1payment-conditions"
+  /payment-conditions/{paymentConditionId}/instalments/{instalmentId}:
+    $ref: "./payments.yaml#/paths/~1payment-conditions~1{paymentConditionId}~1instalments~1{instalmentId}"
+  /payment-conditions/{paymentConditionId}/instalments:
+    $ref: "./payments.yaml#/paths/~1payment-conditions~1{paymentConditionId}~1instalments"
+  /customer-ledger-entries/{id}:
+    $ref: "./payments.yaml#/paths/~1customer-ledger-entries~1{id}"
+  /customer-ledger-entries:
+    $ref: "./payments.yaml#/paths/~1customer-ledger-entries"
+  /payment-methods/{id}:
+    $ref: "./payments.yaml#/paths/~1payment-methods~1{id}"
+  /payment-methods:
+    $ref: "./payments.yaml#/paths/~1payment-methods"
+  #
+  # JSON:API definition for Note services
+  #
+  /note-types/{id}:
+    $ref: "./core.yaml#/paths/~1note-types~1{id}"
+  /note-types:
+    $ref: "./core.yaml#/paths/~1note-types"
+  /entities/{entityName}/{entityObjectId}/notes/{noteId}:
+    $ref: "./core.yaml#/paths/~1entities~1{entityName}~1{entityObjectId}~1notes~1{noteId}"
+  /entities/{entityName}/{entityObjectId}/notes:
+    $ref: "./core.yaml#/paths/~1entities~1{entityName}~1{entityObjectId}~1notes"
+  /entities/{entityName}/sheets:
+    $ref: "./entityAttributes.yaml#/paths/~1entities~1{entityName}~1sheets"
+  /entities/{entityName}/sheets/{id}:
+    $ref: "./entityAttributes.yaml#/paths/~1entities~1{entityName}~1sheets~1{id}"
+  #
+  # JSON:API definition for Country services
+  #
+  /countries/{id}:
+    $ref: "./core.yaml#/paths/~1countries~1{id}"
+  /countries:
+    $ref: "./core.yaml#/paths/~1countries"
+  #
+  # JSON:API definition for Warehouse services
+  #
+  /warehouses/{id}:
+    $ref: "./core.yaml#/paths/~1warehouses~1{id}"
+  /warehouses:
+    $ref: "./core.yaml#/paths/~1warehouses"
+  /warehouse-journal-entries:
+    $ref: "./core.yaml#/paths/~1warehouse-journal-entries"
+  #
+  # JSON:API definition for Taxes services
+  #
+  /taxes/{id}:
+    $ref: "./core.yaml#/paths/~1taxes~1{id}"
+  /taxes/tax-regimes:
+    $ref: "./core.yaml#/paths/~1taxes~1tax-regimes"
+  /taxes/tax-regimes/{id}:
+    $ref: "./core.yaml#/paths/~1taxes~1tax-regimes~1{id}"
+  /taxes/tax-rates:
+    $ref: "./core.yaml#/paths/~1taxes~1tax-rates"
+  /taxes/tax-rates/{id}:
+    $ref: "./core.yaml#/paths/~1taxes~1tax-rates~1{id}"
+  /taxes/tax-rate-groups:
+    $ref: "./core.yaml#/paths/~1taxes~1tax-rate-groups"
+  /taxes/tax-rate-groups/{groupId}:
+    $ref: "./core.yaml#/paths/~1taxes~1tax-rate-groups~1{groupId}"
+  #
+  # JSON:API definition for Sales Documents services
+  #
+  /sales-docs/headers/{headerId}/lines/{lineId}:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{headerId}~1lines~1{lineId}"
+  /sales-docs/headers/{headerId}/lines/{lineId}/discounts:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{headerId}~1lines~1{lineId}~1discounts"
+  /sales-docs/headers/{headerId}/lines/{lineId}/item-info:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{headerId}~1lines~1{lineId}~1item-info"
+  /sales-docs/headers/{headerId}/lines/{lineId}/warnings:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{headerId}~1lines~1{lineId}~1warnings"
+  /sales-docs/headers/{headerId}/lines/by-item-code:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{headerId}~1lines~1by-item-code"
+  /sales-docs/headers/{id}/edit:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1edit"
+  /sales-docs/headers/{id}/publish:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1publish"
+  /sales-docs/headers/{id}/lines:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1lines"
+  /sales-docs/headers/{id}/lines/upsert:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1lines~1upsert"
+  /sales-docs/headers/{id}/release:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1release"
+  /sales-docs/headers-export:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers-export"
+  /sales-docs/headers/{id}:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}"
+  /sales-docs/headers/{id}/reports:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1reports"
+  /sales-docs/headers/{id}/reports/templates:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1reports~1templates"
+  /sales-docs/headers/{id}/bulk-deletion:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1bulk-deletion"
+  /sales-docs/headers/{id}/exceeded-budget-limits:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1exceeded-budget-limits"
+  /sales-docs/{id}/reorder:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1{id}~1reorder"
+  /sales-docs/headers:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers"
+  /sales-docs/lines:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1lines"
+  /sales-docs/headers/{id}/discounts-summary:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1discounts-summary"
+  /sales-docs/headers/{id}/transfer-statuses:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1transfer-statuses"
+  /sales-docs/headers/{headerId}/linked-docs:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{headerId}~1linked-docs"
+  /sales-docs/customer-accounts/sell-to:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1customer-accounts~1sell-to"
+  /sales-docs/customer-accounts/{customerAccountId}/bill-to:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1customer-accounts~1{customerAccountId}~1bill-to"
+  /sales-docs/doc-types:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1doc-types"
+  /sales-docs/price-lists:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1price-lists"
+  /sales-docs/sheets:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1sheets"
+  /sales-docs/headers/{id}/items:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1items"
+  /sales-docs/headers/{headerId}/recipients:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{headerId}~1recipients"
+  /sales-docs/widgets:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1widgets"
+  /sales-docs/headers/{id}/constraints-check:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1headers~1{id}~1constraints-check"
+  /shipping-costs:
+    $ref: "./salesDoc.yaml#/paths/~1shipping-costs"
+  /sales-docs/{id}/draft-ownership:
+    $ref: "./salesDoc.yaml#/paths/~1sales-docs~1{id}~1draft-ownership"
+  #
+  # JSON:API definition for Vehicles services:
+  #
+  /vehicles/{id}:
+    $ref: "./vehicles.yaml#/paths/~1vehicles~1{id}"
+  /vehicles:
+    $ref: "./vehicles.yaml#/paths/~1vehicles"
+  #
+  # JSON:API definition for WorkSession services:
+  #
+  /work-sessions/{id}/documents:
+    $ref: "./workSessions.yaml#/paths/~1work-sessions~1{id}~1documents"
+  /work-sessions/{id}/customers:
+    $ref: "./workSessions.yaml#/paths/~1work-sessions~1{id}~1customers"
+  /work-sessions/{id}/suppliers:
+    $ref: "./workSessions.yaml#/paths/~1work-sessions~1{id}~1suppliers"
+  /work-sessions/{id}:
+    $ref: "./workSessions.yaml#/paths/~1work-sessions~1{id}"
+  /work-sessions:
+    $ref: "./workSessions.yaml#/paths/~1work-sessions"
+  /work-sessions/kpis:
+    $ref: "./workSessions.yaml#/paths/~1work-sessions~1kpis"
+  /work-sessions/kpis/{kpiId}:
+    $ref: "./workSessions.yaml#/paths/~1work-sessions~1kpis~1{kpiId}"
+  /work-sessions/{id}/kpis:
+    $ref: "./workSessions.yaml#/paths/~1work-sessions~1{id}~1kpis"
+  /work-sessions/{workSessionId}/kpis/{kpiId}:
+    $ref: "./workSessions.yaml#/paths/~1work-sessions~1{workSessionId}~1kpis~1{kpiId}"
+  #
+  # JSON:API definition for Reasons services:
+  #
+  /reasons:
+    $ref: "./documents.yaml#/paths/~1reasons"
+  /reasons/{id}:
+    $ref: "./documents.yaml#/paths/~1reasons~1{id}"
+  /reasons/{reasonId}/doc-types/{docTypeId}:
+    $ref: "./documents.yaml#/paths/~1reasons~1{reasonId}~1doc-types~1{docTypeId}"
+  /reasons/{reasonId}/doc-types:
+    $ref: "./documents.yaml#/paths/~1reasons~1{reasonId}~1doc-types"
+  /reasons/{reasonId}/blocks:
+    $ref: "./documents.yaml#/paths/~1reasons~1{reasonId}~1blocks"
+  /reasons/{reasonId}/blocks/{blockId}:
+    $ref: "./documents.yaml#/paths/~1reasons~1{reasonId}~1blocks~1{blockId}"
+  /reasons/{reasonId}/blocks/validate:
+    $ref: "./documents.yaml#/paths/~1reasons~1{reasonId}~1blocks~1validate"
+  #
+  # JSON:API definition for Permissions services:
+  #
+  /permissions/{id}:
+    $ref: "./core.yaml#/paths/~1permissions~1{id}"
+  /permissions:
+    $ref: "./core.yaml#/paths/~1permissions"
+  #
+  # JSON:API definition for Collection document services:
+  #
+
+  /collection-docs/ledger-entries:
+    $ref: "./collectionDoc.yaml#/paths/~1collection-docs~1ledger-entries"
+  /collection-docs/headers/{id}/ledger-entries:
+    $ref: "./collectionDoc.yaml#/paths/~1collection-docs~1headers~1{id}~1ledger-entries"
+  /collection-docs/payments:
+    $ref: "./collectionDoc.yaml#/paths/~1collection-docs~1payments"
+  /collection-docs/headers/{id}/payments:
+    $ref: "./collectionDoc.yaml#/paths/~1collection-docs~1headers~1{id}~1payments"
+  /collection-docs/headers/{id}:
+    $ref: "./collectionDoc.yaml#/paths/~1collection-docs~1headers~1{id}"
+  /collection-docs/headers:
+    $ref: "./collectionDoc.yaml#/paths/~1collection-docs~1headers"
+  /collection-docs/kpis/{kpiId}:
+    $ref: "./collectionDoc.yaml#/paths/~1collection-docs~1kpis~1{kpiId}"
+  /collection-docs/kpis:
+    $ref: "./collectionDoc.yaml#/paths/~1collection-docs~1kpis"
+  #
+  # JSON:API definition for Cash deposit document services:
+  #
+  /cash-deposit-docs/headers:
+    $ref: "./cashDepositDoc.yaml#/paths/~1cash-deposit-docs~1headers"
+  /cash-deposit-docs/headers/{id}:
+    $ref: "./cashDepositDoc.yaml#/paths/~1cash-deposit-docs~1headers~1{id}"
+  /cash-deposit-docs/headers/{id}/payments:
+    $ref: "./cashDepositDoc.yaml#/paths/~1cash-deposit-docs~1headers~1{id}~1payments"
+  /cash-deposit-docs/headers/{id}/collections:
+    $ref: "./cashDepositDoc.yaml#/paths/~1cash-deposit-docs~1headers~1{id}~1collections"
+  /cash-deposit-docs/kpis:
+    $ref: "./cashDepositDoc.yaml#/paths/~1cash-deposit-docs~1kpis"
+  /cash-deposit-docs/kpis/{kpiId}:
+    $ref: "./cashDepositDoc.yaml#/paths/~1cash-deposit-docs~1kpis~1{kpiId}"
+  /cash-deposit-docs/payments:
+    $ref: "./cashDepositDoc.yaml#/paths/~1cash-deposit-docs~1payments"
+  #
+  # JSON:API definition for Budget services:
+  #
+  /budgets:
+    $ref: "./budgets.yaml#/paths/~1budgets"
+  /budgets/{id}:
+    $ref: "./budgets.yaml#/paths/~1budgets~1{id}"
+  /budgets/{id}/targets:
+    $ref: "./budgets.yaml#/paths/~1budgets~1{id}~1targets"
+  /budgets/{id}/trend:
+    $ref: "./budgets.yaml#/paths/~1budgets~1{id}~1trend"
+  /budgets/{id}/kpis:
+    $ref: "./budgets.yaml#/paths/~1budgets~1{id}~1kpis"
+  /budgets/{id}/kpis/{kpiId}:
+    $ref: "./budgets.yaml#/paths/~1budgets~1{id}~1kpis~1{kpiId}"
+  /budgets/kpis:
+    $ref: "./budgets.yaml#/paths/~1budgets~1kpis"
+  /budgets/kpis/{kpiId}:
+    $ref: "./budgets.yaml#/paths/~1budgets~1kpis~1{kpiId}"
+  #
+  # JSON:API definition for EntitySet services:
+  #
+  /entity-sets:
+    $ref: "./entitySets.yaml#/paths/~1entity-sets"
+  /entity-sets/{id}:
+    $ref: "./entitySets.yaml#/paths/~1entity-sets~1{id}"
+  #
+  # JSON:API definition for AppEvent services:
+  #
+  /entities/{entityName}/{entityObjectId}/app-events:
+    $ref: "./core.yaml#/paths/~1entities~1{entityName}~1{entityObjectId}~1app-events"
+  /app-events/{id}:
+    $ref: "./core.yaml#/paths/~1app-events~1{id}"
+  #
+  # JSON:API definition for Cluster services:
+  #
+  /clusters:
+    $ref: "./clusters.yaml#/paths/~1clusters"
+  /clusters/{id}:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}"
+  /clusters/{id}/edit:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}~1edit"
+  /clusters/{id}/publish:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}~1publish"
+  /clusters/{id}/clone:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}~1clone"
+  /clusters/{id}/values:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}~1values"
+  /clusters/{id}/items:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}~1items"
+  /clusters/{id}/customer-accounts:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}~1customer-accounts"
+  /clusters/{id}/items/export:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}~1items~1export"
+  /clusters/{id}/customer-accounts/export:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}~1customer-accounts~1export"
+  /clusters/{clusterId}/values/{valueId}:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{clusterId}~1values~1{valueId}"
+  /clusters/{id}/customer-item-selections:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}~1customer-item-selections"
+  /clusters/{clusterId}/customer-item-selections/{id}:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{clusterId}~1customer-item-selections~1{id}"
+  /clusters/{clusterId}/customer-item-selections/links:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{clusterId}~1customer-item-selections~1links"
+  /clusters/entity-set:
+    $ref: "./clusters.yaml#/paths/~1clusters~1entity-set"
+  /clusters/{id}/multi-values:
+    $ref: "./clusters.yaml#/paths/~1clusters~1{id}~1multi-values"
+  #
+  # JSON:API definition for WarehouseDocument services
+  #
+  /warehouse-docs/headers/{headerId}:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1headers~1{headerId}"
+  /warehouse-docs/headers:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1headers"
+  /warehouse-docs/headers-export:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1headers-export"
+  /warehouse-docs/headers/{headerId}/lines:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1headers~1{headerId}~1lines"
+  /warehouse-docs/headers/{headerId}/line-instances:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1headers~1{headerId}~1line-instances"
+  /warehouse-docs/headers/{headerId}/release:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1headers~1{headerId}~1release"
+  /warehouse-docs/headers/{headerId}/lines/{lineId}/instances:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1headers~1{headerId}~1lines~1{lineId}~1instances"
+  /warehouse-docs/lines:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1lines"
+  /warehouse-docs/headers/{headerId}/inbound:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1headers~1{headerId}~1inbound"
+  /warehouse-docs/headers/{headerId}/linked-docs:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1headers~1{headerId}~1linked-docs"
+  /warehouse-docs/draft-skipped/headers/{headerId}/lines/{lineId}:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1draft-skipped~1headers~1{headerId}~1lines~1{lineId}"
+  /warehouse-docs/reading/headers:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1reading~1headers"
+  /warehouse-docs/reading/headers/{headerId}/compile:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1reading~1headers~1{headerId}~1compile"
+  /warehouse-docs/draft-skipped/headers/{headerId}/instances:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1draft-skipped~1headers~1{headerId}~1instances"
+  /warehouse-docs/reading/headers/{headerId}/release:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1reading~1headers~1{headerId}~1release"
+  /warehouse-docs/reading/headers/{headerId}/aggregated-data:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1reading~1headers~1{headerId}~1aggregated-data"
+  /warehouse-docs/reading/headers/{headerId}/reset:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1reading~1headers~1{headerId}~1reset"
+  /warehouse-docs/reading/headers/{headerId}/unexpected-instances:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1reading~1headers~1{headerId}~1unexpected-instances"
+  /warehouse-docs/reading/headers/{headerId}/expected-instances:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1reading~1headers~1{headerId}~1expected-instances"
+  /warehouse-docs/reading/headers/{headerId}/instances/properties:
+    $ref: "./warehouseDoc.yaml#/paths/~1warehouse-docs~1reading~1headers~1{headerId}~1instances~1properties"
+  #
+  # JSON:API definition for PurchaseDocument services
+  #
+  /purchase-docs/headers:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers"
+  /purchase-docs/headers-export:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers-export"
+  /purchase-docs/headers/{headerId}/lines:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1lines"
+  /purchase-docs/headers/{headerId}/lines/{lineId}:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1lines~1{lineId}"
+  /purchase-docs/lines/{lineId}/string-templates:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1lines~1{lineId}~1string-templates"
+  /purchase-docs/headers/{headerId}/lines/{lineId}/loading-units:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1lines~1{lineId}~1loading-units"
+  /purchase-docs/headers/{headerId}:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}"
+  /purchase-docs/headers/{headerId}/edit:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1edit"
+  /purchase-docs/headers/{headerId}/publish:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1publish"
+  /purchase-docs/headers/{headerId}/release:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1release"
+  /purchase-docs/headers/{headerId}/linked-docs:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1linked-docs"
+  /purchase-docs/headers/{headerId}/transfer-statuses:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1transfer-statuses"
+  /purchase-docs/headers/{headerId}/draft-ownership:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1draft-ownership"
+  /purchase-docs/headers/{headerId}/inbound:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1inbound"
+  /purchase-docs/loading-units:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1loading-units"
+  /purchase-docs/headers/{headerId}/lines/{lineId}/loading-units/printing-callback:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1headers~1{headerId}~1lines~1{lineId}~1loading-units~1printing-callback"
+  /purchase-docs/lines:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1lines"
+  /purchase-docs/reading/headers:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1reading~1headers"
+  /purchase-docs/reading/headers/{headerId}/compile:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1reading~1headers~1{headerId}~1compile"
+  /purchase-docs/draft-skipped/headers/{headerId}/instances:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1draft-skipped~1headers~1{headerId}~1instances"
+  /purchase-docs/draft-skipped/headers/{headerId}/lines/{lineId}/instances:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1draft-skipped~1headers~1{headerId}~1lines~1{lineId}~1instances"
+  /purchase-docs/draft-skipped/headers/{headerId}/instances/{lineInstanceId}:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1draft-skipped~1headers~1{headerId}~1instances~1{lineInstanceId}"
+  /purchase-docs/reading/headers/{headerId}/release:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1reading~1headers~1{headerId}~1release"
+  /purchase-docs/reading/headers/{headerId}/aggregated-data:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1reading~1headers~1{headerId}~1aggregated-data"
+  /purchase-docs/reading/headers/{headerId}/reset:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1reading~1headers~1{headerId}~1reset"
+  /purchase-docs/reading/headers/{headerId}/unexpected-instances:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1reading~1headers~1{headerId}~1unexpected-instances"
+  /purchase-docs/reading/headers/{headerId}/expected-instances:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1reading~1headers~1{headerId}~1expected-instances"
+  /purchase-docs/reading/headers/{headerId}/instances/properties:
+    $ref: "./purchaseDoc.yaml#/paths/~1purchase-docs~1reading~1headers~1{headerId}~1instances~1properties"
+  #
+  # JSON:API definition for Supplier services
+  #
+  /suppliers:
+    $ref: "./suppliers.yaml#/paths/~1suppliers"
+  /suppliers/export:
+    $ref: "./suppliers.yaml#/paths/~1suppliers~1export"
+  /suppliers/{supplierId}:
+    $ref: "./suppliers.yaml#/paths/~1suppliers~1{supplierId}"
+  /suppliers/{supplierId}/items:
+    $ref: "./suppliers.yaml#/paths/~1suppliers~1{supplierId}~1items"
+  /suppliers/{supplierId}/linked-user-profiles:
+    $ref: "./suppliers.yaml#/paths/~1suppliers~1{supplierId}~1linked-user-profiles"
+  /suppliers/{supplierId}/linked-sales-reps:
+    $ref: "./suppliers.yaml#/paths/~1suppliers~1{supplierId}~1linked-sales-reps"
+  /suppliers/{supplierId}/clone:
+    $ref: "./suppliers.yaml#/paths/~1suppliers~1{supplierId}~1clone"
+  #
+  # JSON:API definition for SurveyDocument services
+  #
+  /survey-docs/headers:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers"
+  /survey-docs/headers/{headerId}/sections:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{headerId}~1sections"
+  /survey-docs/headers/{headerId}/template-sections/{templateSectionId}/answers:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{headerId}~1template-sections~1{templateSectionId}~1answers"
+  /survey-docs/headers/{headerId}/sections/{sectionId}/answers:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{headerId}~1sections~1{sectionId}~1answers"
+  /survey-docs/headers/{headerId}/template-sections/{templateSectionId}/q-and-a:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{headerId}~1template-sections~1{templateSectionId}~1q-and-a"
+  /survey-docs/headers/{id}:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{id}"
+  /survey-docs/headers/{id}/transfer-statuses:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{id}~1transfer-statuses"
+  /survey-docs/headers/{id}/linked-docs:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{id}~1linked-docs"
+  /survey-docs/headers/{id}/publish:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{id}~1publish"
+  /survey-docs/headers/{id}/edit:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{id}~1edit"
+  /survey-docs/templates:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1templates"
+  /survey-docs/templates/{id}:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1templates~1{id}"
+  /survey-docs/templates/{templateId}/edit:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1templates~1{templateId}~1edit"
+  /survey-docs/templates/{templateId}/publish:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1templates~1{templateId}~1publish"
+  /survey-docs/templates/{templateId}/clusters:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1templates~1{templateId}~1clusters"
+  /survey-docs/templates/{templateId}/clusters/{clusterId}:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1templates~1{templateId}~1clusters~1{clusterId}"
+  /survey-docs/templates/{templateId}/template-sections:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1templates~1{templateId}~1template-sections"
+  /survey-docs/templates/{templateId}/template-sections/{templateSectionId}:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1templates~1{templateId}~1template-sections~1{templateSectionId}"
+  /survey-docs/headers/{headerId}/lines/{lineId}/attachments/{attachmentId}:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{headerId}~1lines~1{lineId}~1attachments~1{attachmentId}"
+  /survey-docs/headers/{headerId}/lines/{lineId}/attachments/{attachmentId}/download:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{headerId}~1lines~1{lineId}~1attachments~1{attachmentId}~1download"
+  /survey-docs/attachments:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1attachments"
+  /survey-docs/attachments/export:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1attachments~1export"
+  /survey-docs/headers/{headerId}/recipients:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1headers~1{headerId}~1recipients"
+  /survey-docs/doc-types:
+    $ref: "./surveyDoc.yaml#/paths/~1survey-docs~1doc-types"
+  #
+  # JSON:API definition for Target services
+  #
+  /targets/measurement-methods:
+    $ref: "./target.yaml#/paths/~1targets~1measurement-methods"
+  /targets:
+    $ref: "./target.yaml#/paths/~1targets"
+  /targets/{targetId}:
+    $ref: "./target.yaml#/paths/~1targets~1{targetId}"
+  /targets/{targetId}/values:
+    $ref: "./target.yaml#/paths/~1targets~1{targetId}~1values"
+  /targets/{targetId}/values/{targetValueId}:
+    $ref: "./target.yaml#/paths/~1targets~1{targetId}~1values~1{targetValueId}"
+  /targets/{targetId}/edit:
+    $ref: "./target.yaml#/paths/~1targets~1{targetId}~1edit"
+  /targets/{targetId}/publish:
+    $ref: "./target.yaml#/paths/~1targets~1{targetId}~1publish"
+  /targets/{targetId}/parties:
+    $ref: "./target.yaml#/paths/~1targets~1{targetId}~1parties"
+  /targets/{targetId}/customer-accounts:
+    $ref: "./target.yaml#/paths/~1targets~1{targetId}~1customer-accounts"
+
+  #
+  # JSON:API definition for Task and Calendar services
+  #
+  /tasks:
+    $ref: "./tasks.yaml#/paths/~1tasks"
+  /tasks/outcomes:
+    $ref: "./tasks.yaml#/paths/~1tasks~1outcomes"
+  /tasks/types:
+    $ref: "./tasks.yaml#/paths/~1tasks~1types"
+  /tasks/kpis:
+    $ref: "./tasks.yaml#/paths/~1tasks~1kpis"
+  /tasks/kpis/{kpiId}:
+    $ref: "./tasks.yaml#/paths/~1tasks~1kpis~1{kpiId}"
+  /tasks/{id}:
+    $ref: "./tasks.yaml#/paths/~1tasks~1{id}"
+  /tasks/{id}/actions:
+    $ref: "./tasks.yaml#/paths/~1tasks~1{id}~1actions"
+  /tasks/{id}/actions/{actionId}:
+    $ref: "./tasks.yaml#/paths/~1tasks~1{id}~1actions~1{actionId}"
+  /calendars:
+    $ref: "./tasks.yaml#/paths/~1calendars"
+  /calendars/{calendarId}:
+    $ref: "./tasks.yaml#/paths/~1calendars~1{calendarId}"
+  /calendars/{calendarId}/events:
+    $ref: "./tasks.yaml#/paths/~1calendars~1{calendarId}~1events"
+  /calendars/{calendarId}/events/{eventId}:
+    $ref: "./tasks.yaml#/paths/~1calendars~1{calendarId}~1events~1{eventId}"
+  /calendars/events/{eventId}/attendees:
+    $ref: "./tasks.yaml#/paths/~1calendars~1events~1{eventId}~1attendees"
+  /calendars/events/{eventId}/attendees/{attendeeCalendarId}:
+    $ref: "./tasks.yaml#/paths/~1calendars~1events~1{eventId}~1attendees~1{attendeeCalendarId}"
+  #
+  # JSON:API definition for Zone services
+  #
+  /zones:
+    $ref: "./accessControl.yaml#/paths/~1zones"
+  /zones/hierarchies:
+    $ref: "./accessControl.yaml#/paths/~1zones~1hierarchies"
+  /zones/{id}:
+    $ref: "./accessControl.yaml#/paths/~1zones~1{id}"
+  /zones/{id}/sub-zones:
+    $ref: "./accessControl.yaml#/paths/~1zones~1{id}~1sub-zones"
+  /zones/{id}/head-count:
+    $ref: "./accessControl.yaml#/paths/~1zones~1{id}~1head-count"
+  /zones/{id}/hierarchy:
+    $ref: "./accessControl.yaml#/paths/~1zones~1{id}~1hierarchy"
+  /zones/kpis:
+    $ref: "./accessControl.yaml#/paths/~1zones~1kpis"
+  /zones/{id}/emergencies:
+    $ref: "./accessControl.yaml#/paths/~1zones~1{id}~1emergencies"
+  /zones/check-out-personnel:
+    $ref: "./accessControl.yaml#/paths/~1zones~1check-out-personnel"
+  /emergencies:
+    $ref: "./accessControl.yaml#/paths/~1emergencies"
+  /emergencies/{id}:
+    $ref: "./accessControl.yaml#/paths/~1emergencies~1{id}"
+  #
+  # JSON:API definition for GreyMarketSurvey services
+  #
+  /grey-market-surveys/headers:
+    $ref: "./greyMarketSurvey.yaml#/paths/~1grey-market-surveys~1headers"
+  /grey-market-surveys/headers/{headerId}:
+    $ref: "./greyMarketSurvey.yaml#/paths/~1grey-market-surveys~1headers~1{headerId}"
+  /grey-market-surveys/headers/{headerId}/lines:
+    $ref: "./greyMarketSurvey.yaml#/paths/~1grey-market-surveys~1headers~1{headerId}~1lines"
+  /grey-market-surveys/lines/{lineId}:
+    $ref: "./greyMarketSurvey.yaml#/paths/~1grey-market-surveys~1lines~1{lineId}"
+  #
+  # JSON:API definition for InventoryDocument services
+  #
+  /inventory-docs/headers:
+    $ref: "./inventoryDoc.yaml#/paths/~1inventory-docs~1headers"
+  /inventory-docs/headers/{headerId}:
+    $ref: "./inventoryDoc.yaml#/paths/~1inventory-docs~1headers~1{headerId}"
+  /inventory-docs/headers/{headerId}/lines:
+    $ref: "./inventoryDoc.yaml#/paths/~1inventory-docs~1headers~1{headerId}~1lines"
+  /inventory-docs/headers/{headerId}/linked-docs:
+    $ref: "./inventoryDoc.yaml#/paths/~1inventory-docs~1headers~1{headerId}~1linked-docs"
+  /inventory-docs/lines:
+    $ref: "./inventoryDoc.yaml#/paths/~1inventory-docs~1lines"
+  /inventory-docs/headers-export:
+    $ref: "./inventoryDoc.yaml#/paths/~1inventory-docs~1headers-export"
+  /inventory-docs/lines-export:
+    $ref: "./inventoryDoc.yaml#/paths/~1inventory-docs~1lines-export"
+  #
+  # JSON:API definition for access control services
+  #
+  /access/gates:
+    $ref: "./accessControl.yaml#/paths/~1access~1gates"
+  /access/gates/{id}:
+    $ref: "./accessControl.yaml#/paths/~1access~1gates~1{id}"
+  /access/groups:
+    $ref: "./accessControl.yaml#/paths/~1access~1groups"
+  /access/groups/{groupId}/gates/{gateId}:
+    $ref: "./accessControl.yaml#/paths/~1access~1groups~1{groupId}~1gates~1{gateId}"
+  /access/groups/gates/{gateId}:
+    $ref: "./accessControl.yaml#/paths/~1access~1groups~1gates~1{gateId}"
+  /badge-holders/last-accesses:
+    $ref: "./accessControl.yaml#/paths/~1badge-holders~1last-accesses"
+  /access/entries:
+    $ref: "./accessControl.yaml#/paths/~1access~1entries"
+  /badges/{id}:
+    $ref: "./accessControl.yaml#/paths/~1badges~1{id}"
+  /badge-holders/{id}:
+    $ref: "./accessControl.yaml#/paths/~1badge-holders~1{id}"
+  /badge-holders/by-code/{code}:
+    $ref: "./accessControl.yaml#/paths/~1badge-holders~1by-code~1{code}"
+  /badge-holders/{code}/access/entries:
+    $ref: "./accessControl.yaml#/paths/~1badge-holders~1{code}~1access~1entries"
+  #
+  # JSON:API definition for Authorization Workflow services
+  #
+  /auth-workflows:
+    $ref: "./authWorkflows.yaml#/paths/~1auth-workflows"
+  /auth-workflows/actions:
+    $ref: "./authWorkflows.yaml#/paths/~1auth-workflows~1actions"
+  /auth-workflows/auth-steps:
+    $ref: "./authWorkflows.yaml#/paths/~1auth-workflows~1auth-steps"
+  /auth-workflows/auth-bodies/{bodyId}:
+    $ref: "./authWorkflows.yaml#/paths/~1auth-workflows~1auth-bodies~1{bodyId}"
+  /auth-workflows/auth-bodies:
+    $ref: "./authWorkflows.yaml#/paths/~1auth-workflows~1auth-bodies"
+  /auth-workflows/steps:
+    $ref: "./authWorkflows.yaml#/paths/~1auth-workflows~1steps"
+  /auth-workflows/steps/{stepId}:
+    $ref: "./authWorkflows.yaml#/paths/~1auth-workflows~1steps~1{stepId}"
+  #
+  # JSON:API definition for Sales Representative services
+  #
+  /sales-reps:
+    $ref: "./salesReps.yaml#/paths/~1sales-reps"
+  /sales-reps/{id}:
+    $ref: "./salesReps.yaml#/paths/~1sales-reps~1{id}"
+  /sales-reps/{id}/tasks:
+    $ref: "./salesReps.yaml#/paths/~1sales-reps~1{id}~1tasks"
+  /sales-reps/{id}/comissions/last-calculation-date:
+    $ref: "./salesReps.yaml#/paths/~1sales-reps~1{id}~1commissions~1last-calculation-date"
+  /sales-reps/{id}/kpis:
+    $ref: "./salesReps.yaml#/paths/~1sales-reps~1{id}~1kpis"
+  /sales-reps/{id}/kpis/{kpiId}:
+    $ref: "./salesReps.yaml#/paths/~1sales-reps~1{id}~1kpis~1{kpiId}"
+  /sales-reps/{id}/targets:
+    $ref: "./salesReps.yaml#/paths/~1sales-reps~1{id}~1targets"
+  /sales-reps/{id}/calendar-events:
+    $ref: "./salesReps.yaml#/paths/~1sales-reps~1{id}~1calendar-events"
+  #
+  # JSON:API definition for Commission services
+  #
+  /commission-sessions:
+    $ref: "./commissions.yaml#/paths/~1commission-sessions"
+  /commission-sessions/{id}:
+    $ref: "./commissions.yaml#/paths/~1commission-sessions~1{id}"
+  /commission-sessions/{id}/cut-off:
+    $ref: "./commissions.yaml#/paths/~1commission-sessions~1{id}~1cut-off"
+  /commission-sessions/{id}/kpis:
+    $ref: "./commissions.yaml#/paths/~1commission-sessions~1{id}~1kpis"
+  /commission-sessions/{id}/kpis/{kpiId}:
+    $ref: "./commissions.yaml#/paths/~1commission-sessions~1{id}~1kpis~1{kpiId}"
+  /commission-sessions/{id}/sales-doc-lines:
+    $ref: "./commissions.yaml#/paths/~1commission-sessions~1{id}~1sales-doc-lines"
+  /commission-sessions/{id}/status:
+    $ref: "./commissions.yaml#/paths/~1commission-sessions~1{id}~1status"
+  /commission-sessions/cut-off:
+    $ref: "./commissions.yaml#/paths/~1commission-sessions~1cut-off"
+  /commissions:
+    $ref: "./commissions.yaml#/paths/~1commissions"
+  /commissions/{id}:
+    $ref: "./commissions.yaml#/paths/~1commissions~1{id}"
+  /commissions/{id}/details:
+    $ref: "./commissions.yaml#/paths/~1commissions~1{id}~1details"
+  /commissions/export:
+    $ref: "./commissions.yaml#/paths/~1commissions~1export"
+  #
+  # JSON:API definition for Accounting period services
+  #
+  /accounting-periods:
+    $ref: "./core.yaml#/paths/~1accounting-periods"
+  #
+  # JSON:API definition for Identity services
+  #
+  /identities/inhibited:
+    $ref: "./identities.yaml#/paths/~1identities~1inhibited"
+  /identities/keep-alive:
+    $ref: "./identities.yaml#/paths/~1identities~1keep-alive"
+  /enrollment/code/{code}:
+    $ref: "./identities.yaml#/paths/~1enrollment~1code~1{code}"
+  #
+  # JSON:API definition for Digital Content services
+  #
+  /contents/entities/{entityId}/{entityObjectId}:
+    $ref: "./digitalContents.yaml#/paths/~1contents~1entities~1{entityId}~1{entityObjectId}"
+  /contents/entities/{entityId}/{entityObjectId}/reorder:
+    $ref: "./digitalContents.yaml#/paths/~1contents~1entities~1{entityId}~1{entityObjectId}~1reorder"
+  /contents/media/{contentId}:
+    $ref: "./digitalContents.yaml#/paths/~1contents~1media~1{contentId}"
+  /contents/media/{contentId}/renditions:
+    $ref: "./digitalContents.yaml#/paths/~1contents~1media~1{contentId}~1renditions"
+  /contents/categories:
+    $ref: "./digitalContents.yaml#/paths/~1contents~1categories"
+  /contents/types:
+    $ref: "./digitalContents.yaml#/paths/~1contents~1types"
+  /contents/types/{typeId}:
+    $ref: "./digitalContents.yaml#/paths/~1contents~1types~1{typeId}"
+  #
+  # JSON:API definition for Widget services
+  #
+  /widgets:
+    $ref: "./widgets.yaml#/paths/~1widgets"
+  #
+  # JSON:API definition for Notification services
+  #
+  /notifications/channels/email:
+    $ref: "./notifications.yaml#/paths/~1notifications~1channels~1email"
+  /notifications/channels/email/attachments:
+    $ref: "./notifications.yaml#/paths/~1notifications~1channels~1email~1attachments"
+  #
+  # JSON:API definition for Report services
+  #
+  /report-queue/{queueEntryId}:
+    $ref: "./core.yaml#/paths/~1report-queue~1{queueEntryId}"
+  /reports/engine-templates/{id}:
+    $ref: "./core.yaml#/paths/~1reports~1engine-templates~1{id}"
+  /reports/string-templates/{id}:
+    $ref: "./core.yaml#/paths/~1reports~1string-templates~1{id}"
+  /reports/templates:
+    $ref: "./core.yaml#/paths/~1reports~1templates"
+  #
+  # JSON:API definition for SalesPoint resources
+  #
+  /sales-points:
+    $ref: "./core.yaml#/paths/~1sales-points"
+  /sales-points/{id}:
+    $ref: "./core.yaml#/paths/~1sales-points~1{id}"
+  /sales-points/{id}/warehouses:
+    $ref: "./core.yaml#/paths/~1sales-points~1{id}~1warehouses"
+  #
+  # JSON:API definition for SalesDepartment resources
+  #
+  /sales-departments:
+    $ref: "./core.yaml#/paths/~1sales-departments"
+  #
+  # JSON:API definition for UserMessage resources
+  #
+  /messages/incoming:
+    $ref: "./messages.yaml#/paths/~1messages~1incoming"
+  /messages/message:
+    $ref: "./messages.yaml#/paths/~1messages~1message"
+  /messages/message/{id}:
+    $ref: "./messages.yaml#/paths/~1messages~1message~1{id}"
+  /messages/message/{id}/return-receipts:
+    $ref: "./messages.yaml#/paths/~1messages~1message~1{id}~1return-receipts"
+  /messages/reading-status:
+    $ref: "./messages.yaml#/paths/~1messages~1reading-status"
+  /messages/recipients:
+    $ref: "./messages.yaml#/paths/~1messages~1recipients"
+  /messages/senders:
+    $ref: "./messages.yaml#/paths/~1messages~1senders"
+  /messages/sent:
+    $ref: "./messages.yaml#/paths/~1messages~1sent"
+  #
+  # JSON:API definition for Plant resources
+  #
+  /plants:
+    $ref: "./plants.yaml#/paths/~1plants"
+  /plants/{id}:
+    $ref: "./plants.yaml#/paths/~1plants~1{id}"
+  /plants/{id}/details:
+    $ref: "./plants.yaml#/paths/~1plants~1{id}~1details"
+  #
+  # JSON:API definition for B2B Catalog
+  #
+  /items/catalog-filters:
+    $ref: "./b2b/catalog.yaml#/paths/~1items~1catalog-filters"
+  /items/search-suggestions:
+    $ref: "./b2b/catalog.yaml#/paths/~1items~1search-suggestions"
+  /sales-docs/headers/{id}/items-for-catalog:
+    $ref: "./b2b/catalog.yaml#/paths/~1sales-docs~1headers~1{id}~1items-for-catalog"
+  /sales-docs/headers/{headerId}/pricing-conditions:
+    $ref: "./b2b/catalog.yaml#/paths/~1sales-docs~1headers~1{headerId}~1pricing-conditions"
+  /sales-docs/headers/{id}/promotions:
+    $ref: "./b2b/catalog.yaml#/paths/~1sales-docs~1headers~1{id}~1promotions"
+  #
+  # JSON:API definition for Recurrence values
+  #
+  /recurrence-values:
+    $ref: "./recurrences.yaml#/paths/~1recurrence-values"
+  /recurrence-values/{id}:
+    $ref: "./recurrences.yaml#/paths/~1recurrence-values~1{id}"
+  #
+  # JSON:API definition for Certificate values
+  #
+  /certificate-types:
+    $ref: "./certificates.yaml#/paths/~1certificate-types"
+  /certificate-types/{id}:
+    $ref: "./certificates.yaml#/paths/~1certificate-types~1{id}"
+  /certificates:
+    $ref: "./certificates.yaml#/paths/~1certificates"
+  /certificates/{id}:
+    $ref: "./certificates.yaml#/paths/~1certificates~1{id}"
+  #
+  # JSON:API definition for Marketplace values
+  #
+  /marketplaces:
+    $ref: "./b2b/marketplaces.yaml#/paths/~1marketplaces"
+  /marketplaces/{id}:
+    $ref: "./b2b/marketplaces.yaml#/paths/~1marketplaces~1{id}"
+  /marketplaces/{id}/items:
+    $ref: "./b2b/marketplaces.yaml#/paths/~1marketplaces~1{id}~1items"
+  /marketplaces/{marketplaceId}/items/{itemId}:
+    $ref: "./b2b/marketplaces.yaml#/paths/~1marketplaces~1{marketplaceId}~1items~1{itemId}"
+  /marketplaces/{id}/customers:
+    $ref: "./b2b/marketplaces.yaml#/paths/~1marketplaces~1{id}~1customers"
+  /marketplaces/{marketplaceId}/customers/{customerId}:
+    $ref: "./b2b/marketplaces.yaml#/paths/~1marketplaces~1{marketplaceId}~1customers~1{customerId}"
+  /marketplaces/{id}/attributes:
+    $ref: "./b2b/marketplaces.yaml#/paths/~1marketplaces~1{id}~1attributes"
+  /marketplaces/{id}/attributes/eligible:
+    $ref: "./b2b/marketplaces.yaml#/paths/~1marketplaces~1{id}~1attributes~1eligible"
+
+  #
+  # JSON:API definition for Comment values
+  #
+  /comments:
+    $ref: "./comments.yaml#/paths/~1comments"
+  /comments/{id}:
+    $ref: "./comments.yaml#/paths/~1comments~1{id}"
+  #
+  # JSON:API definition for Tickets
+  #
+  /tickets:
+    $ref: "./tickets.yaml#/paths/~1tickets"
+  /tickets/export:
+    $ref: "./tickets.yaml#/paths/~1tickets~1export"
+  /tickets/types:
+    $ref: "./tickets.yaml#/paths/~1tickets~1types"
+  /tickets/reasons:
+    $ref: "./tickets.yaml#/paths/~1tickets~1reasons"
+  #
+  # JSON:API definition for Party services
+  #
+  /parties/{id}/business-hours:
+    $ref: "./businessHours.yaml#/paths/~1parties~1{id}~1business-hours"
+  #
+  # JSON:API definition for Statistics services
+  #
+  /stats:
+    $ref: "./stats.yaml#/paths/~1stats"
+  /sales-stats/{statId}/dataset:
+    $ref: "./stats.yaml#/paths/~1sales-stats~1{statId}~1dataset"
+
+  /identification-uhf/readings:
+    $ref: "./identifiers.yaml#/paths/~1identification-uhf~1readings"
+  #
+  # JSON:API definition for Communication services
+  #
+  /communications:
+    $ref: "./communications.yaml#/paths/~1communications"
+  /communications/actions:
+    $ref: "./communications.yaml#/paths/~1communications~1actions"
+  /communications/types:
+    $ref: "./communications.yaml#/paths/~1communications~1types"
+  /communications/{id}:
+    $ref: "./communications.yaml#/paths/~1communications~1{id}"
+  /communications/{id}/edit:
+    $ref: "./communications.yaml#/paths/~1communications~1{id}~1edit"
+  /communications/{id}/publish:
+    $ref: "./communications.yaml#/paths/~1communications~1{id}~1publish"
+  #
+  # JSON:API definition for Email Verification services
+  #
+  /email-verification:
+    $ref: "./core.yaml#/paths/~1email-verification"
+  /email-verification/start:
+    $ref: "./core.yaml#/paths/~1email-verification~1start"

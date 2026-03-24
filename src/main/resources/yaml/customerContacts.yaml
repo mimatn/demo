@@ -1,0 +1,322 @@
+openapi: 3.0.3
+info:
+  title: Customer Contacts API
+  version: "-"
+tags:
+  - name: Customer Contact
+    description: |
+      This functionality allows users to manage a client's contacts, specifically the individuals associated with a 
+      client. It centralizes all contact information, collecting and storing it in a single, accessible location to 
+      make management and reference easier. It also enhances communication by enabling more effective and personalized 
+      interactions with clients through emails, phone calls, messages, and other channels.
+
+      The functionality tracks all interactions with clients, including meetings, calls, emails, and notes, providing a 
+      complete overview of the relationship. 
+
+      Additionally, it records the consents given by each contact regarding data processing purposes and tracks any 
+      consents provided.
+components:
+  schemas:
+    Contact:
+      description: Contact resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "Contact"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - firstName
+            - lastName
+            - contactTypeId
+            - emails
+            - phones
+          properties:
+            code:
+              description: Contact code.
+              type: string
+            firstName:
+              description: Contact first name.
+              type: string
+            lastName:
+              description: Contact last name.
+              type: string
+            businessRole:
+              description: Description of the business role of the contact.
+              type: string
+            contactTypeId:
+              description: Contact type id. See dictionary `ContactType`.
+              type: string
+            emails:
+              description: List of emails for this contact. The main email is the one with `sequenceNum = 0`.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/Email"
+            phones:
+              description: List of phones for this contact. The main phone is the one with `sequenceNum = 0`.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/Phone"
+            username:
+              description: Optional username of the UserProfileId connected to the contact.
+              type: string
+        relationships:
+          type: object
+          description: The relationships of a Contact.
+          readOnly: true
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            privacyAgreements:
+              $ref: "./jsonapi.yaml#/components/schemas/relToManyReadOnly"
+            relatedCustomers:
+              $ref: "./jsonapi.yaml#/components/schemas/relToManyParties"
+    ContactIncluded:
+      description: Related entities.
+      type: array
+      items:
+        $ref: "./core.yaml#/components/schemas/PrivacyAgreement"
+      uniqueItems: true
+    ContactResponse:
+      description: Single Contact response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Contact"
+        included:
+          $ref: "#/components/schemas/ContactIncluded"
+    ContactListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Contacts.
+          type: array
+          items:
+            $ref: "#/components/schemas/Contact"
+        included:
+          $ref: "#/components/schemas/ContactIncluded"
+    ContactRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Contact"
+paths:
+  /customers/{id}/contacts:
+    parameters:
+      - name: id
+        in: path
+        description: The customer id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of the contacts of a customer.
+      operationId: listCustomerContacts
+      tags:
+        - Customer Contact
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+      responses:
+        "200":
+          description: Customer contact list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ContactListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Add a customer contact.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) | 
+        |:-:|
+        | createCustomerContact |
+      operationId: createCustomerContact
+      tags:
+        - Customer Contact
+      x-authorities:
+        - createCustomerContact
+      requestBody:
+        description: Customer account contact to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ContactRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ContactResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customers/{customerId}/contacts/{contactId}:
+    parameters:
+      - name: customerId
+        in: path
+        description: The customer id
+        required: true
+        schema:
+          type: string
+      - name: contactId
+        in: path
+        description: The contact id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single customer contact.
+      operationId: getCustomerContact
+      tags:
+        - Customer Contact
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ContactResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: |
+        Update a Customer contact.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateCustomerContact |
+      operationId: updateCustomerContact
+      tags:
+        - Customer Contact
+      x-authorities:
+        - updateCustomerContact
+      requestBody:
+        description: Customer contact to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ContactRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ContactResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        Delete a Customer account contact.
+      operationId: deleteCustomerContact
+      tags:
+        - Customer Contact
+      x-authorities:
+        - deleteCustomerContact
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customers/{customerId}/contacts/{contactId}/swap:
+    parameters:
+      - name: customerId
+        in: path
+        description: The customer id
+        required: true
+        schema:
+          type: string
+      - name: contactId
+        in: path
+        description: The customer contact id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: |
+        Swaps two contacts for a given customer account.
+        Updates the sequence number of a specific contact within a customer account. 
+        The contact identified by `contactId` will be assigned the new sequenceNum, and the contact currently holding 
+        that `sequenceNum` will be reassigned the original sequence number of the moved contact. 
+        No other contacts are affected.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateCustomerContact |
+      operationId: swapCustomerContacts
+      tags:
+        - Customer Contact
+      x-authorities:
+        - updateCustomerContact
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              type: object
+              required:
+                - newSequenceNum
+              properties:
+                newSequenceNum:
+                  type: integer
+                  description: |
+                    The new sequence number for the contact. The contact currently holding 
+                    this `sequenceNum` will be reassigned the original sequence number of the moved contact.
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ContactResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

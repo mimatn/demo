@@ -1,0 +1,1655 @@
+openapi: 3.0.3
+info:
+  title: Warehouse Documents API
+  version: "-"
+  description: APIs for Warehouse Document.
+tags:
+  - name: Warehouse Document
+    description: Warehouse Document.
+components:
+  schemas:
+    WarehouseDocLineWithHeaderFilters:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/WarehouseDocHeaderFilters"
+        - $ref: "#/components/schemas/WarehouseDocLineFilters"
+    WarehouseDocHeaderFilters:
+      description: The set of filters available for warehouse document headers.
+      type: object
+      allOf:
+        - type: object
+          properties:
+            warehouseIn:
+              description: A loading warehouse.
+              type: string
+              example: "WAREHOUSE.1"
+            warehouseOut:
+              description: A unloading warehouse.
+              type: string
+              example: "WAREHOUSE.2"
+            itemStatusIn:
+              description: A destination status for the item linked to the header's lines.
+              type: string
+              example: "Allocated"
+            deliveryDate:
+              description: Filter the response by delivery date.
+              type: string
+            checkpointId:
+              description: It will filter the warehouse documents based on the checkpoint to which they are assigned.
+              type: string
+            packageItemInstanceId:
+              description: Filter the response by package item instance.
+              type: string
+            processingStatusId:
+              description: Filter the response by processing status.
+              type: string
+            docTypeId:
+              description: Filter the response by document type.
+              type: string
+        - $ref: "./documents.yaml#/components/schemas/DocWithItemsHeaderFilters"
+    WarehouseDocLineFilters:
+      description: The set of filters available for warehouse document lines.
+      type: object
+      allOf:
+        - type: object
+          properties:
+            warehouseIn:
+              description: A loading warehouse.
+              type: string
+              example: "WAREHOUSE.1"
+            warehouseOut:
+              description: A unloading warehouse.
+              type: string
+              example: "WAREHOUSE.2"
+            itemStatusIn:
+              description: A destination status for the item linked to the line.
+              type: string
+              example: "Allocated"
+            itemInstance:
+              description: Filter the response by item instance.
+              type: string
+        - $ref: "./documents.yaml#/components/schemas/DocWithItemsLineFilters"
+    #
+    # WarehouseDocHeaderAttributes (extends ./core.yaml#/components/schemas/DocHeaderAttributes)
+    #
+    WarehouseDocHeaderAttributes:
+      description: |
+        Specific attributes of a warehouse document header. The attributes that are in common with the other types of document
+        are defined in the `DocHeaderAttributes` object.
+      type: object
+      properties:
+        warehouseIn:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: The loading warehouse
+        warehouseOut:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: The unloading warehouse
+        fulfillmentStatusId:
+          $ref: "./documents.yaml#/components/schemas/FulfillmentStatus"
+          description: The warehouse document's fulfillment status.
+        deliveryStatusId:
+          description: The document's delivery status.
+          type: string
+          example: "DeliveryStatus.InPreparation"
+        deliveryDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        totFulfilledQuantity:
+          description: |
+            The sum of the fulfilled quantities of document's lines. 
+            **Important:** This field will be `null` if lines' units of measurement are not homogeneous.
+          type: integer
+          readOnly: true
+          example: 6
+        totDocQuantity:
+          description: |
+            The sum of the document quantities of document's lines.
+            **Important:** This field will be `null` if lines' units of measurement are not homogeneous.
+          type: integer
+          readOnly: true
+          example: 9
+        counters:
+          description: The counters calculated for the aggregation.
+          type: object
+          properties:
+            global:
+              description: |
+                The global counters. It is `null` when `includeCounters` parameter
+                is `No`. It has a value in all other cases.
+              allOf:
+                - $ref: "./documents.yaml#/components/schemas/ReadingDocCounters"
+            packages:
+              description: |
+                The package counters. It is `null` when `includePackageCounters`
+                parameter is `No`. It has a value in all other cases.
+              allOf:
+                - $ref: "./documents.yaml#/components/schemas/ReadingDocPackageCounters"
+    WarehouseDocHeaderAttributesWithDocHeader:
+      description: Complete set of attributes of a warehouse document header
+      allOf:
+        - $ref: "#/components/schemas/WarehouseDocHeaderAttributes"
+        - description: DocHeader attributes.
+          type: object
+          required:
+            - docHeaderAttributes
+          properties:
+            docHeaderAttributes:
+              $ref: "./documents.yaml#/components/schemas/DocHeaderAttributes"
+    WarehouseDocHeaderRelationships:
+      description: A warehouse document's relationships. They extend generic document header's ones.
+      type: object
+      required:
+        - docHeader
+      properties:
+        docHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+          description: The generic document header linked to the warehouse document header.
+    WarehouseDocHeader:
+      description: An object that contains the information about a warehouse document header.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "WarehouseDocHeader"
+        id:
+          description: A string that uniquely identify a warehouse document header.
+          type: string
+          example: "1"
+        attributes:
+          $ref: "#/components/schemas/WarehouseDocHeaderAttributesWithDocHeader"
+        relationships:
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/DocHeaderRelationships"
+            - $ref: "#/components/schemas/WarehouseDocHeaderRelationships"
+    WarehouseDocHeaderIncluded:
+      description: Related document header and common document header relationships.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    WarehouseDocResponse:
+      description: Single warehouse document response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/WarehouseDocHeader"
+        included:
+          $ref: "#/components/schemas/WarehouseDocHeaderIncluded"
+    WarehouseDocHeaderListResponse:
+      description: An object with a list of warehouse document headers enriched with statistics.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of warehouse document headers.
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDocHeader"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/WarehouseDocHeaderIncluded"
+    WarehouseDocRequest:
+      description: Object to use to create a new warehouse document header.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/WarehouseDocHeader"
+    CommonWarehouseDocLineRelationships:
+      description: Relationships that are common in warehouse document line and line instances.
+      type: object
+      required:
+        - itemStatusIn
+        - itemStatusOut
+      properties:
+        itemStatusIn:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        itemStatusOut:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMetaReadOnly"
+    WarehouseDocLineAttributes:
+      description: The attributes of a warehouse document line.
+      type: object
+      required:
+        - lineNumber
+        - reason
+        - docFulfillQuantity
+        - commonLineAttributes
+      properties:
+        lineNumber:
+          description: The line's number in the document.
+          type: string
+          example: "1"
+        reason:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        warehouseIn:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        warehouseOut:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        docQuantity:
+          description: Document quantity expressed in the document's unit of measure.
+          type: number
+          format: double
+          default: 0.0
+          example: 5.0
+          minimum: 0.0
+        docFulfillQuantity:
+          description: Quantity of goods processed expressed in the document's unit of measure.
+          type: number
+          format: double
+          default: 0.0
+          minimum: 0.0
+          example: 5.0
+        expectedDocQuantity:
+          description: Expected quantity expressed in the document's unit of measure.
+          type: number
+          format: double
+          default: 0.0
+          minimum: 0.0
+          example: 5.0
+        fulfillmentStatusId:
+          $ref: "./documents.yaml#/components/schemas/FulfillmentStatus"
+        deliveryStatusId:
+          description: The line's delivery status.
+          type: string
+          example: "DeliveryStatus.InPreparation"
+        deliveryDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        commonLineAttributes:
+          $ref: "./documents.yaml#/components/schemas/CommonDocLineAttributes"
+        batches:
+          description: Related batches codes.
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        serialNumbers:
+          description: Related serial numbers codes.
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+        itemInstance:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Item Instance linked to the line.
+    WarehouseDocLineRelationships:
+      description: The relationships of a warehouse document line.
+      type: object
+      required:
+        - warehouseDocHeader
+        - item
+      properties:
+        warehouseDocHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+        item:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        fulfilledDocHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneNullable"
+        fulfilledDocLine:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneNullable"
+    WarehouseDocLineIncluded:
+      description: Related relationships of a warehouse document line.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    WarehouseDocLine:
+      description: A warehouse document line.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "WarehouseDocLine"
+        id:
+          description: A string that uniquely identify the object.
+          type: string
+          example: "W.LINE.1"
+        attributes:
+          $ref: "#/components/schemas/WarehouseDocLineAttributes"
+        relationships:
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/CommonDocLineRelationships"
+            - $ref: "#/components/schemas/CommonWarehouseDocLineRelationships"
+            - $ref: "#/components/schemas/WarehouseDocLineRelationships"
+    WarehouseDocLineRequest:
+      description: Object to use to create a new warehouse document line.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDocLine"
+    WarehouseDocLineResponse:
+      description: Single warehouse document line.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/WarehouseDocLine"
+        included:
+          $ref: "#/components/schemas/WarehouseDocLineIncluded"
+    WarehouseDocLineListResponse:
+      description: An object with a list of warehouse document lines.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: A list of warehouse document lines.
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDocLine"
+        included:
+          $ref: "#/components/schemas/WarehouseDocLineIncluded"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+    WarehouseDocLineInstanceAttributes:
+      description: The attributes of a warehouse document line instance.
+      type: object
+      required:
+        - commonLineAttributes
+      properties:
+        reason:
+          description: |
+            The reason why an item instance is being moved. This attribute will have a value only when the warehouse
+            document line linked to the current warehouse line instance has to be inferred from it.
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        commonLineAttributes:
+          $ref: "./documents.yaml#/components/schemas/CommonDocLineAttributes"
+    WarehouseDocLineInstanceRelationships:
+      description: Relationships of a warehouse document line instance.
+      type: object
+      required:
+        - itemInstance
+        - warehouseDocLine
+      properties:
+        itemInstance:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        warehouseDocLine:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+    WarehouseDocLineInstance:
+      description: A warehouse document line instance.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "WarehouseDocLineInstance"
+        id:
+          description: A string that uniquely identify the object.
+          type: string
+          example: "W.LINE.INST.1"
+        attributes:
+          $ref: "#/components/schemas/WarehouseDocLineInstanceAttributes"
+        relationships:
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/CommonDocLineRelationships"
+            - $ref: "#/components/schemas/CommonWarehouseDocLineRelationships"
+            - $ref: "#/components/schemas/WarehouseDocLineInstanceRelationships"
+    MultipleWarehouseDocLineInstanceRequest:
+      description: An object to use to create a list of warehouse document line instances.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: A list of warehouse document line instances to create.
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDocLineInstance"
+    WarehouseDocLineInstanceListResponse:
+      description: An object that contains a list of warehouse document line instances.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: A list of warehouse document line instances.
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDocLineInstance"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    WarehouseDocLineWithHeader:
+      description: |
+        WarehouseDocLineWithHeader resource. Contains all attributes and relationships of the warehouse document line and its
+        warehouse document header info.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "WarehouseDocLineWithHeader"
+        id:
+          type: string
+        attributes:
+          allOf:
+            - $ref: "#/components/schemas/WarehouseDocHeaderAttributesWithDocHeader"
+            - $ref: "#/components/schemas/WarehouseDocLineAttributes"
+        relationships:
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/DocHeaderRelationships"
+            - $ref: "#/components/schemas/WarehouseDocHeaderRelationships"
+            - $ref: "./documents.yaml#/components/schemas/CommonDocLineRelationships"
+            - $ref: "#/components/schemas/CommonWarehouseDocLineRelationships"
+            - $ref: "#/components/schemas/WarehouseDocLineRelationships"
+    WarehouseDocLineWithHeaderIncluded:
+      description: WarehouseDocLineWithHeader related schemas.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    WarehouseDocLineWithHeaderListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of warehouse documents lines with their header info included.
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDocLineWithHeader"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/WarehouseDocLineWithHeaderIncluded"
+    WarehouseDocHeaderInboundResponse:
+      description: A response to an inbound operation.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: A list of `InboundLine` objects.
+          type: array
+          items:
+            $ref: "./documents.yaml#/components/schemas/InboundLine"
+    WarehouseDocAggregatedTotals:
+      description: |
+        An object containing data calculated by aggregating the lines of a warehouse document based on a particular
+        aggregation strategy. Since data may be aggregated in different ways, the meaning of these attributes will
+        be specified in the context of the aggregation strategy used.
+      type: object
+      required:
+        - expectedQty
+        - readQty
+        - missingQty
+        - unexpectedQty
+      properties:
+        expectedQty:
+          description: The total expected quantity.
+          type: number
+          format: double
+        readQty:
+          description: The total read quantity.
+          type: number
+          format: double
+        missingQty:
+          description: The total missing quantity.
+          type: number
+          format: double
+        unexpectedQty:
+          description: The total unexpected quantity.
+          type: number
+          format: double
+    WarehouseDocNoGroupingElement:
+      type: object
+      required:
+        - lineId
+        - item
+        - expectedQty
+        - readQty
+        - missingQty
+        - unexpectedQty
+        - lastChangeTs
+        - reason
+      properties:
+        lineId:
+          description: The line id.
+          type: string
+        item:
+          description: Related item.
+          type: object
+          required:
+            - id
+            - descr
+            - code
+            - isUnexpected
+          properties:
+            id:
+              description: The item id.
+              type: string
+            descr:
+              description: The item description.
+              type: string
+            code:
+              description: The item code.
+              type: string
+            brand:
+              description: The item brand.
+              type: string
+            size:
+              description: The item size.
+              type: string
+            color:
+              description: The item color.
+              type: string
+            isUnexpected:
+              description: Indicates if the item is unexpected.
+              type: boolean
+              default: false
+        expectedQty:
+          description: The expected quantity of the item.
+          type: number
+          format: double
+        readQty:
+          description: Quantity or number of tags read.
+          type: number
+          format: double
+        missingQty:
+          description: Quantity or number of missing tags.
+          type: number
+          format: double
+        unexpectedQty:
+          description: Quantity of unexpected tags read.
+          type: number
+          format: double
+        lastChangeTs:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+        reason:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+    WarehouseDocNoGrouping:
+      description: |
+        Raw item-level aggregation without grouping.
+
+        For the `noGrouping` strategy, the meaning of the attributes inside `totals` is the following:
+
+        * `expectedQty`: Counts the items defined in the lines of the document fulfilled by the considered one.
+        It is expressed in the document's unit of measurement.
+        * `readQty`: Counts **only** the serials read by the **checkpoint** that created the considered warehouse
+        document. It is expressed in the document's unit of measurement.
+        * `missingQty`: It is the sum of the differences between expected and fulfilled quantities declared in
+        the source document. It is expressed in the document's unit of measurement.
+        * `unexpectedQty`: Counts **only** the unexpected items read by the **checkpoint** that created the
+        considered warehouse document. It is expressed in the document's unit of measurement.
+      type: object
+      required:
+        - groups
+        - totals
+      properties:
+        groups:
+          description: An array where each group represents a line of a warehouse document.
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDocNoGroupingElement"
+        totals:
+          $ref: "#/components/schemas/WarehouseDocAggregatedTotals"
+    WarehouseDocGroupByPackageGroup:
+      type: object
+      required:
+        - packageCode
+        - expectedQty
+        - readQty
+        - missingQty
+      properties:
+        packageCode:
+          description: The package code id.
+          type: string
+        expectedQty:
+          description: The expected quantity of the item.
+          type: number
+          format: double
+        readQty:
+          description: Quantity or number of tags read.
+          type: number
+          format: double
+        missingQty:
+          description: Quantity or number of missing tags.
+          type: number
+          format: double
+    WarehouseDocGroupByPackage:
+      description: |
+        Warehouse document data aggregated by package code. Each group represents a single package.
+
+        For the `groupByPackage` strategy, the meaning of the attributes inside `totals` is the following:
+
+        * `expectedQty`: Counts how many items are defined for a given package. It is expressed in the document's
+        unit of measurement.
+        * `readQty`: Counts how many serials have been read for a given package. It counts **only** the serials
+        read by the **checkpoint** that created the considered warehouse document. It is expressed in the
+        document's unit of measurement.
+        * `missingQty`: It is the sum of the differences between expected and fulfilled quantities declared in
+        the source document. It is expressed in the document's unit of measurement.
+        * `unexpectedQty`: It has no meaning in this context.
+      type: object
+      required:
+        - groups
+        - totals
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDocGroupByPackageGroup"
+        totals:
+          $ref: "#/components/schemas/WarehouseDocAggregatedTotals"
+    WarehouseDocSerialsOnlyGroup:
+      type: object
+      required:
+        - itemInstanceId
+        - lineInstanceId
+      properties:
+        itemInstanceId:
+          description: The item instance id.
+          type: string
+        lineInstanceId:
+          description: The line instance id.
+          type: string
+        epc:
+          description: The EPC (Electronic Product Code) of the item instance (if RFID tag).
+          type: string
+        item:
+          description: Related item.
+          type: object
+          required:
+            - id
+            - descr
+            - code
+          properties:
+            id:
+              description: The item id.
+              type: string
+            descr:
+              description: The item description.
+              type: string
+            code:
+              description: The item code.
+              type: string
+            brand:
+              description: The item brand.
+              type: string
+            size:
+              description: The item size.
+              type: string
+            color:
+              description: The item color.
+              type: string
+    WarehouseDocSerialsOnly:
+      description: |
+        Warehouse document data aggregated by serials. Each group represents a single serial.
+
+        For the `serialsOnly` strategy, the meaning of the attributes inside `totals` is the following:
+
+        * `expectedQty`: It has no meaning in this context.
+        * `readQty`: How many serials have been read in total.
+        * `missingQty`: It has no meaning in this context.
+        * `unexpectedQty`: How many unexpected serials have been read in total.
+      type: object
+      required:
+        - groups
+        - totals
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/WarehouseDocSerialsOnlyGroup"
+        totals:
+          $ref: "#/components/schemas/WarehouseDocAggregatedTotals"
+    WarehouseDocAggregatedData:
+      description: |
+        Aggregated warehouse document data. Only one of the three aggregation strategies
+        (`noGrouping`, `groupByPackage`, or `serialsOnly`) will be populated in the `attributes`
+        field depending on the aggregation strategy defined in the request.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "WarehouseDocAggregatedData"
+        id:
+          description: Unique identifier of the warehouse document used for aggregation.
+          type: string
+        attributes:
+          description: Aggregated data grouped according to the selected strategy.
+          type: object
+          properties:
+            noGrouping:
+              $ref: "#/components/schemas/WarehouseDocNoGrouping"
+            groupByPackage:
+              $ref: "#/components/schemas/WarehouseDocGroupByPackage"
+            serialsOnly:
+              $ref: "#/components/schemas/WarehouseDocSerialsOnly"
+    WarehouseDocAggregatedDataResponse:
+      description: An object that contains the aggregated data of a warehouse document.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/WarehouseDocAggregatedData"
+    WarehouseDocReading:
+      description: An object needed to create a new warehouse reading document.
+      type: object
+      required:
+        - type
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "WarehouseDocReading"
+        attributes:
+          description: The attributes needed to create a new warehouse document.
+          type: object
+          required:
+            - creationDate
+            - ignoreReadingPackage
+            - ignoreReadingInstance
+            - createWithLineFromExpectedDocument
+            - createWithPackageFromExpectedDocument
+            - createWithInstanceFromExpectedDocument
+            - unexpectedDataStrategy
+          properties:
+            creationDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+              description: The date when the document is created.
+            ignoreReadingPackage:
+              description: Flag to indicate whether to interpret the read packages or not.
+              type: boolean
+              default: false
+            ignoreReadingInstance:
+              description: Flag to indicate whether to interpret the read items or not.
+              type: boolean
+              default: false
+            lineMatchAttributes:
+              description: |
+                Attributes used to identify the match between reading and expected document.
+                The match is between the value of the ItemInstance and the one present in the reading document line.
+              type: array
+              items:
+                uniqueItems: true
+                $ref: "./documents.yaml#/components/schemas/LineMatchAttribute"
+            createWithLineFromExpectedDocument:
+              description: If `true`, the lines will be copied to the reading document.
+              type: boolean
+            createWithPackageFromExpectedDocument:
+              description: If `true`, the packages will be copied to the reading document.
+              type: boolean
+            createWithInstanceFromExpectedDocument:
+              description: If `true`, the item instances will be copied to the reading document.
+              type: boolean
+            unexpectedDataStrategy:
+              $ref: "./documents.yaml#/components/schemas/UnexpectedDataStrategy"
+        relationships:
+          description: Related entities relationships needed to create a new warehouse doc.
+          type: object
+          required:
+            - organization
+            - docType
+            - language
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            docType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            userProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            checkpoint:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            device:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            fulfilledDocHeaders:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+            language:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    WarehouseDocReadingRequest:
+      description: A request to create a new warehouse reading document.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/WarehouseDocReading"
+  parameters:
+    WarehouseDocLineWithHeaderFiltersParameter:
+      name: filter
+      description: Complex filters for warehouse document lines with header info included.
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/WarehouseDocLineWithHeaderFilters"
+    WarehouseDocHeaderFiltersParameter:
+      name: filter
+      description: Complex filters for warehouse document headers.
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/WarehouseDocHeaderFilters"
+    WarehouseDocLineFiltersParameter:
+      name: filter
+      description: Complex filters for warehouse document line.
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/WarehouseDocLineFilters"
+    WarehouseDocHeaderId:
+      name: headerId
+      description: The id of a warehouse document header.
+      in: path
+      required: true
+      schema:
+        type: string
+paths:
+  /warehouse-docs/headers/{headerId}:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+    get:
+      description: Returns a single warehouse document header.
+      operationId: getWarehouseDocHeader
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+    patch:
+      description: Updates a single warehouse document header.
+      operationId: updateWarehouseDocHeader
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The warehouse document header to patch.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/WarehouseDocRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: Deletes a warehouse document header together with its lines.
+      operationId: deleteWarehouseDocHeader
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/headers/{headerId}/linked-docs:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+      - $ref: "./documents.yaml#/components/parameters/getLinkedDocsFilter"
+    get:
+      description: Returns a list of all the documents linked to the given one.
+      operationId: getWarehouseDocLinkedDocs
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocHeaderLiteListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/headers:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Creates a warehouse document header.
+      operationId: createWarehouseDocHeader
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The warehouse document header to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/WarehouseDocRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    get:
+      description: Returns a list of warehouse document headers.
+      operationId: listWarehouseDocHeaders
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./documents.yaml#/components/parameters/includeCounters"
+        - $ref: "./documents.yaml#/components/parameters/includePackageCounters"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/WarehouseDocHeaderFiltersParameter"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocHeaderListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/headers-export:
+    post:
+      description: Requests an export of warehouse document headers.
+      operationId: exportWarehouseDocHeaders
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/WarehouseDocHeaderFiltersParameter"
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/headers/{headerId}/lines:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+    post:
+      description: Creates a warehouse document line.
+      operationId: createWarehouseDocLines
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The warehouse document line to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/WarehouseDocLineRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocLineListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    get:
+      description: Returns a list of warehouse document lines.
+      operationId: listWarehouseDocLine
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "#/components/parameters/WarehouseDocLineFiltersParameter"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocLineListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: Deletes all the lines and line instances of a warehouse document. The header is maintained.
+      operationId: deleteWarehouseDocHeaderLines
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/headers/{headerId}/line-instances:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+    post:
+      description: |
+        Creates a list of warehouse document line instances delegating the server the responsibility to create the 
+        corresponding warehouse document lines. In particular, the server creates a warehouse document line for 
+        each item referred by the line instances.
+      operationId: createWarehouseDocLineInstances
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The list of warehouse document line instances to create.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/MultipleWarehouseDocLineInstanceRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocLineInstanceListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/headers/{headerId}/release:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+    post:
+      description: |
+        Releases a warehouse document. In particular, it changes its status to `Released` and it generates logistics handling lines.
+      operationId: releaseWarehouseDoc
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/headers/{headerId}/lines/{lineId}/instances:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+      - name: lineId
+        in: path
+        description: The warehouse doc line id.
+        required: true
+        schema:
+          $ref: "./jsonapi.yaml#/components/schemas/id"
+    post:
+      description: Creates a list of warehouse document line instances for an existing line.
+      operationId: createWarehouseDocLineInstancesForLine
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The list of warehouse document line instances to create.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/MultipleWarehouseDocLineInstanceRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocLineInstanceListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/lines:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a list of warehouse document lines with their header info included. Lines
+        can reference different warehouse document headers.
+      operationId: listWarehouseDocLines
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/WarehouseDocLineWithHeaderFiltersParameter"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocLineWithHeaderListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Requests an export of warehouse document lines with their header info included. Lines
+        can reference different warehouse document headers.
+      operationId: exportWarehouseDocLines
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/WarehouseDocLineWithHeaderFiltersParameter"
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/headers/{headerId}/inbound:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+    get:
+      description: Returns the inbound data for the warehouse document specified in the path.
+      operationId: getInboundDataForDocument
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocHeaderInboundResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /warehouse-docs/draft-skipped/headers/{headerId}/lines/{lineId}:
+    parameters:
+      - name: headerId
+        in: path
+        description: A warehouse doc header id.
+        required: true
+        schema:
+          type: string
+      - name: lineId
+        in: path
+        description: A warehouse doc line id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: Updates a warehouse doc line.
+      operationId: updateWarehouseDocLineSkipDraft
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The warehouse doc line to patch.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              description: The updated warehouse doc line.
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  description: The reason for the update.
+                  type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocLineResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/reading/headers/{headerId}/compile:
+    parameters:
+      - name: headerId
+        in: path
+        description: A warehouse doc header id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        The service updates the reading document with the data present in the reading queue.
+
+        If a package is read, it retrieves the serials of the items or the quantities present in the packages.
+        It checks if the serials or item quantities read match the expected documents and updates the quantity values if there is a match.
+        If there is no match, new rows are created to identify the unexpected readings.
+      operationId: compileWarehouseDocReading
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./documents.yaml#/components/schemas/CompileReadingDocRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/reading/headers:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        The service is used to create the working document, referred to as the reading document,
+        where items, quantities, packages, and serials acquired during the reading will be recorded.
+
+        If the calling identity:
+        - If it is a `Checkpoint`: the `UserProfile` is mandatory and the `Checkpoint` is ignored
+        - If it is a `Device`: the `UserProfile` is mandatory and the `Device` is ignored
+        - If it is a `UserProfile`: the `Checkpoint` or the `Device` is mandatory and the `UserProfile` is ignored
+      operationId: createWarehouseDocReading
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The warehouse document to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/WarehouseDocReadingRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/draft-skipped/headers/{headerId}/instances:
+    parameters:
+      - name: headerId
+        in: path
+        description: A warehouse doc header id.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    delete:
+      description: |
+        Deletes all the line instances of the warehouse document specified in the path. This operation will affect
+        the quantity of the lines the instances are linked to and those of the lines fulfilled by them.
+      operationId: deleteWarehouseDocLineInstancesSkipDraft
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/reading/headers/{headerId}/release:
+    parameters:
+      - $ref: "#/components/parameters/WarehouseDocHeaderId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        This API releases the warehouse document specified in the path when it is used as a reading document.
+
+        Releasing a warehouse reading document consists on these actions:
+        * Deletion of all the unexpected lines, serials and packages.
+        * Deletion of all the unknown RFID tags.
+        * Update of the fulfillment status of the source documents linked to the one provided in the path.
+        * Update of the fulfillment status of the source documents' lines linked to the one provided in the path.
+        * Change the document's processing status to `Released`.
+      operationId: releaseWarehouseDocReading
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: An object containing the parameters to consider to release a reading document.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./documents.yaml#/components/schemas/ReleaseReadingDocRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/reading/headers/{headerId}/aggregated-data:
+    parameters:
+      - $ref: "#/components/parameters/WarehouseDocHeaderId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        This API retrieves the data of the document identified by `headerId` (reading doc)
+        grouped accordingly with the aggregation strategy provided as a parameter. In
+        particular, data can be aggregated by: line, package, line and package, serials.
+
+        It is possible to specify filters to narrow down data based on the consumer's
+        needs. For each element in the resulting list will be specified a map containing
+        the values of the filters needed to consult its detail. For example: each group
+        obtained with the `GroupByPackage` aggregation startegy, will have the filtering
+        attributes to retrieve the items in a package and the serials in it.
+      operationId: getWarehouseDocAggregatedData
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./documents.yaml#/components/parameters/groupByFulfilledDoc"
+        - $ref: "./documents.yaml#/components/parameters/groupByReason"
+        - $ref: "./documents.yaml#/components/parameters/groupByOperationReason"
+        - $ref: "./documents.yaml#/components/parameters/includeCountersRequired"
+        - $ref: "./documents.yaml#/components/parameters/includePackageCountersRequired"
+        - $ref: "./documents.yaml#/components/parameters/groupingStrategy"
+        - $ref: "./documents.yaml#/components/parameters/GetReadingDocAggregatedDataSorting"
+        - $ref: "./documents.yaml#/components/parameters/GetReadingDocAggregatedDataFilters"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/ReadingDocGetAggregatedResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/reading/headers/{headerId}/reset:
+    parameters:
+      - $ref: "#/components/parameters/WarehouseDocHeaderId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        This API resets the reading document specified in the path. Resetting a document means
+        to delete all document's data such that it status is like the one after creation.
+      operationId: resetWarehouseDocReading
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: An object containing the parameters to reset a reading document.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./documents.yaml#/components/schemas/ResetReadingDocRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WarehouseDocResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/reading/headers/{headerId}/unexpected-instances:
+    parameters:
+      - $ref: "#/components/parameters/WarehouseDocHeaderId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: |
+        This API allows to set document's instances provided in the body from _unexpected_
+        to _expected_. Instances in the body can be both packages and serials.
+      operationId: setWarehouseDocInstancesAsExpected
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: An object containing the document's instances to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./documents.yaml#/components/schemas/UpdateReadingDocInstancesRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/reading/headers/{headerId}/expected-instances:
+    parameters:
+      - $ref: "#/components/parameters/WarehouseDocHeaderId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: |
+        This API allows to set document's instances provided in the body from _expected_
+        to _unexpected_. Instances in the body can be both packages and serials.
+      operationId: setWarehouseDocInstancesAsUnexpected
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: An object containing the document's instances to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./documents.yaml#/components/schemas/UpdateReadingDocInstancesRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /warehouse-docs/reading/headers/{headerId}/instances/properties:
+    parameters:
+      - $ref: "#/components/parameters/WarehouseDocHeaderId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: |
+        This API allows to change some properties of the document's instances provided
+        in the body. Updatable properties are provided in request body's `properties`
+        attribute and are defined in `UpdatableItemInstancePropertyName` enumeration.
+      operationId: updateWarehouseDocInstancesProperties
+      tags:
+        - Warehouse Document
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: |
+          An object containing the document's instances to update and the properties to use.
+          At least one property must be provided, otherwise the API will fail.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./documents.yaml#/components/schemas/UpdateReadingDocInstancesPropertiesRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

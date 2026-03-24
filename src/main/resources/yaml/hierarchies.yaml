@@ -1,0 +1,2021 @@
+openapi: 3.0.3
+info:
+  title: Hierarchies API
+  version: "-"
+  description: APIs to manage hierarchies (i.e. tree structures) of resources, especially for customers and items.
+tags:
+  - name: Hierarchy
+    description: |
+      APIs to manage hierarchical structures. 
+      Hierarchies allow you to create hierarchical trees of generic entities. 
+
+      ### How a Hierarchy is structured
+
+      Each node in a hierarchy can have at most one parent and can have multiple child nodes.
+      Children can be other nodes (which does not have a specific type, they are just nodes)
+      or be a generic entity, of the type `entityName`, specified by the hierarchy.
+
+      For example we want to represent a hierarchy of customers, so `entityName = CustomerAccount`.
+      The root node is "Italy", which has children nodes "North" and "South". 
+      "North" has an associated list of entities of type "CustomerAccount", like "C001", "C002", "C003" 
+      (the customers in the northern part of Italy), 
+      while "South" has another list of entities: "C015", "C016" the customers in the southern part of Italy.
+
+      In the above example, "Italy", "North", "South" are just nodes with an id and a description, 
+      while "C001", "C002", etc. are customer, i.e. objects of type "CustomerAccount".
+
+      Every node can be related also to other specific objects, depending on the use of the hierarchy.
+      For example, in a hierarchy that models a sales network, the entities pointed by "entityName" are the customers, 
+      so `entityName = CustomerAccount` and every node is associated with one user, which are the sales reps or their chiefs 
+      (area managers, brand managers and so on).
+
+      To continue with the above example, we may associate the user "Paolo Rossi" to the node "Italy": he is the area manager for Italy.
+      Then we associate the user "Giovanna Bianchi" to the node "North" and "Matteo Verdi" to the node "South": 
+      they are the sales reps that manage the customers in the north and south, respectively.
+
+      ### How to modify a Hierarchy
+
+      A Hierarchy is a complex entity: to modify it, the user must enter the "edit mode", by calling the _edit_ API.
+      The system will return a draft copy of the entity, which can be modified and saved, even if the editing is partial.
+      The draft copy will only be visible to the user that is editing the object, while other users will continue to see the published version.
+      When the user has finished to modify the object, he must call the _publish_ API to request the publication.
+      Depending on the application configuration, a valid object may be directly published, or it can require the revision
+      of other users: in this case the publish action starts an approval workflow.
+components:
+  schemas:
+    #
+    # HierarchyNode objects
+    #
+    HierarchyNode:
+      description: HierarchyNode resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "HierarchyNode"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+          properties:
+            descr:
+              description: General description/name
+              type: string
+            code:
+              description: Code of the node
+              type: string
+            level:
+              description: Level of the node
+              type: integer
+            sequenceNum:
+              description: Position of the node in the list
+              type: integer
+            totalEntityCount:
+              description: Total number of entities
+              type: integer
+            childrenNodesCount:
+              description: Total number of children nodes
+              type: integer
+            accountableUser:
+              $ref: "./core.yaml#/components/schemas/UserProfileSimple"
+            ancestors:
+              description: |
+                List of all the ancestor nodes of the current one. This attribute is set only when retrieving single entities, 
+                in all other cases is null and it is ignored.
+                The list contains the entire hierarchical chain from the root (hierarchy excluded) to the leaf (the current node).
+
+                For example the root node is "Italy", which has children nodes "North" and "South". 
+                "North" has an associated list of regions, like "Veneto", "Lombardia", "Piemonte" 
+                (the customers in the northern part of Italy), 
+                while "South" has another list of regions: "Puglia", "Sicily".
+
+                When retrieving the node "Sicily", ancestors' list will have the following items:
+                * Italy;
+                * South;
+                * Sicily.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            hierarchy:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+              description: Main info of the related Hierarchy. More info is available through the relationship.
+            renditionUrl:
+              description: |
+                URL of the requested rendition of the digital content with the sequence number 0. 
+                You need to provide the `renditionTypeId` parameter and `digitalContentTypeId` parameter 
+                in order to get the correspondent picture's link.
+              type: string
+        relationships:
+          description: Relationships of the nodes.
+          type: object
+          required:
+            - hierarchy
+          properties:
+            hierarchy:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            parentHierarchyNode:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            childrenNodes:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+            relatedEntities:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+            relatedHierarchyNodeUserProfiles:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    HierarchyNodeIncluded:
+      description: "Related entities data: one of HierarchyNode"
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    HierarchyNodeResponse:
+      description: Single HierarchyNode
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/HierarchyNode"
+        included:
+          $ref: "#/components/schemas/HierarchyNodeIncluded"
+    HierarchyNodeListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of HierarchyNodes
+          type: array
+          items:
+            $ref: "#/components/schemas/HierarchyNode"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/HierarchyNodeIncluded"
+    HierarchyNodeRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/HierarchyNode"
+    #
+    # Hierarchy objects
+    #
+    Hierarchy:
+      description: Hierarchy resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Hierarchy"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - entityName
+            - hierarchyTypeId
+            - startDate
+            - endDate
+            - draft
+          properties:
+            descr:
+              description: General description/name.
+              type: string
+            entityName:
+              description: Name of the entity associated with this hierarchy, i.e. the type of the leaf "entity" nodes.
+              type: string
+            hierarchyTypeId:
+              description: The type of hierarchy, i.e. salesRep customers, item categories, etc. . See dictionary `HierarchyType`.
+              type: string
+            processingStatusId:
+              $ref: "./core.yaml#/components/schemas/ProcessingStatus"
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            nodesCount:
+              description: total number of nodes contained in this hierarchy, excluded the "entity" leaves.
+              type: integer
+            entitiesCount:
+              description: total number of leaves of type "entity".
+              type: integer
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+            operations:
+              $ref: "./core.yaml#/components/schemas/Operations"
+        relationships:
+          type: object
+          description: |
+            The relationships of the hierarchy. 
+            A Hierarchy:
+            - belongs to an organization;
+            - can be edited by a user (currentDraftUserProfile);
+            - has a tree of nodes; hierarchyNodeRoot returns the root node, of type HierarchyNode.
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currentDraftUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            hierarchyNodeRoot:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    HierarchyIncluded:
+      description: "Related entities data: one of Organization, UserProfile, HierarchyNode"
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    HierarchyResponse:
+      description: Single `Hierarchy`.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Hierarchy"
+        included:
+          $ref: "#/components/schemas/HierarchyIncluded"
+    HierarchyListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of Hierarchies.
+          type: array
+          items:
+            $ref: "#/components/schemas/Hierarchy"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/HierarchyIncluded"
+    HierarchyRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Hierarchy"
+    HierarchyNodeUserProfile:
+      description: "`HierarchyNodeUserProfile` resource."
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "HierarchyNodeUserProfile"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - sequenceNum
+            - startDate
+            - endDate
+            - userProfileHierarchyTreeTypeId
+          properties:
+            sequenceNum:
+              description: Position in the list.
+              type: integer
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            userProfileHierarchyTreeTypeId:
+              description: The type of user related to the node, like Accountable or Substitute. See dictionary `UserProfileHierarchyTreeType`.
+              type: string
+              example: UserProfileHierarchyTreeType.Accountable
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+        relationships:
+          type: object
+          description: The relationships of the `HierarchyNodeUserProfile`.
+          required:
+            - userProfile
+            - hierarchyNode
+          properties:
+            userProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            hierarchyNode:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    HierarchyNodeUserProfileIncluded:
+      description: "Related entities data: userProfile, hierarchyNode"
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    HierarchyNodeUserProfileListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of `HierarchyNodeUserProfile`.
+          type: array
+          items:
+            $ref: "#/components/schemas/HierarchyNodeUserProfile"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/HierarchyNodeUserProfileIncluded"
+    HierarchyNodeUserProfileRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/HierarchyNodeUserProfile"
+    HierarchyNodeUserProfileResponse:
+      description: Single `HierarchyNodeUserProfile`.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/HierarchyNodeUserProfile"
+        included:
+          $ref: "#/components/schemas/HierarchyNodeUserProfileIncluded"
+    HierarchyEligibleCustomerAccount:
+      description: "`HierarchyEligibleCustomerAccount` resource."
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "HierarchyEligibleCustomerAccount"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - name
+          properties:
+            code:
+              description: Code of the customer in the ERP system.
+              type: string
+            name:
+              description: Business name of the customer's company.
+              type: string
+            descr:
+              description: Additional description of the customer.
+              type: string
+            taxNumber:
+              description: The tax number. Usually the "VAT" number.
+              type: string
+            ministerialCode:
+              description: Ministerial code.
+              type: string
+            linkId:
+              description: The id of the link to the external entity, if already linked, or null if not linked.
+              type: string
+    HierarchyEligibleCustomerAccountListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of `HierarchyEligibleCustomerAccount`.
+          type: array
+          items:
+            $ref: "#/components/schemas/HierarchyEligibleCustomerAccount"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+    HierarchyEligibleItem:
+      description: Item with attribute link indicating if it is already linked to the hierarchy.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "HierarchyEligibleItem"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+            - descrShort
+          properties:
+            code:
+              description: A code to distinguish the item.
+              type: string
+              example: "ABC-1234"
+            descr:
+              description: A general description of the item.
+              type: string
+              example: "T-shirt in Jersey di lino"
+            descrShort:
+              description: A short description of the item.
+              type: string
+              example: "T-shirt"
+            brand:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            salesLine:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            processingStatusId:
+              $ref: "./core.yaml#/components/schemas/ProcessingStatus"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            renditionUrl:
+              description: URL of the requested rendition of the digital content with the sequence number 0. You need to provide the `renditionTypeId` parameter in order to get the correspondent picture's link.
+              type: string
+              format: uri-reference
+              readOnly: true
+            linkId:
+              description: The id of the link to the external entity, if already linked, or null if not linked.
+              type: string
+        relationships:
+          type: object
+          description: |
+            The relationships of the HierarchyEligibleItem.
+          required:
+            - itemStatus
+          properties:
+            itemCategory:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            itemStatus:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            salesDepartment:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+            tags:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    HierarchyEligibleItemListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of HierarchyEligibleItem
+          type: array
+          items:
+            $ref: "#/components/schemas/HierarchyEligibleItem"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        included:
+          $ref: "#/components/schemas/HierarchyEligibleItemIncluded"
+    HierarchyEligibleItemIncluded:
+      description: "Related entities data: itemCategory, itemStatus, salesDepartment, tags"
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    HierarchyNodeEntity:
+      description: HierarchyNodeEntity resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "HierarchyNodeEntity"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - entityName
+          properties:
+            entityName:
+              description: Entity name (e.g. CustomerAccount, Item)
+              type: string
+            entityIds:
+              description: List of entity ids (e.g. CustomerAccount ids, Item ids)
+              type: array
+              items:
+                type: string
+    HierarchyNodeEntityRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/HierarchyNodeEntity"
+    UserProfileHierarchyTreeType:
+      description: The type of the relationship between a user and a hierarchy node.
+      type: string
+      enum:
+        - UserProfileHierarchyTreeType.Accountable
+        - UserProfileHierarchyTreeType.Backoffice
+        - UserProfileHierarchyTreeType.Substitute
+        - UserProfileHierarchyTreeType.Zone
+      x-enum-varnames:
+        - Accountable
+        - Backoffice
+        - Substitute
+        - Zone
+    EntityAttributeUpdateAction:
+      description: The update action for an entity attribute.
+      type: string
+      enum:
+        - EntityAttributeUpdateAction.All
+        - EntityAttributeUpdateAction.MatchPreviousValue
+        - EntityAttributeUpdateAction.New
+    HierarchyTreeEntityAttribute:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "HierarchyTreeEntityAttribute"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - updateActionId
+          properties:
+            descr:
+              description: The description of the attribute
+              type: string
+              example: "Contract code"
+              readOnly: true
+            attribute:
+              description: The name of the attribute
+              type: string
+              example: "ContractCode"
+              readOnly: true
+            attributeValue:
+              description: The value of the attribute.
+              type: string
+            dataType:
+              allOf:
+                - $ref: "./entityAttributes.yaml#/components/schemas/EntityAttributeDataType"
+                  readOnly: true
+            virtual:
+              description: If `true`, this is a virtual attribute; if `false` it refers to a physical column in the database.
+              type: boolean
+              default: false
+              readOnly: true
+            defaultValue:
+              description: the default value of the entity. The format depends on the data type.
+              type: string
+              readOnly: true
+            constraintsDefinition:
+              $ref: "./entityAttributes.yaml#/components/schemas/ConstraintDefinition"
+            previousValue:
+              type: string
+              description: Previous value of the attribute
+              readOnly: true
+            updateActionId:
+              $ref: "#/components/schemas/EntityAttributeUpdateAction"
+    HierarchyTreeEntityAttributeListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: List of attributes linked to a hierarchy entity.
+          type: array
+          items:
+            $ref: "#/components/schemas/HierarchyTreeEntityAttribute"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The hierarchy id.
+      required: true
+      schema:
+        type: string
+    hierarchyId:
+      name: hierarchyId
+      in: path
+      description: The hierarchy id to which the node belongs.
+      required: true
+      schema:
+        type: string
+    nodeId:
+      name: nodeId
+      in: path
+      description: The hierarchy node to manage. Must be a node of the hierarchy `HierarchyId`.
+      required: true
+      schema:
+        type: string
+paths:
+  #
+  # JSON:API definition for Hierarchy services
+  #
+  /hierarchies/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Get a Hierarchy.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getHierarchy |
+        | getItemHierarchy |
+      operationId: getHierarchy
+      tags:
+        - Hierarchy
+      x-authorities: ["getHierarchy", "getItemHierarchy"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a Hierarchy.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: updateHierarchy
+      tags:
+        - Hierarchy
+      x-authorities:
+        ["createHierarchy", "updateHierarchy", "createItemHierarchy", "updateItemHierarchy"]
+      requestBody:
+        description: Hierarchy to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/HierarchyRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a Hierarchy and all associated nodes.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | deleteHierarchy |
+        | createHierarchy |
+        | updateHierarchy |
+        | deleteItemHierarchy |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: deleteHierarchy
+      tags:
+        - Hierarchy
+      x-authorities:
+        [
+          "deleteHierarchy",
+          "createHierarchy",
+          "updateHierarchy",
+          "deleteItemHierarchy",
+          "createItemHierarchy",
+          "updateItemHierarchy",
+        ]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{id}/edit:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      description: |
+        Edit a Hierarchy.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: editHierarchy
+      tags:
+        - Hierarchy
+      x-authorities:
+        ["createHierarchy", "updateHierarchy", "createItemHierarchy", "updateItemHierarchy"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{id}/publish:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    post:
+      description: |
+        Publish a Hierarchy.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: publishHierarchy
+      tags:
+        - Hierarchy
+      x-authorities:
+        ["createHierarchy", "updateHierarchy", "createItemHierarchy", "updateItemHierarchy"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies:
+    get:
+      description: |
+        Returns a collection of Hierarchies.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listHierarchies |
+        | listItemHierarchies |
+      operationId: listHierarchies
+      tags:
+        - Hierarchy
+      x-authorities: ["listHierarchies", "listItemHierarchies"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "entityName"
+          in: query
+          description: the entity name to filter by. "CustomerAccount" for a hierarchy of customers.
+          required: true
+          style: form
+          schema:
+            type: string
+            example: "CustomerAccount"
+            pattern: "^(CustomerAccount|Item)$"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                type: string
+              organizationId:
+                description: Filter the response by Organization id. The user must also have the permission to view the organization.
+                type: string
+              hierarchyTypeId:
+                description: The hierarchy type to filter by; for example, a salesRep hierarchy or a price list hierarchy.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Hierarchy list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Create a Hierarchy.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | createItemHierarchy |
+      operationId: createHierarchy
+      tags:
+        - Hierarchy
+      x-authorities: ["createHierarchy", "createItemHierarchy"]
+      requestBody:
+        description: Hierarchy to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/HierarchyRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  #
+  # JSON:API definition for Hierarchy > HierarchyNode services
+  #
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}:
+    parameters:
+      - $ref: "#/components/parameters/hierarchyId"
+      - $ref: "#/components/parameters/nodeId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Get a HierarchyNode. A node references his parent and his children, if there are any.
+        A node can be associated to users and to related entities. See HierarchyNode object.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listHierarchies |
+        | createHierarchy |
+        | updateHierarchy |
+        | listItemHierarchies |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: getHierarchyNode
+      tags:
+        - Hierarchy
+      x-authorities:
+        [
+          "listHierarchies",
+          "createHierarchy",
+          "updateHierarchy",
+          "listItemHierarchies",
+          "createItemHierarchy",
+          "updateItemHierarchy",
+        ]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a HierarchyNode.
+        This service will update also the relationships of the node, i.e. children nodes, related users and related entities.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: updateHierarchyNode
+      tags:
+        - Hierarchy
+      x-authorities:
+        ["createHierarchy", "updateHierarchy", "createItemHierarchy", "updateItemHierarchy"]
+      requestBody:
+        description: HierarchyNode to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/HierarchyNodeRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a HierarchyNode.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: deleteHierarchyNode
+      tags:
+        - Hierarchy
+      x-authorities:
+        ["createHierarchy", "updateHierarchy", "createItemHierarchy", "updateItemHierarchy"]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes:
+    parameters:
+      - name: hierarchyId
+        in: path
+        description: The hierarchy Id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns all the nodes of a hierarchy.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listHierarchies |
+        | createHierarchy |
+        | updateHierarchy |
+        | listItemHierarchies |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: listHierarchyNodes
+      tags:
+        - Hierarchy
+      x-authorities:
+        - listHierarchies
+        - createHierarchy
+        - updateHierarchy
+        - listItemHierarchies
+        - createItemHierarchy
+        - updateItemHierarchy
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: renditionTypeId
+          in: query
+          description: |
+            The media rendition id.
+            This parameter combined with the `digitalContentTypeId` parameter allows to obtain 
+            the `renditionUrl` attribute relating to the rendition of the digital content type 
+            specified and linked to the hierarchy node.
+          required: false
+          style: form
+          schema:
+            type: string
+        - name: digitalContentTypeId
+          in: query
+          description: |
+            The digital content type.
+            This parameter combined with the `renditionTypeId` parameter allows to obtain 
+            the `renditionUrl` attribute relating to the rendition of the digital content type 
+            specified and linked to the hierarchy node.
+          required: false
+          style: form
+          schema:
+            type: string
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside some attributes, as specified in the API documentation, e.g. descr, code, etc.
+                type: string
+              tagId:
+                description: The identifier of a `Tag` resource linked to the hierarchy node.
+                type: string
+      responses:
+        "200":
+          description: HierarchyNode list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/children:
+    parameters:
+      - name: hierarchyId
+        in: path
+        description: The hierarchy Id
+        required: true
+        schema:
+          type: string
+      - name: nodeId
+        in: path
+        description: The node id; must belong to the hierarchy "hierarchyId". The service manages the children of this node.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns the children of the specified (a collection of HierarchyNodes), nodeId, based on the provided filters.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listHierarchies |
+        | createHierarchy |
+        | updateHierarchy |
+        | listItemHierarchies |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: listHierarchyNodeChildren
+      tags:
+        - Hierarchy
+      x-authorities:
+        [
+          "listHierarchies",
+          "createHierarchy",
+          "updateHierarchy",
+          "listItemHierarchies",
+          "createItemHierarchy",
+          "updateItemHierarchy",
+        ]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/filterSearch"
+      responses:
+        "200":
+          description: HierarchyNode list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Create a HierarchyNode as a child of another node.
+        The relationship parentHierarchyNode is mandatory.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: createHierarchyNodeChild
+      tags:
+        - Hierarchy
+      x-authorities:
+        ["createHierarchy", "updateHierarchy", "createItemHierarchy", "updateItemHierarchy"]
+      requestBody:
+        description: HierarchyNode to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/HierarchyNodeRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/hierarchy-node-user-profiles:
+    parameters:
+      - name: hierarchyId
+        in: path
+        description: The hierarchy id.
+        required: true
+        schema:
+          type: string
+      - name: nodeId
+        description: The node id; must belong to the hierarchy `hierarchyId`.
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Get the users related to a HierarchyNode. The main related user is the one with `sequenceNum = 0`.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listHierarchies |
+        | createHierarchy |
+        | updateHierarchy |
+      operationId: listHierarchyNodeUserProfiles
+      tags:
+        - Hierarchy
+      x-authorities: ["listHierarchies", "createHierarchy", "updateHierarchy"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/filterSearch"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeUserProfileListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Create a `HierarchyNodeUserProfile`.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+      operationId: createHierarchyNodeUserProfile
+      tags:
+        - Hierarchy
+      x-authorities: ["createHierarchy", "updateHierarchy"]
+      requestBody:
+        description: "`HierarchyNodeUserProfile` to post."
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/HierarchyNodeUserProfileRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeUserProfileResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/hierarchy-node-user-profiles/{id}:
+    parameters:
+      - name: hierarchyId
+        in: path
+        description: The hierarchy id
+        required: true
+        schema:
+          type: string
+      - name: nodeId
+        description: The node id; must belong to the hierarchy `hierarchyId`.
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        description: The `HierarchyNodeUserProfile` id.
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a `HierarchyNodeUserProfile`.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+      operationId: updateHierarchyNodeUserProfile
+      tags:
+        - Hierarchy
+      x-authorities: ["createHierarchy", "updateHierarchy"]
+      requestBody:
+        description: "`HierarchyNodeUserProfile` to patch."
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/HierarchyNodeUserProfileRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeUserProfileResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        [Delete](https://jsonapi.org/format/#crud-deleting) a HierarchyNodeUserProfile.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+      operationId: deleteHierarchyNodeUserProfile
+      tags:
+        - Hierarchy
+      x-authorities: ["createHierarchy", "updateHierarchy"]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/descendant-user-profiles:
+    parameters:
+      - name: hierarchyId
+        in: path
+        description: The hierarchy id.
+        required: true
+        schema:
+          type: string
+      - name: nodeId
+        description: The node id; must belong to the hierarchy `hierarchyId`.
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Retrieves the user profiles in the subtree rooted at `nodeId` (included). Results must be filtered by their type.
+        Calling this service without at least one type, will cause the operation to fail.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listHierarchies |
+      parameters:
+        - name: filter[userProfileTypes]
+          in: query
+          description: A list of comma-separated types of user profile to retrieve. At least one type must be provided.
+          required: true
+          style: form
+          schema:
+            type: string
+          example: "filter[userProfileTypes]=Type1,Type2"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+      operationId: listUserProfilesForNodeDescendants
+      summary: listUserProfilesForNodeDescendants
+      tags:
+        - Hierarchy
+      x-authorities: ["listHierarchies"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeUserProfileListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/customer-accounts:
+    parameters:
+      - name: hierarchyId
+        in: path
+        description: The hierarchy id.
+        required: true
+        schema:
+          type: string
+      - name: nodeId
+        description: The node id to which customers accounts are associated; must belong to the hierarchy `hierarchyId`.
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Get the customer accounts related to a `HierarchyNode`.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listHierarchies |
+        | createHierarchy |
+        | updateHierarchy |
+      operationId: listHierarchyNodeCustomerAccounts
+      tags:
+        - Hierarchy
+      x-authorities: ["listHierarchies", "createHierarchy", "updateHierarchy"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/filterSearch"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./customers.yaml#/components/schemas/CustomerAccountFullListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/items:
+    parameters:
+      - name: hierarchyId
+        in: path
+        description: The hierarchy Id
+        required: true
+        schema:
+          type: string
+      - name: nodeId
+        in: path
+        description: The hierarchy node Id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns all items related to a hierarchy node.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listItemHierarchies |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: listHierarchyNodeItems
+      tags:
+        - Hierarchy
+      x-authorities: ["listItemHierarchies", "createItemHierarchy", "updateItemHierarchy"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in the item's code and description.
+                type: string
+      responses:
+        "200":
+          description: Item list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./items.yaml#/components/schemas/ItemListResponse"
+        "400":
+          description: Bad request;
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/customer-accounts/links:
+    parameters:
+      - name: hierarchyId
+        in: path
+        description: The hierarchy id.
+        required: true
+        schema:
+          type: string
+      - name: nodeId
+        description: The node id to which customers accounts are associated; must belong to the hierarchy `hierarchyId`.
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Returns a collection of CustomerAccounts that are eligible to be linked to the given `HierarchyNode` or are 
+        already linked. Retrieved customers belong to the same organization as the `Hierarchy`.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listHierarchies |
+        | createHierarchy |
+        | updateHierarchy |
+      operationId: listEligibleCustomerAccounts
+      tags:
+        - Hierarchy
+      x-authorities: ["listHierarchies", "createHierarchy", "updateHierarchy"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in the customer's name, code, tax number, ministerial code.
+                type: string
+              linked:
+                description: |
+                  * If `nn:` (not-null), retrieves only the customers **already linked** to the HierarchyNode;
+                  * if `nl:` (null), retrieves only the customers that are **not linked** to the HierarchyNode;
+                  * if not specified, retrieves **all** customers.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyEligibleCustomerAccountListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/items/links:
+    parameters:
+      - name: hierarchyId
+        in: path
+        description: The hierarchy id.
+        required: true
+        schema:
+          type: string
+      - name: nodeId
+        description: The node id to which items are associated; must belong to the hierarchy `hierarchyId`.
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Returns a collection of items that are eligible to be linked to the given `HierarchyNode` or are 
+        already linked. Retrieved items belong to the same organization as the `Hierarchy`.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listItemHierarchies |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: listEligibleItems
+      tags:
+        - Hierarchy
+      x-authorities: ["listItemHierarchies", "createItemHierarchy", "updateItemHierarchy"]
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in the item's code and description.
+                type: string
+              linked:
+                description: |
+                  * If `nn:` (not-null), retrieves only the items **already linked** to the HierarchyNode;
+                  * if `nl:` (null), retrieves only the items that are **not linked** to the HierarchyNode;
+                  * if not specified, retrieves **all** items.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyEligibleItemListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/entities:
+    parameters:
+      - name: hierarchyId
+        in: path
+        description: The hierarchy id.
+        required: true
+        schema:
+          type: string
+      - name: nodeId
+        description: The node id to which entities are associated; must belong to the hierarchy `hierarchyId`.
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: all
+        in: query
+        description: If true all entities are considered, otherwise only the entities specified in the request are considered.
+        required: true
+        style: form
+        schema:
+          type: boolean
+          default: false
+    post:
+      description: |
+        Adds the provided entities to the node.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: addHierarchyNodeEntities
+      tags:
+        - Hierarchy
+      x-authorities:
+        ["createHierarchy", "updateHierarchy", "createItemHierarchy", "updateItemHierarchy"]
+      parameters:
+        - name: "filters"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in the customer's name, code, tax number, ministerial code.
+                type: string
+      requestBody:
+        description: Entities to add
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/HierarchyNodeEntityRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: |
+        Moves the provided entities to the new node provided in the request.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: moveHierarchyNodeEntities
+      tags:
+        - Hierarchy
+      x-authorities:
+        ["createHierarchy", "updateHierarchy", "createItemHierarchy", "updateItemHierarchy"]
+      parameters:
+        - name: newNodeId
+          description: The node id to which entities are moved; must belong to the hierarchy `hierarchyId`.
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in the customer's name, code, tax number, ministerial code.
+                type: string
+      requestBody:
+        description: Entities to move
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/HierarchyNodeEntityRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        Deletes the provided entities to the node.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createHierarchy |
+        | updateHierarchy |
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: deleteHierarchyNodeEntities
+      tags:
+        - Hierarchy
+      x-authorities:
+        ["createHierarchy", "updateHierarchy", "createItemHierarchy", "updateItemHierarchy"]
+      parameters:
+        - name: "filter"
+          in: query
+          description: Filter group.
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in the customer's name, code, tax number, ministerial code.
+                type: string
+      requestBody:
+        description: Entities to delete.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/HierarchyNodeEntityRequest"
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/tags:
+    parameters:
+      - $ref: "#/components/parameters/hierarchyId"
+      - $ref: "#/components/parameters/nodeId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: |
+        Replace the tags associated to the given hierarchy node id.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) | 
+        |:-:|
+        | replaceItemHierarchyNodeTags |
+        | replaceCustomerHierarchyNodeTags |
+      operationId: replaceHierarchyNodeTags
+      tags:
+        - Hierarchy
+      x-authorities:
+        - replaceItemHierarchyNodeTags
+        - replaceCustomerHierarchyNodeTags
+      requestBody:
+        description: |
+          List of tags that are going to replace entirely the existing associations. 
+          An empty list will result in the deletion of current associations.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./core.yaml#/components/schemas/Tags"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/Tags"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/nodes:
+    get:
+      description: |
+        Returns a list of all `HierarchyNode` based on organization and hierarchy type filters.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listHierarchies |
+        | listItemHierarchies |
+      operationId: listAllHierarchyNodes
+      tags:
+        - Hierarchy
+      x-authorities:
+        - listHierarchies
+        - listItemHierarchies
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter[hierarchyTypeId]"
+          in: query
+          description: Filter the response by hierarchy type id.
+          required: true
+          style: form
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string; searches inside code and description.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Hierarchy node list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyNodeListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/eligible-attributes:
+    get:
+      description: |
+        Returns the dynamic attributes configured for the hierarchy.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createItemHierarchy |
+        | updateItemHierarchy |
+      operationId: listEligibleEntityAttributesForHierarchy
+      tags:
+        - Hierarchy
+      x-authorities:
+        - createItemHierarchy
+        - updateItemHierarchy
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: hierarchyId
+          in: path
+          description: The hierarchy id.
+          required: true
+          schema:
+            type: string
+        - name: "filter[hierarchyTypeId]"
+          in: query
+          description: Filter the response by hierarchy type id.
+          required: true
+          style: form
+          schema:
+            type: string
+        - name: "filter[appId]"
+          in: query
+          description: Filter the response by app id.
+          required: true
+          style: form
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Eligible entity attribute definitions list
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./entityAttributes.yaml#/components/schemas/EntitySheetListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /hierarchies/{hierarchyId}/hierarchy-nodes/{nodeId}/entity-attributes:
+    parameters:
+      - name: hierarchyId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The id of the hierarchy.
+      - name: nodeId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The id of the hierarchy node.
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        List entity attributes for a hierarchy tree node.
+
+        To access the service you need the following permission:
+        | Permission |
+        |:-:|
+        | getItemHierarchy |
+      operationId: listHierarchyTreeEntityAttributes
+      tags:
+        - Hierarchy
+      x-authorities:
+        - getItemHierarchy
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+      responses:
+        "200":
+          description: List of entity attributes for the hierarchy tree node
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/HierarchyTreeEntityAttributeListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      operationId: replaceHierarchyTreeEntityAttributes
+      description: |
+        Replaces all EntityAttribute associations for a hierarchy tree node. 
+        Adds new, updates existing, and deletes missing associations.
+      tags:
+        - Hierarchy
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              type: object
+              required:
+                - data
+              properties:
+                data:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/HierarchyTreeEntityAttribute"
+      responses:
+        "200":
+          description: "[OK] Associations replaced."
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HierarchyTreeEntityAttribute"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

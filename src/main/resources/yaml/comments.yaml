@@ -1,0 +1,267 @@
+openapi: 3.0.3
+info:
+  title: Comment API
+  version: "-"
+tags:
+  - name: Comment
+    description: APIs for Comments
+components:
+  schemas:
+    Comment:
+      description: Comment resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Comment"
+        id:
+          type: string
+        attributes:
+          description: Comment attributes.
+          type: object
+          required:
+            - body
+            - isPrivate
+          properties:
+            body:
+              description: Body of the comment.
+              type: string
+            isPrivate:
+              description: Visibility of the comment.
+              type: boolean
+              default: false
+            lastUpdateTs:
+              readOnly: true
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+            creationTs:
+              readOnly: true
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+        relationships:
+          type: object
+          description: The relationships of a Comment.
+          required:
+            - entityObject
+          properties:
+            entityObject:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            userProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMetaReadOnly"
+    CommentRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Comment"
+    CommentResponse:
+      type: object
+      description: Single Comment response.
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Comment"
+        included:
+          $ref: "#/components/schemas/CommentIncluded"
+    CommentListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: List of Comments
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+        included:
+          $ref: "#/components/schemas/CommentIncluded"
+    CommentIncluded:
+      description: Related entities of a comment.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+  parameters:
+    id:
+      name: id
+      in: path
+      description: Comment Id.
+      required: true
+      schema:
+        type: string
+paths:
+  /comments:
+    get:
+      description: |
+        Returns a list of comments.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getTask |
+        | getCustomerAccount |
+      operationId: listComments
+      tags:
+        - Comment
+      x-authorities:
+        - getTask
+        - getCustomerAccount
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: filter[entityId]
+          in: query
+          description: Filter the response by entityId.
+          required: true
+          schema:
+            type: string
+        - name: filter[entityObjectId]
+          in: query
+          description: Filter the response by entityObjectId.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Comments list response.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommentListResponse"
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Creates a new comment.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getTask |
+        | getCustomerAccount |
+      operationId: createComment
+      tags:
+        - Comment
+      x-authorities:
+        - getTask
+        - getCustomerAccount
+      requestBody:
+        description: Comment to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CommentRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommentResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /comments/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a single comment.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getTask |
+        | getCustomerAccount |
+      operationId: getComment
+      tags:
+        - Comment
+      x-authorities:
+        - getTask
+        - getCustomerAccount
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommentResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    patch:
+      description: |
+        Updates/Modifies a comment.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getTask |
+        | getCustomerAccount |
+      operationId: updateComment
+      tags:
+        - Comment
+      x-authorities:
+        - getTask
+        - getCustomerAccount
+      requestBody:
+        description: Comment to patch/update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CommentRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CommentResponse"
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        Deletes a Comment.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getTask |
+        | getCustomerAccount |
+      operationId: deleteComment
+      tags:
+        - Comment
+      x-authorities:
+        - getTask
+        - getCustomerAccount
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

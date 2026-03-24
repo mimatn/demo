@@ -1,0 +1,972 @@
+openapi: 3.0.3
+info:
+  title: DiscountList API
+  version: "-"
+  description: "APIs for Discount Lists, mainly used in onSales solution"
+tags:
+  - name: Discount List
+    description: |
+      The discount lists allow you to define the commercial discount conditions, to be applied to a set of products for a group of customers. 
+      The rules for applying a discount list depend mainly on the customers to whom the price list is assigned and on the period of validity.
+components:
+  schemas:
+    DiscountMode:
+      description: Mode of applying the discounts. See dictionary `DiscountMode`.
+      type: string
+      enum:
+        - DiscountMode.Overwrite
+        - DiscountMode.Add
+        - DiscountMode.Ignore
+    DiscountListType:
+      description: Represents the type of the discount list. See dictionary `DiscountListType`.
+      type: string
+      enum:
+        - DiscountListType.Item
+        - DiscountListType.Hierarchy
+        - DiscountListType.All
+    DiscountType:
+      description: Percentage or value discount
+      type: string
+      enum:
+        - Percentage
+        - Value
+      x-enum-varnames:
+        - percentage
+        - amount
+    #
+    # DiscountList objects
+    #
+    DiscountList:
+      description: Discount List resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "DiscountList"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - startDate
+            - endDate
+            - discountListTypeId
+          properties:
+            code:
+              description: Code/name of the discount list
+              type: string
+            descr:
+              description: General description/name
+              type: string
+            discountListTypeId:
+              $ref: "#/components/schemas/DiscountListType"
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+            defaultDiscountModeId:
+              $ref: "#/components/schemas/DiscountMode"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+            level:
+              description: Level of the node
+              type: integer
+            operations:
+              $ref: "./core.yaml#/components/schemas/Operations"
+        relationships:
+          type: object
+          description: The relationships of the Discount List.
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            hierarchy:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currency:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            currentDraftUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    DiscountListIncluded:
+      description: Related Organization and Hierarchy level
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    DiscountListResponse:
+      description: Single DiscountList
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DiscountList"
+        included:
+          $ref: "#/components/schemas/DiscountListIncluded"
+    DiscountListCollectionResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of DiscountLists
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscountList"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/DiscountListIncluded"
+    DiscountListRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DiscountList"
+    #
+    # CustomerDiscountList objects
+    #
+    CustomerDiscountList:
+      description: |
+        Customer Discount List resource: models the relation of a DiscountList with CustomerAccounts.
+        The DiscountList may be linked directly to CustomerAccounts or through a node in a hierarchy of CustomerAccounts.
+        The entityObject attribute contains this relation, with `entityName=CustomerAccount` or `entityName=HierarchyTree`.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CustomerDiscountList"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - entityObject
+            - sequenceNum
+          properties:
+            entityObject:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            sequenceNum:
+              description: The sequence in which the discount list is applied.
+              type: integer
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            operations:
+              $ref: "./core.yaml#/components/schemas/Operations"
+        relationships:
+          type: object
+          description: The relationships of the Customer Discount List.
+          required:
+            - discountList
+          properties:
+            discountList:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            docType:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            customerAccount:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            hierarchyNode:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            entitySet:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CustomerDiscountListIncluded:
+      description: Related Discount List and Document Type
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    CustomerDiscountListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerDiscountList"
+        included:
+          $ref: "#/components/schemas/CustomerDiscountListIncluded"
+    CustomerDiscountListCollectionResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of Customers or Hierarchy Nodes of this Discount List.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerDiscountList"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CustomerDiscountListIncluded"
+    CustomerDiscountListRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerDiscountList"
+    #
+    # DiscountListDetail objects
+    #
+    DiscountListDetail:
+      description: Discount List Detail resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "DiscountListDetail"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - quantityMin
+            - startDate
+            - endDate
+            - discountModeId
+          properties:
+            entityObject:
+              $ref: "./core.yaml#/components/schemas/SimpleEntity"
+            code:
+              description: Code of the Discount List Detail
+              type: string
+            quantityMin:
+              description: The minimum quantity.
+              type: number
+              format: double
+            quantityMax:
+              description: The maximum quantity. If null there is no maximum quantity limit.
+              type: number
+              format: double
+            startDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+              description: Starting date
+            endDate:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+              description: Validity end date
+            discountModeId:
+              $ref: "#/components/schemas/DiscountMode"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+            discounts:
+              description: List of all discounts related to this discount list
+              type: array
+              items:
+                $ref: "#/components/schemas/DiscountListDetailDiscount"
+            discountSummary:
+              description: |
+                Convenience field to summarize the discount list details discounts, e.g. 
+                If discounts array contains the elements: 10%, 3%, 4€ the value of this field should be `10% + 3% + 4€`.
+              type: string
+        relationships:
+          type: object
+          description: The relationships of the Discount List Detail.
+          required:
+            - discountList
+          properties:
+            discountList:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            unitOfMeasure:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    DiscountListDetailIncluded:
+      description: Related entities of a Discount List Detail
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    DiscountListDetailResponse:
+      description: Single Discount List detail
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DiscountListDetail"
+        included:
+          $ref: "#/components/schemas/DiscountListDetailIncluded"
+    DiscountListDetailListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The collection of Discount List Details.
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscountListDetail"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/DiscountListDetailIncluded"
+    DiscountListDetailRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/DiscountListDetail"
+    DiscountListDetailListRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: The collection of Discount List Details.
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscountListDetail"
+    #
+    # DiscountListDetailDiscount objects
+    #
+    DiscountListDetailDiscount:
+      description: Discount List Detail Discount resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "DiscountListDetailDiscount"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - discountListDetailId
+            - editable
+            - sequenceNum
+            - discountType
+            - discountValue
+          properties:
+            discountListDetailId:
+              description: Discount List Detail whom this discount is related to
+              type: string
+            sequenceNum:
+              description: The sequence in which the discount is applied.
+              type: integer
+            code:
+              description: Discount code or name
+              type: string
+            discountType:
+              $ref: "#/components/schemas/DiscountType"
+            discountValue:
+              description: If not null represents the discount
+              type: number
+              format: double
+            discountMin:
+              description: If not null represents the minimum discount to compare to discount value. Discount value and Editable condition are required and the value must be greater than zero.
+              type: number
+              format: double
+            discountMax:
+              description: If not null represents the maximum discount to compare to discount value. Discount value and Editable condition are required and the value must be greater than zero.
+              type: number
+              format: double
+            editable:
+              description: False by default.
+              type: boolean
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+    EligibleCustomerAccountListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: |
+            The list of CustomerAccounts eligible for this discount list. 
+            For every customer the attribute linkId specifies the id of the link, or null if not linked.
+          type: array
+          items:
+            $ref: "./customers.yaml#/components/schemas/LinkableCustomerAccount"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The discount list id
+      required: true
+      schema:
+        type: string
+    discountListId:
+      name: discountListId
+      in: path
+      description: The discount list Id
+      required: true
+      schema:
+        type: string
+    detailId:
+      name: detailId
+      in: path
+      description: The discount list detail Id
+      required: true
+      schema:
+        type: string
+paths:
+  /discount-lists/{id}:
+    parameters:
+      - $ref: "#/components/parameters/id"
+    get:
+      description: Get a DiscountList
+      operationId: getDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DiscountListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      description: "[Update](https://jsonapi.org/format/#crud-updating) a Discount List"
+      operationId: updateDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Discount List to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DiscountListRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DiscountListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      description: "[Delete](https://jsonapi.org/format/#crud-deleting) a DiscountList and all its details or Customer Discount List"
+      operationId: deleteDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /discount-lists/{id}/edit:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Edit a Discount List
+      operationId: editDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DiscountListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /discount-lists/{id}/publish:
+    parameters:
+      - $ref: "#/components/parameters/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Publish a Discount List
+      operationId: publishDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DiscountListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /discount-lists:
+    get:
+      description: Returns a collection of Discount Lists
+      operationId: listDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                type: string
+              organizationId:
+                description: Filter the response by Organization id. The user must also have the permission to view the organization.
+                type: string
+              discountListTypeId:
+                description: The type of discount list to filter on; i.e. "DiscountListType.Item" for a items discount list. See DiscountListType enum.
+                type: string
+                example: "eq:DiscountListType.Item"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: DiscountList collection response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DiscountListCollectionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Create a Discount List
+      operationId: createDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: DiscountList to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DiscountListRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DiscountListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  #
+  # JSON:API definition for DiscountList > CustomerDiscountList services
+  #
+  /discount-lists/{discountListId}/customer-accounts:
+    parameters:
+      - $ref: "#/components/parameters/discountListId"
+    get:
+      description: Get customer accounts related to the discount list.
+      operationId: listCustomerDiscountLists
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              entityName:
+                description: The name of the entity to filter on; i.e. "HierarchyTree" for nodes (customer areas) or "CustomerAccount" for customers
+                type: string
+                example: "eq:HierarchyTree"
+      responses:
+        "200":
+          description: CustomerDiscountLists list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerDiscountListCollectionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      description: Create a new relation between a DiscountList and a customer account or a node in a customer hierarchy
+      operationId: createCustomerDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: CustomerDiscountList to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CustomerDiscountListRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerDiscountListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /discount-lists/{discountListId}/customer-accounts/{id}:
+    parameters:
+      - $ref: "#/components/parameters/discountListId"
+      - name: id
+        in: path
+        description: Customer discount list relationship id
+        required: true
+        schema:
+          type: string
+    get:
+      description: Get the single relation between a discount list and a customer account or a node in a customer hierarchy
+      operationId: getCustomerDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerDiscountListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a CustomerDiscountList.
+      operationId: updateCustomerDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: CustomerDiscountList to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CustomerDiscountListRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerDiscountListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      description: "[delete](https://jsonapi.org/format/#crud-deleting) a CustomerDiscountList"
+      operationId: deleteCustomerDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  #
+  # JSON:API definition for DiscountList > DiscountListDetails services
+  #
+  /discount-lists/{discountListId}/details:
+    get:
+      description: Get all details related to the discount list.
+      operationId: listDiscountListDetails
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "#/components/parameters/discountListId"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                type: string
+              itemId:
+                description: The details related to the given item id.
+                type: string
+              salesLineId:
+                description: Discount list details related to the given line id.
+                type: string
+              brandId:
+                description: Discount list details related to all the items of the given brand id.
+                type: string
+              startDate:
+                description: Discount list details start date
+                type: string
+              endDate:
+                description: Discount list details end date
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DiscountListDetailListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      parameters:
+        - $ref: "#/components/parameters/discountListId"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      description: Create new discount list detail
+      operationId: createDiscountListDetails
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: DiscountListDetail to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DiscountListDetailListRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DiscountListDetailListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /discount-lists/{discountListId}/details/{detailId}:
+    parameters:
+      - $ref: "#/components/parameters/discountListId"
+      - $ref: "#/components/parameters/detailId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get single detail related to the discount list.
+      operationId: getDiscountListDetail
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DiscountListDetailResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a DiscountListDetail.
+      operationId: updateDiscountListDetail
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: DiscountListDetail to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/DiscountListDetailRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/DiscountListDetailResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[delete](https://jsonapi.org/format/#crud-deleting) a DiscountListDetail"
+      operationId: deleteDiscountListDetail
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /discount-lists/{discountListId}/customer-accounts/links:
+    parameters:
+      - $ref: "#/components/parameters/discountListId"
+    get:
+      description: |
+        Returns a collection of CustomerAccounts that are eligible to be linked to the given DiscountList or are already linked.
+        Retrieved customers belong to the same organization as the DiscountList.
+      operationId: listEligibleCustomerAccountsForDiscountList
+      tags:
+        - Discount List
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                type: string
+              linked:
+                description: |
+                  * If `nn:` (not-null), retrieves only the customers **already linked** to the discount list;
+                  * if `nl:` (null), retrieves only the customers that are **not linked** to the discount list;
+                  * if not specified, retrieves **all** customers.
+                type: string
+      responses:
+        "200":
+          description: Eligible CustomerAccount list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EligibleCustomerAccountListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

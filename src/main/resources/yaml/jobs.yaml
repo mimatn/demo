@@ -1,0 +1,140 @@
+openapi: 3.0.3
+info:
+  title: Jobs API
+  version: "-"
+  description: Jobs API
+tags:
+  - name: Job
+    description: Job resource object.
+components:
+  schemas:
+    JobStatus:
+      description: The job status. See dictionary `JobStatus`.
+      type: string
+      enum:
+        - JobStatus.Scheduled
+        - JobStatus.Runnable
+        - JobStatus.Running
+        - JobStatus.Done
+        - JobStatus.Error
+        - JobStatus.Cancelled
+        - JobStatus.Expired
+      x-enum-varnames:
+        - Scheduled
+        - Runnable
+        - Running
+        - Done
+        - Error
+        - Cancelled
+        - Expired
+    Job:
+      description: Job resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Job"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - submittedTs
+            - jobStatusId
+            - jobTypeId
+          properties:
+            completionTs:
+              description: Time at which the job is completed.
+              type: string
+              format: date-time
+              example: "2023-03-10T14:10:00.0Z"
+            executionParameter:
+              description: Job ExecutionParameter.
+              type: string
+            jobStatusId:
+              $ref: "#/components/schemas/JobStatus"
+            jobTypeId:
+              description: Job type. See dictionary "JobType".
+              type: string
+            mimeType:
+              description: Job MIMEType.
+              type: string
+            resultFilename:
+              description: Job ResultFilename.
+              type: string
+            resultMessage:
+              description: Job ResultMessage.
+              type: string
+            resultURL:
+              description: Job ResultURL.
+              type: string
+            scheduledStartTs:
+              description: Time at which the job is scheduled.
+              type: string
+              format: date-time
+              example: "2023-03-10T14:10:00.0Z"
+            startTs:
+              description: Time at which the job is started.
+              type: string
+              format: date-time
+              example: "2023-03-10T14:10:00.0Z"
+            submittedTs:
+              description: Time at which the job is submitted.
+              type: string
+              format: date-time
+              example: "2023-03-10T14:10:00.0Z"
+        relationships:
+          type: object
+          required:
+            - userProfile
+          properties:
+            jobSchedule:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            userProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    JobIncluded:
+      description: JobSchedule and UserProfile.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    JobResponse:
+      description: Single Job response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Job"
+        included:
+          $ref: "#/components/schemas/JobIncluded"
+paths:
+  /jobs/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The Job id.
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns a single job.
+      operationId: getJob
+      tags:
+        - Job
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/JobResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."

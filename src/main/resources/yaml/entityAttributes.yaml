@@ -1,0 +1,2158 @@
+openapi: 3.0.3
+info:
+  title: onSales Next Core API
+  version: "-"
+  description: API to manage attributes (called `Entity Attributes`) in a dynamic way, i.e. without knowing the name of the attribute at compile time.
+tags:
+  - name: Entity Attribute
+    description: |
+      Provides APIs to manage attributes in a generic way. 
+
+      An `EntityAttribute` is a generic description of an attribute of a generic entity.
+      It may refer to a real column in the database or a _virtual_ one and has a `DataType`.
+      When describing a virtual attribute, it is also called a _dynamic_ attribute, since it is only known at runtime, not a compile time.
+
+      A `Sheet` is a group of `EntityAttributes`.
+      Referring to products, customers, document types, etc. it groups a set of additional attributes of an entity and provides an order. 
+      It is used for viewing and editing purposes. 
+
+      When an `EntityAttribute` is used in a `Sheet`, it is called a `SheetEntityAttribute` and has additional properties that describes it (like editable, mandatory, etc.), 
+      which are useful to show and modify the value in a user interface.
+components:
+  schemas:
+    EntityAttributeDataType:
+      description: |
+        The data type of the attribute. One of:
+          * `Text` text with no line breaks. Can be validated by a regex;
+          * `TextLanguage` as `Text`, additionally it allows to add the translations in different languages;
+          * `TextMultiline` a multiline text;
+          * `TextMultilineLanguage` as `TextMultiline`, additionally allows to add the translations in different languages;
+          * `Number` decimal number (use `.` as decimal separator);
+          * `Boolean` a boolean value, `0` for `false`, `1` for `true`;
+          * `Date` date formatted like `YYYY-MM-DD`;
+          * `DateTime` date and time formatted like `YYYY-MM-DDThh:mm:ss.sZ`;
+          * `Time` time formatted like `hh:mm:ss.s`; `ss.s` can be omitted and this case `00.0` is assumed;
+          * `SelectSingle` select a single value from a list; the value is the id;
+          * `SelectMulti` select multiple values from a list; each value is the id;
+          * `DigitalContent` digital content, like a image, a pdf file, etc.
+      type: string
+      enum:
+        - DataType.Text
+        - DataType.TextLanguage
+        - DataType.TextMultiline
+        - DataType.TextMultilineLanguage
+        - DataType.Number
+        - DataType.Boolean
+        - DataType.Date
+        - DataType.DateTime
+        - DataType.Time
+        - DataType.SelectSingle
+        - DataType.SelectMulti
+        - DataType.DigitalContent
+      example: DataType.Text
+    EntityAttributeAttributes:
+      type: object
+      required:
+        - descr
+        - attribute
+        - dataType
+        - virtual
+      properties:
+        descr:
+          description: The description of the attribute
+          type: string
+          example: "Contract code"
+        attribute:
+          description: The name of the attribute
+          type: string
+          example: "ContractCode"
+        dataType:
+          $ref: "#/components/schemas/EntityAttributeDataType"
+        virtual:
+          description: If `true`, this is a virtual attribute; if `false` it refers to a physical column in the database.
+          type: boolean
+          default: false
+        defaultValue:
+          description: the default value of the entity. The format depends on the data type.
+          type: string
+        constraintsDefinition:
+          $ref: "#/components/schemas/ConstraintDefinition"
+        itemSubscriptionServices:
+          description: |
+            List of subscription services associated with the item.
+
+            **NOTE**: This information is available only to users with the `listItemSubscriptionService` permission.
+          type: array
+          items:
+            $ref: "./items.yaml#/components/schemas/ItemSubscriptionService"
+    EntityAttribute:
+      description: |
+        An `EntityAttribute` is a generic description of an attribute of a generic entity.
+        An EntityAttribute may refer to a real column in the database or a _virtual_ one and has a DataType.
+        When describing a virtual attribute, it is also called a _dynamic_ attribute, since it is only known at runtime, not a compile time.
+        When used in a Sheet it has additional attributes necessary to show and modify the value in the UI.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "EntityAttribute"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/EntityAttributeAttributes"
+    EntityAttributeListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of EntityAttributes
+          type: array
+          items:
+            $ref: "#/components/schemas/EntityAttribute"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    SheetEntityAttributeValueIncluded:
+      description: "Related entities data: one of EntityAttribute"
+      type: array
+      items:
+        $ref: "#/components/schemas/SheetEntityAttribute"
+      uniqueItems: true
+    SheetEntityAttributeValueRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SheetEntityAttributeValue"
+    SheetEntityAttributeValueResponse:
+      description: The value of the entity attribute and how to represent it in a sheet
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SheetEntityAttributeValue"
+        included:
+          $ref: "#/components/schemas/SheetEntityAttributeValueIncluded"
+    SheetEntityAttributeAttributes:
+      description: |
+        A `SheetEntityAttribute` refers to an `EntityAttribute` used in a `Sheet`. 
+        An `EntityAttribute`is a generic description of an attribute of a generic entity.
+        It may refer to a real column in the database or a "virtual" one and has a DataType.
+        When describing a virtual attribute, it is also called a "dynamic" attribute, since it is only known at runtime, not a compile time.
+        When used in a Sheet it has additional attributes necessary to show and modify the value in the UI.
+      type: object
+      required:
+        - descr
+        - sequenceNum
+        - mandatoryCondition
+        - editableCondition
+        - visibleCondition
+      properties:
+        descr:
+          description: The name of the attribute in the sheet.
+          type: string
+          example: Contract code
+        code:
+          description: The code of the attribute in the Sheet.
+          type: string
+          example: CONTRACT_CODE
+        hint:
+          description: An suggestion for the user, for example, for a text field it may describe which value to type in the field.
+          type: string
+          example: Insert the contract number of the customer as found in the ERP
+        sequenceNum:
+          description: The sequence number used to sort the attributes, when presenting them on a UI.
+          type: integer
+          example: 1
+        layoutDefinition:
+          description: |
+            An optional string in JSON format, which describes the layout of the attribute.
+            The JSON properties of the object are:
+              * `colSpan`: number of columns that the attribute should take in the layout, considering a layout of 4 columns.
+              * `newLine`: a boolean, describes whether the attribute should be rendered in a new line with respect to the previous attribute.
+              Example: 
+              ```
+                { 
+                  "colSpan": 2, 
+                  "newLine": false
+                }
+              ```
+          type: string
+          example: |
+            ```
+              { 
+                "colSpan": 1, 
+                "newLine": true
+              }
+            ```
+        mandatoryCondition:
+          description: |
+            A string in JSON format, which describes the mandatory nature of the attribute.
+            When condition is true, the attribute is mandatory, otherwise it is optional.
+            [See more details](https://atongroup.atlassian.net/wiki/spaces/ONCORERMP/pages/283725496326/Condizioni+attributi+dinamici#Requisiti).
+          type: string
+          default: |
+            ```
+            { "condition": "false" }
+            ```
+          example: |
+            ```
+              { "condition": "%Item.Glazing > 0" }
+            ```
+        editableCondition:
+          description: |
+            A string in JSON format, which describes if the attribute is editable.
+            When the condition is true, the attribute is editable, otherwise readonly.
+            [See more details](https://atongroup.atlassian.net/wiki/spaces/ONCORERMP/pages/283725496326/Condizioni+attributi+dinamici#Requisiti).
+          type: string
+          default: |
+            ```
+            { "condition": "false" }
+            ```
+          example: |
+            ```
+              { "condition": "%Item.Glazing > 0" }
+            ```
+        visibleCondition:
+          description: |
+            A string in JSON format, which describes if the attribute is visible.
+            When the condition is true, the attribute is visible, hidden otherwise.
+            [See more details](https://atongroup.atlassian.net/wiki/spaces/ONCORERMP/pages/283725496326/Condizioni+attributi+dinamici#Requisiti).
+          type: string
+          default: |
+            ```
+            { "condition": "true" }
+            ```
+          example: |
+            ```
+              { "condition": "%Item.Glazing > 0" }
+            ```
+        anomalyCondition:
+          description: A string in JSON format that describes if the attribute has anomalies.
+          type: string
+    SheetEntityAttributeDefinition:
+      allOf:
+        - $ref: "#/components/schemas/EntityAttributeAttributes"
+        - $ref: "#/components/schemas/SheetEntityAttributeAttributes"
+    SheetEntityAttribute:
+      description: |
+        The attributes that define a `SheetEntityAttribute`.
+        A `SheetEntityAttribute` refers to an `EntityAttribute` used in a `Sheet`. 
+        An `EntityAttribute` is a generic description of an attribute of a generic entity.
+        It may refer to a real column in the database or a _virtual_ one and has a DataType.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SheetEntityAttribute"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/SheetEntityAttributeDefinition"
+        relationships:
+          type: object
+          properties:
+            entityAttribute:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    SheetEntityAttributeValue:
+      description: Contains the definition of the entity attribute ad its current value, JSONAPI format
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SheetEntityAttributeValue"
+        id:
+          description: The id of the attribute in a specific sheet, to be used to update or delete it, together with the object name and id
+          type: string
+        attributes:
+          type: object
+          required:
+            - attributeValue
+          properties:
+            attributeValue:
+              description: The value of the EntityAttribute for the given entity object
+              type: string
+              example: "CNT2022/000123"
+              nullable: true
+        relationships:
+          type: object
+          properties:
+            sheetEntityAttribute:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    EntityAttributeValueTranslations:
+      description: The map with the language ISO code as key, and the string in the given language as values.
+      type: object
+      additionalProperties:
+        type: string
+      example: |
+        ```
+          { 
+            "it-IT": "Pesce", 
+            "en-US": "Fish", 
+            "fr-FR": "Poisson"
+          }
+        ```
+    SheetExEntityAttributeValue:
+      description: Contains the definition of the entity attribute ad its current value
+      type: object
+      required:
+        - id
+        - attributeDefinition
+      properties:
+        sheetEntityAttributeId:
+          description: |
+            The id of the `SheetEntityAttribute`, i.e. the attribute in the specific sheet, to be used to update or delete it, 
+            together with the object name and id.
+          type: string
+        attributeValue:
+          description: The value of the EntityAttribute for the given entity object.
+          type: string
+          example: "CNT2022/000123"
+          nullable: true
+        translations:
+          $ref: "#/components/schemas/EntityAttributeValueTranslations"
+        attributeDefinition:
+          allOf:
+            - type: object
+              properties:
+                id:
+                  description: The id of the `EntityAttribute`
+                  type: string
+                  readOnly: true
+            - $ref: "#/components/schemas/SheetEntityAttributeDefinition"
+        hasAnomalies:
+          description: True if the attribute has some anomalies according to some conditions.
+          readOnly: true
+          type: boolean
+          default: false
+          example: false
+    SheetEx:
+      description: |
+        An extension of a `Sheet` which includes both the sheet attributes, and their values for the given object.
+
+        A Sheet is a group of `EntityAttributes`.
+        Referring to products, customers, document types, etc. it groups a set of additional attributes of an entity and provides an order. 
+        It is used for viewing and editing purposes.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SheetEx"
+        id:
+          description: The Id of the Sheet
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - entityName
+            - entityAttributeValues
+          properties:
+            descr:
+              description: Name of the sheet, describing this group of attributes.
+              type: string
+            entityName:
+              description: The name of the referred entity.
+              type: string
+              example: "CustomerAccount"
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            entityAttributeValues:
+              description: The list of entity attributes in this sheets, with their current values.
+              type: array
+              items:
+                $ref: "#/components/schemas/SheetExEntityAttributeValue"
+            wizardSectionId:
+              description: The step of the creation / update wizard. See dictionary `WizardSection`.
+              type: string
+            sequenceNum:
+              description: The sequence number used to sort the sheets, when presenting them on a UI.
+              type: integer
+        relationships:
+          description: The related resources; `apps` are the applications in which this sheet is defined.
+          type: object
+          required:
+            - apps
+          properties:
+            apps:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    #
+    # SheetExIncluded
+    #
+    SheetExIncluded:
+      description: Resource related a SheetEx.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SheetExResponse:
+      description: Single Sheet
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SheetEx"
+        included:
+          $ref: "#/components/schemas/SheetExIncluded"
+    SheetExListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of Sheets
+          type: array
+          items:
+            $ref: "#/components/schemas/SheetEx"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SheetExIncluded"
+    #
+    # EntitySheet
+    #
+    EntitySheet:
+      description: |
+        An extension of a `Sheet` which includes the sheet attributes with their definition for the given object.
+
+        A Sheet is a group of EntityAttributes.
+        Referring to products, customers, document types, etc. it groups a set of additional attributes of an entity and provides an order. 
+        It is used for viewing and editing purposes.
+        It does not include the values for each attributes, which are available in each entity's API under the entityAttributes array.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "EntitySheet"
+        id:
+          description: The Id of the Sheet
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - sheetEntityAttributes
+            - sequenceNum
+          properties:
+            descr:
+              description: Name of the sheet, describing this group of attributes.
+              type: string
+            isDraft:
+              $ref: "./core.yaml#/components/schemas/isDraft"
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            sheetEntityAttributes:
+              description: The list of entity attributes in this sheets
+              type: array
+              items:
+                $ref: "#/components/schemas/SheetEntityAttribute"
+            wizardSectionId:
+              description: The step of the creation / update wizard. See dictionary `WizardSection`.
+              type: string
+            sequenceNum:
+              description: The sequence number used to sort the sheets, when presenting them on a UI.
+              type: integer
+            defaultOpenInView:
+              description: |
+                True if the sheet is open by default for the user in view mode in the given app.
+              type: boolean
+              default: false
+              readOnly: true
+            defaultOpenInEdit:
+              description: |
+                True if the sheet is open by default for the user in edit mode in the given app.
+              type: boolean
+              default: false
+              readOnly: true
+    EntitySheetResponse:
+      description: Single Sheet
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/EntitySheet"
+    EntitySheetListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of EntitySheets.
+          type: array
+          items:
+            $ref: "#/components/schemas/EntitySheet"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    EntityAttributeValue:
+      required:
+        - attribute
+        - dataType
+        - entityAttributeId
+      properties:
+        entityAttributeId:
+          description: |
+            The id of the `EntityAttribute`, i.e. the attribute in the specific sheet, to be used to update or delete it, 
+            together with the object name and id.
+          type: string
+        attribute:
+          description: The name of the attribute.
+          type: string
+          example: ContractCode
+        dataType:
+          $ref: "./entityAttributes.yaml#/components/schemas/EntityAttributeDataType"
+        attributeValue:
+          description: The value of the EntityAttribute for the given item.
+          type: string
+          example: "CNT2022/000123"
+          nullable: true
+        translations:
+          $ref: "./entityAttributes.yaml#/components/schemas/EntityAttributeValueTranslations"
+    EntityAttributeOptions:
+      description: |
+        Given the user profile (and therefore its roles), app ID, and entity ID (e.g. "Item"), indicates whether an 
+        entity attribute is visible and editable.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: EntityAttributeOptions
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - visible
+            - editable
+          properties:
+            visible:
+              description: True if the entity attribute is visible, false otherwise.
+              type: boolean
+              default: false
+            editable:
+              description: True if the entity attribute is editable, false otherwise.
+              type: boolean
+              default: false
+        relationships:
+          type: object
+          required:
+            - entityAttribute
+          properties:
+            entityAttribute:
+              description: |
+                The entity attribute the options refers to. This relationship is not considered in the `include`
+                because no other data but the id is meaningful for the entity attribute.
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    EntityAttributeOptionsListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of entity attributes options.
+          type: array
+          items:
+            $ref: "#/components/schemas/EntityAttributeOptions"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    EligibleEntityAttributeDefinition:
+      description: An attribute of an entity.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "EligibleEntityAttributeDefinition"
+        id:
+          description: A string that uniquely identify the attribute.
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+            - dataTypeId
+          properties:
+            code:
+              description: The name of the attribute.
+              type: string
+            descr:
+              description: A string that describes the attribute.
+              type: string
+            dataTypeId:
+              $ref: "#/components/schemas/EntityAttributeDataType"
+            constraintsDefinition:
+              description: A JSON string that describes the constraints of the entity attribute.
+              type: string
+            linked:
+              description: True if the attribute is linked to the sheet, false otherwise.
+              type: boolean
+              readOnly: true
+    ListEligibleEntityAttributeDefinitionResponse:
+      description: An object that contains a list of eligible entity attributes definitions.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: A list of eligible entity attribute definitions.
+          type: array
+          items:
+            $ref: "#/components/schemas/EligibleEntityAttributeDefinition"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    ListSheetEntityAttributeResponse:
+      description: |
+        An object that contains a list of `SheetEntityAttribute` objects which are entity attributes used in a sheet.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: A list of `SheetEntityAttribute` objects.
+          type: array
+          items:
+            $ref: "#/components/schemas/SheetEntityAttribute"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    SheetEntityAttributeResponse:
+      description: |
+        An object that contains a `SheetEntityAttribute` object which is an entity attribute used in a sheet.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SheetEntityAttribute"
+    EntityAttributeCreationData:
+      description: The data needed to create a new entity attribute.
+      type: object
+      required:
+        - attribute
+        - descr
+        - dataTypeId
+      properties:
+        attribute:
+          description: The attribute of the entity attribute.
+          type: string
+        descr:
+          description: The description of the entity attribute.
+          type: string
+        dataTypeId:
+          $ref: "#/components/schemas/EntityAttributeDataType"
+        constraintsDefinition:
+          description: A JSON string that describes the constraints of the entity attribute.
+          type: string
+    CreateEntityAttributeRequest:
+      description: An object containing the entity attribute to create.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          required:
+            - type
+            - attributes
+          properties:
+            type:
+              default: "CreateEntityAttributeRequest"
+            attributes:
+              $ref: "#/components/schemas/EntityAttributeCreationData"
+    EntityAttributeResponse:
+      description: An object that contains an entity attribute.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/EntityAttribute"
+    AddEntityAttributesToSheetRequest:
+      description: An object containing the entity attributes to add to a sheet.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: The set of entity attributes to add to the sheet.
+          type: object
+          required:
+            - type
+            - attributes
+          properties:
+            type:
+              default: "AddEntityAttributesToSheetRequest"
+            attributes:
+              type: object
+              required:
+                - entityAttributeIds
+              properties:
+                entityAttributeIds:
+                  description: The ids of the entity attributes to add to the sheet.
+                  type: array
+                  uniqueItems: true
+                  items:
+                    description: The id of an entity attribute to add to the sheet.
+                    type: string
+    UpdateEntityAttributeForSheetData:
+      description: The data needed to update an entity attribute in a sheet.
+      type: object
+      required:
+        - sequenceNum
+      properties:
+        sequenceNum:
+          description: The position of the attribute in the sheet.
+          type: integer
+          minimum: 0
+        mandatoryCondition:
+          description: A JSON string that describes the conditions based on which an attribute is mandatory in a sheet.
+          type: string
+        editableCondition:
+          description: A JSON string that describes the conditions based on which an attribute is editable in a sheet.
+          type: string
+        visibleCondition:
+          description: A JSON string that describes the conditions based on which an attribute is visible in a sheet.
+          type: string
+        anomalyCondition:
+          description: A JSON string that describes the conditions based on which an attribute has anomalies in a sheet.
+          type: string
+        layoutDefinition:
+          description: A JSON string that describes the layout the attribute will have when presented in the UI.
+          type: string
+        hint:
+          description: A string that provides a hint to the user about the attribute.
+          type: string
+    UpdateEntityAttributeForSheetRequest:
+      description: |
+        An object containing the data to use to update an entity attribute in a sheet.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - type
+            - attributes
+          properties:
+            type:
+              default: "UpdateEntityAttributeForSheetRequest"
+            attributes:
+              $ref: "#/components/schemas/UpdateEntityAttributeForSheetData"
+    CreateSheetData:
+      description: The data needed to create a sheet.
+      type: object
+      required:
+        - type
+        - attributes
+      properties:
+        type:
+          default: CreateSheetData
+          type: string
+        attributes:
+          description: The data needed to create a new sheet.
+          type: object
+          required:
+            - entityId
+            - descr
+            - organizations
+            - apps
+          properties:
+            entityId:
+              description: The id of the entity the sheet is defined for.
+              type: string
+            descr:
+              description: A string that generically describes the sheet.
+              type: string
+            wizardSectionId:
+              description: The id of the wizard section the sheet is part of.
+              type: string
+            organizations:
+              description: |
+                A list containing the id of the organizations the sheet is visible for. It must contain at least one
+                element.
+              type: array
+              minLength: 1
+              items:
+                type: string
+            apps:
+              description: |
+                A list containing the id of the applications the sheet is defined for. It must contain at least one
+                element.
+              type: array
+              minLength: 1
+              items:
+                type: string
+    CreateSheetRequest:
+      description: An object that contains the data needed to create a new sheet.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CreateSheetData"
+    UpdateSheetData:
+      description: An object that contains the data needed to update a sheet.
+      type: object
+      required:
+        - type
+        - attributes
+      properties:
+        type:
+          default: UpdateSheetData
+          type: string
+        attributes:
+          description: The data needed to update a sheet.
+          type: object
+          required:
+            - descr
+          properties:
+            descr:
+              description: The new description for the sheet.
+              type: string
+            wizardSectionId:
+              description: The new wizard section id for the sheet. Could be `null`.
+              type: string
+            organizations:
+              description: |
+                The new list of organizations the sheet will be visible for. This attribute must be different from
+                `null` only when sheet's organizations changed. Indeed, organizations provided in this list will
+                completely overwrite the previous ones.
+              type: array
+              uniqueItems: true
+              items:
+                description: The id of an organization the sheet will be visible for.
+                type: string
+            apps:
+              description: |
+                The new list of applications the sheet will be defined for. This attribute must be different from
+                `null` only when sheet's applications changed. Indeed, applications provided in this list will
+                completely overwrite the previous ones.
+              type: array
+              uniqueItems: true
+              items:
+                type: object
+                required:
+                  - appId
+                  - defaultOpenInView
+                  - defaultOpenInEdit
+                properties:
+                  appId:
+                    description: The id of an application the sheet will be defined for.
+                    type: string
+                  defaultOpenInView:
+                    description: |
+                      True if the sheet is open by default for the user in view mode in the given app.
+                    type: boolean
+                    default: false
+                  defaultOpenInEdit:
+                    description: |
+                      True if the sheet is open by default for the user in edit mode in the given app.
+                    type: boolean
+                    default: false
+
+    UpdateSheetRequest:
+      description: An object containing the data needed to update a sheet.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/UpdateSheetData"
+    Sheet:
+      description: |
+        A `Sheet` is a group of EntityAttributes.
+        Referring to products, customers, document types etc. groups a set of additional attributes of an entity and provides an order. 
+        It is used for viewing and editing purposes
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Sheet"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - entityId
+            - isProtected
+            - entityAttributesCount
+            - processingStatusId
+          properties:
+            descr:
+              description: Description of the additional attribute.
+              type: string
+            entityId:
+              description: The id of the referred entity.
+              type: string
+            isDraft:
+              description: It is `true` when the sheet is a draft.
+              type: boolean
+              readOnly: true
+            lastChangeTs:
+              $ref: "./core.yaml#/components/schemas/lastChangeTs"
+            isProtected:
+              description: |
+                `true` when the sheet is protected. If a sheet is protected it cannot be neither modified nor deleted.
+              type: boolean
+              default: false
+            entityAttributesCount:
+              description: The number of entity attributes linked to the sheet.
+              type: integer
+              minimum: 0
+              default: 0
+            processingStatusId:
+              $ref: "./core.yaml#/components/schemas/ProcessingStatus"
+            canBeDeleted:
+              description: |
+                `true` when the sheet can be deleted. Deletion eligibility considers both the `isProtected` and survey
+                sections linked to the sheet.
+              type: boolean
+              default: false
+            wizardSectionId:
+              description: The id of a wizard section the sheet is part of.
+              type: string
+        relationships:
+          description: Entities related to the sheet.
+          type: object
+          required:
+            - organizations
+            - apps
+          properties:
+            organizations:
+              $ref: "./jsonapi.yaml#/components/schemas/relToManyWithMeta"
+            apps:
+              description: A multiple relationship with one meta block per element.
+              type: object
+              required:
+                - meta
+              properties:
+                links:
+                  $ref: "./jsonapi.yaml#/components/schemas/relationshipLinks"
+                data:
+                  description: |
+                    An array of objects each containing `type` and `id` members for to-many
+                    relationships and the meta block.
+                  type: array
+                  items:
+                    description: The `type` and `id` to non-empty members. Contains also meta block with entity main info.
+                    type: object
+                    required:
+                      - type
+                      - id
+                    properties:
+                      type:
+                        type: string
+                      id:
+                        type: string
+                      meta:
+                        allOf:
+                          - type: object
+                            properties:
+                              defaultOpenInView:
+                                description: |
+                                  True if the sheet is open by default for the user in view mode in the given app.
+                                type: boolean
+                                readOnly: true
+                              defaultOpenInEdit:
+                                description: |
+                                  True if the sheet is open by default for the user in edit mode in the given app.
+                                type: boolean
+                                readOnly: true
+                          - $ref: "./jsonapi.yaml#/components/schemas/relationshipToManyMeta"
+                  uniqueItems: true
+                meta:
+                  $ref: "./jsonapi.yaml#/components/schemas/relToManyMeta"
+            currentDraftUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            draftOwnerUserProfile:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+    SheetIncluded:
+      description: Related organizations and apps.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    SheetResponse:
+      description: Single Sheet.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Sheet"
+        included:
+          $ref: "#/components/schemas/SheetIncluded"
+    SheetListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of Sheets.
+          type: array
+          items:
+            $ref: "#/components/schemas/Sheet"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/SheetIncluded"
+    MinimalSurveyDocSection:
+      description: A minimal representation of a survey document section with only a subset of its attributes.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the resource.
+          type: string
+          default: "SurveyDocSection"
+        id:
+          description: A string that uniquely identify the resource. It is the id of a `SurveyDocSection`.
+          type: string
+        attributes:
+          description: The minimal attributes to describe a survey document section.
+          type: object
+          required:
+            - surveyDocTemplateCode
+            - surveyDocTemplateDescr
+            - sectionTemplateDescr
+          properties:
+            surveyDocTemplateCode:
+              description: A section belongs to a survey. This is the code of the survey's template.
+              type: string
+            surveyDocTemplateDescr:
+              description: A section belongs to a survey. This is the description of the survey's template.
+              type: string
+            sectionTemplateDescr:
+              description: The description of the section's template.
+              type: string
+        relationships:
+          type: object
+          required:
+            - surveyDocTemplate
+          properties:
+            surveyDocTemplate:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    ListMinimalSurveyDocSectionResponse:
+      description: An object that contains a list of minimal survey document sections.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of minimal survey document sections.
+          type: array
+          items:
+            $ref: "#/components/schemas/MinimalSurveyDocSection"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        included:
+          type: array
+          items:
+            $ref: "./surveyDoc.yaml#/components/schemas/SurveyDocTemplate"
+          uniqueItems: true
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    ConstraintDefinition:
+      description: |
+        An optional string in JSON format, which describes the constraints on the attribute. 
+        The format depends on the data type of the attributes.
+        Where min and max are specified, it must be `max >= min`.
+        ### Number attributes:
+          * minValue: minimum value, included; default: 0;
+          * maxValue: maximum value, included;
+          * decimals: number of decimals (positive integer); default: 0;     
+
+            Example: 
+            ```
+              { 
+                "minValue": 0.0, 
+                "maxValue": 100, 
+                "decimals": 2
+              }
+            ```
+        ### Text and TextLanguage attributes:
+          * minLength: minimum length in characters (positive integer); default: 0;
+          * maxLength: maximum length in characters (positive integer); default: 200, max: 4000;
+          * regex: a regular expression to validate (string);
+          * languages: an array of language ids (only for TextLanguage). If not specified, all languages will be shown;
+
+            Example: 
+            ```
+              { 
+                "minLength": 3, 
+                "maxLength": 100 
+              }
+            ```
+        ### TextMultiline and TextMultilineLanguage attributes:
+          * minLength: minimum length in characters (positive integer); default: 0;
+          * maxLength: maximum length in characters (positive integer); default and max: 4000;
+          * languages: an array of language ids (only for TextMultilineLanguage). If not specified, all languages will be shown;
+          * rows: the maximum number of rows visible without scrolling (this is not a constraint on the value);
+
+            Example: 
+            ```
+              { 
+                "maxLength": 500, 
+                "rows": 3
+              }
+            ```
+        ### Date. The selectable dates can be restricted based on the following attributes:
+          * minDays: min number of days from today, included (integer); 0 means today is valid, 1 means date starts from tomorrow;
+          * maxDays: max number of days from today, included (integer);
+
+            Example: 
+            ```
+              { 
+                "minDays": 1,
+                "maxDays": 30 
+              }
+            ```
+        ### Time. The selectable time can be restricted based on the following attributes:
+          * minTime: minimum time (included); default: `00:00:00.0`;
+          * maxTime: maximum time (included); default: `23:59:59.9`, max: `99:59:59.9`;
+
+            Example: 
+            ```
+              { 
+                "min": 07:00, 
+                "max": 22:00
+              }
+            ```
+        ### DateTime. The selectable dates and time can be restricted based on the following attributes:
+          * minDays: min number of days from today, included (integer); 0 means today is valid, 1 means date starts from tomorrow;
+          * maxDays: max number of days from today, included (integer);
+          * minTime: minimum time (included); default: `00:00:00.0`;
+          * maxTime: maximum time (included); default and max: `23:59:59.9`;
+
+            Example: 
+            ```
+              { 
+                "minDays": 0, 
+                "maxDays": 30
+              }
+            ```
+        ### SelectSingle and SelectMulti attributes 
+          * dictionary: the id of the dictionary (string);
+
+            Example: 
+            ```
+              { 
+                "dictionary": "SalesLine" 
+              }
+            ```
+        ### DigitalContent attributes
+          * **[MANDATORY]** `digitalContentTypeId`: the id of the Digital Content Type;
+          * `minCount`: minimum number of digital content to load, default **0**;
+          * `maxCount`: maximum number of digital content that can be loaded, default **5**;
+          * `versionMandatory`: boolean if version si mandatory, default **false**;
+          * `lastChangeDateMandatory`: if last change date is mandatory, default **false**.
+
+          Example: 
+          ```
+            {  
+              "digitalContentTypeId": "<id>",
+              "minCount": 1,
+              "maxCount": 3,
+              "versionMandatory": true,
+              "lastChangeDateMandatory": false
+            }
+          ```
+
+      type: string
+      example: '{ "minLength": 0, "maxLength": 100 }'
+  parameters:
+    entityName:
+      name: entityName
+      in: path
+      description: The name of the entity.
+      required: true
+      schema:
+        type: string
+      example: "CustomerAccount"
+    entityObjectId:
+      name: entityObjectId
+      in: path
+      description: |
+        The instance id of the object of type `entityName`.
+        For a physical entity (Entity.Virtual = false) it will be the id of the row in the corresponding table 
+        (e.g .: value of the Id column in the CustomerAccount table).
+        For a virtual entity (Entity.Virtual = true) it will be the id in the EntityObject table
+      required: true
+      schema:
+        type: string
+      example: "010012345"
+    appIdFilter:
+      name: filter[appId]
+      in: query
+      description: The id of the application
+      required: true
+      style: form
+      schema:
+        type: string
+      example: SLBORMP
+paths:
+  #
+  # JSON:API definition for 'Sheet with EntityAttribute Values' services
+  #
+  /entities/{entityName}/{entityObjectId}/sheets:
+    parameters:
+      - $ref: "#/components/parameters/entityName"
+      - $ref: "#/components/parameters/entityObjectId"
+    get:
+      description: |
+        Gets the list of the sheets for the given entity and the attributes for every sheet, 
+        including the definition and value of each attribute.
+      operationId: listSheetsWithAttributesValues
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: filter[appId]
+          in: query
+          description: The id of the application
+          required: true
+          style: form
+          schema:
+            type: string
+          example: SLBORMP
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SheetExListResponse"
+  /entities/{entityName}/sheets:
+    parameters:
+      - $ref: "#/components/parameters/entityName"
+    get:
+      description: |
+        Gets the list of the sheets for the given entity and the attributes for every sheet, 
+        including the definition of each attribute.
+      operationId: listSheetsWithAttributesDefinitions
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./entityAttributes.yaml#/components/parameters/appIdFilter"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EntitySheetListResponse"
+  /entities/{entityName}/sheets/{id}:
+    parameters:
+      - $ref: "#/components/parameters/entityName"
+      - name: id
+        in: path
+        description: The Sheet id.
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        For the entity with the given entityName, gets the sheet with its attributes, 
+        including the definition of each attribute.
+      operationId: getSheetWithAttributesDefinitions
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./entityAttributes.yaml#/components/parameters/appIdFilter"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EntitySheetResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /entities/{entityName}/{entityObjectId}/sheets/{id}:
+    parameters:
+      - $ref: "#/components/parameters/entityName"
+      - $ref: "#/components/parameters/entityObjectId"
+      - name: id
+        in: path
+        description: The Sheet id
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        For the entity with the given object id, gets the sheet with its attributes, 
+        including the definition and value of each attribute.
+      operationId: getSheetWithAttributesValues
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: filter[appId]
+          in: query
+          description: The id of the application
+          required: true
+          style: form
+          schema:
+            type: string
+          example: SLBORMP
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SheetExResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  #
+  # JSON:API definition for EntityAttributeValue services
+  #
+  /entities/{entityName}/{entityObjectId}/sheet-attributes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/entityName"
+      - $ref: "#/components/parameters/entityObjectId"
+      - name: id
+        in: path
+        description: The SheetEntityAttribute id.
+        required: true
+        schema:
+          $ref: "./jsonapi.yaml#/components/schemas/id"
+    get:
+      description: Gets an SheetEntityAttributeValue. It must be one of the attributes of the entity with the given entityName.
+      operationId: getSheetEntityAttributeValue
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SheetEntityAttributeValueResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    post:
+      description: |
+        Sets an `EntityAttribute` value, given che ids of the entity object, the `EntityAttribute` and the `Sheet` containing it.
+      operationId: setSheetEntityAttributeValue
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: EntityAttributeValue to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/SheetEntityAttributeValueRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SheetEntityAttributeValueResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[Delete](https://jsonapi.org/format/#crud-deleting) a EntityAttributeValue."
+      operationId: deleteEntityAttributeValue
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /entities/{entityName}/attributes:
+    parameters:
+      - $ref: "#/components/parameters/entityName"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns the dynamic attributes defined for `entityName`. The attributes are filtered by the roles of the
+        identity calling this endpoint.
+      operationId: listAttributesForEntity
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: filter
+          description: EntityAttribute filters
+          in: query
+          required: true
+          style: deepObject
+          schema:
+            properties:
+              s:
+                description: Search by description
+                type: string
+              virtual:
+                description: If the attribute is virtual or not
+                type: string
+                example: "eq:true"
+              dataType:
+                description: |
+                  Filters attributes by their data type. With this filter is possible, for example, to retrieve only
+                  boolean attributes.
+                type: string
+                example: "eq:DataType.Boolean"
+              appId:
+                description: Filters results by the application id.
+                type: string
+              organizationId:
+                description: Filters results by the organization id.
+                type: string
+      responses:
+        "200":
+          description: EntityAttribute list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EntityAttributeListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Creates a new entity attribute for the entity specified in the path. Attributes created with this endpoint will
+        be virtual by default.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSheet |
+        | updateSheet |
+      operationId: createEntityAttribute
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - createSheet
+        - updateSheet
+      requestBody:
+        description: An object containing the entity attribute to create.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CreateEntityAttributeRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EntityAttributeResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /entities/{entityName}/attributes-options:
+    parameters:
+      - $ref: "#/components/parameters/entityName"
+    get:
+      description: Returns a list of entity attribute options based on the user who made the request.
+      operationId: listEntityAttributesOptions
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./entityAttributes.yaml#/components/parameters/appIdFilter"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: filter
+          description: Optional filters.
+          in: query
+          required: true
+          style: deepObject
+          schema:
+            properties:
+              isVirtual:
+                description: |
+                  If true only options related to additional attributes are considered. Otherwise, static attributes are
+                  taken into account.
+                type: string
+                example: "eq:true"
+              entityAttribute:
+                description: Filters options by entity attribute.
+                type: string
+                example: "eq:Attribute.Id"
+      responses:
+        "200":
+          description: Entity attribute options list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EntityAttributeOptionsListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /entities/{entityName}/attributes-definitions:
+    parameters:
+      - $ref: "#/components/parameters/entityName"
+    get:
+      description: |
+        Returns all entity attributes defined for `entityName` and related to the `Sheet`.
+
+        The attributes are **not** filtered by the roles of the identity calling this endpoint.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSheet |
+        | updateSheet |
+      operationId: listEligibleEntityAttributesDefinitions
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - createSheet
+        - updateSheet
+      parameters:
+        - name: sheetId
+          in: query
+          description: The sheet ID.
+          required: true
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: filter
+          description: Optional filters.
+          in: query
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Filters attributes by name and description.
+                type: string
+              linked:
+                description: |
+                  * If `nn:` (not-null), retrieves only the attributes **already linked**;
+                  * if `nl:` (null), retrieves only the attributes that are **not linked**;
+                  * if not specified, retrieves **all** attributes.
+                type: string
+      responses:
+        "200":
+          description: Entity attribute options list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ListEligibleEntityAttributeDefinitionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /entities/{entityName}/data-types:
+    parameters:
+      - $ref: "#/components/parameters/entityName"
+    get:
+      description: Returns the available data types for the specified entity.
+      operationId: listDataTypesForEntity
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: filter
+          description: Optional filters.
+          in: query
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Filters by code or description.
+                type: string
+      responses:
+        "200":
+          description: Data type list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/DictionaryListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sheets/{sheetId}/attributes:
+    parameters:
+      - name: sheetId
+        in: path
+        description: The id of a sheet
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Returns the attributes defined for the sheet with the given id. The caller must belong to at least one of the
+        organizations the sheet is defined for and enabled for at least one of the applications the sheet is linked to.
+      operationId: listSheetAttributes
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: sort
+          in: query
+          description: |
+            Sorts attributes by: sequence number, attribute's name and data type. Therefore, available sorters are:
+            `sequenceNum`, `attribute` and `dataType`.
+          required: false
+          style: form
+          schema:
+            type: string
+        - name: filter
+          description: Optional filters.
+          in: query
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Filters attributes by name and description.
+                type: string
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ListSheetEntityAttributeResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Adds a set of entity attributes to the sheet specified in the path.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSheet |
+        | updateSheet |
+      operationId: addEntityAttributesToSheet
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - createSheet
+        - updateSheet
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        description: |
+          An object containing the entity attributes to add to the sheet. Entity attributes' sequence number will be
+          automatically calculated such that the new attributes will be after the existing ones.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/AddEntityAttributesToSheetRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ListSheetEntityAttributeResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sheets/{sheetId}/attributes/{attributeId}:
+    parameters:
+      - name: sheetId
+        in: path
+        description: The id of a sheet
+        required: true
+        schema:
+          type: string
+      - name: attributeId
+        in: path
+        description: The id of an attribute
+        required: true
+        schema:
+          type: string
+    patch:
+      description: |
+        Updates the relationship between the sheet and the attribute specified in the path.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSheet |
+        | updateSheet |
+      operationId: updateEntityAttributeForSheet
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - createSheet
+        - updateSheet
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        description: An object containing the data to use to update an entity attribute in a sheet.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/UpdateEntityAttributeForSheetRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SheetEntityAttributeResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        Removes the attribute from the sheet.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSheet |
+        | updateSheet |
+      operationId: deleteEntityAttributeFromSheet
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - createSheet
+        - updateSheet
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sheets/{sheetId}/survey-sections:
+    parameters:
+      - name: sheetId
+        in: path
+        description: The id of a sheet
+        required: true
+        schema:
+          type: string
+    get:
+      description: |
+        Returns the survey sections linked to the sheet with the given id. The caller must belong to at least one of the
+        organizations the sheet is defined for and enabled for at least one of the applications the sheet is linked to.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listSheets |
+      operationId: listSheetSurveyDocSections
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - listSheets
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ListMinimalSurveyDocSectionResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sheets/{sheetId}/edit:
+    parameters:
+      - name: sheetId
+        in: path
+        description: The id of a sheet
+        required: true
+        schema:
+          type: string
+    post:
+      description: |
+        Starts and editing session for the sheet specified in the path. This operation assumes that `sheetId` refers to
+        a published sheet.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSheet |
+        | updateSheet |
+      operationId: editSheet
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - createSheet
+        - updateSheet
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SheetResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sheets/{sheetId}/publish:
+    parameters:
+      - name: sheetId
+        in: path
+        description: The id of a sheet
+        required: true
+        schema:
+          type: string
+    post:
+      description: |
+        Publishes the sheet specified in the path. This operation assumes that `sheetId` refers to a cloned sheet.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSheet |
+        | updateSheet |
+      operationId: publishSheet
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - createSheet
+        - updateSheet
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SheetResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sheets/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The sheet id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Get a Sheet
+      operationId: getSheet
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SheetResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: |
+        Updates the sheet specified in the path. This operation assumes that `sheetId` is the id of a cloned sheet.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | updateSheet |
+      operationId: updateSheet
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - updateSheet
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        description: An object that contains the data to use to update the specified sheet.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./entityAttributes.yaml#/components/schemas/UpdateSheetRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SheetResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        Deletes the sheet specified in the path. This operation will succeed only if the sheet is deletable. When
+        `sheetId` refers to a published sheet the sheet and all the ongoing changes on it will be deleted. On the
+        other hand, when `sheetId` refers to a cloned sheet only the cloned sheet will be deleted.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | deleteSheet |
+      operationId: deleteSheet
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - deleteSheet
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /sheets:
+    get:
+      description: |
+        Returns a collection of Sheet
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listSheets |
+      operationId: listSheets
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - listSheets
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                type: string
+              entityName:
+                description: Name of the referred entity
+                type: string
+                example: CustomerAccount
+              entityAttribute:
+                description: |
+                  Filters the response considering sheets for which entity attributes are defined. For example, if this
+                  filter was `in:Attr.1,Attr.2` only sheets for which `Attr.1` and `Attr.2` are defined would be
+                  returned.
+                type: string
+              organization:
+                description: |
+                  Filters the response considering sheets linked to the specified organizations. For example, if this
+                  filter was `eq:Org.1`, only sheets linked to `Org.1` would be returned.
+                type: string
+              application:
+                description: |
+                  Filters the response considering sheets linked to the specified applications. For example, if this
+                  filter was `eq:App.1`, only sheets linked to `App.1` would be returned.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Sheet list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SheetListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Creates a new sheet.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSheet |
+      operationId: createSheet
+      tags:
+        - Entity Attribute
+      x-authorities:
+        - createSheet
+      requestBody:
+        description: An object that contains a new sheet.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./entityAttributes.yaml#/components/schemas/CreateSheetRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./entityAttributes.yaml#/components/schemas/SheetResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

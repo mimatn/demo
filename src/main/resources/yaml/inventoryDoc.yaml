@@ -1,0 +1,632 @@
+openapi: 3.0.3
+info:
+  title: Inventory Documents API
+  version: "-"
+  description: APIs for Inventory Document.
+tags:
+  - name: Inventory Document
+    description: Inventory Document.
+components:
+  schemas:
+    InventoryDocLineWithHeaderFilters:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/InventoryDocHeaderFilters"
+        - $ref: "#/components/schemas/InventoryDocLineFilters"
+    InventoryDocHeaderFilters:
+      description: The set of filters available for inventory document headers.
+      type: object
+      allOf:
+        - type: object
+          properties:
+            warehouse:
+              description: Filter the response by warehouse.
+              type: string
+            itemStatus:
+              description: A destination status for the item linked to the header's lines.
+              type: string
+              example: "Allocated"
+            item:
+              description: Filter the response by item.
+              type: string
+            stockDiffQuantity:
+              description: Filter the response by stock difference quantity.
+              type: string
+            itemInstance:
+              description: Filter the response by item instance.
+              type: string
+        - $ref: "./documents.yaml#/components/schemas/DocHeaderFilters"
+    #
+    # InventoryDocLineFilters
+    #
+    InventoryDocLineFilters:
+      description: The set of filters available for inventory document lines.
+      type: object
+      properties:
+        s:
+          description: A generic string that filters document lines.
+          type: string
+        warehouse:
+          description: Filter the response by warehouse.
+          type: string
+        itemStatus:
+          description: Filter the response by item status.
+          type: string
+        item:
+          description: Filter the response by item.
+          type: string
+        stockDiffQuantity:
+          description: Filter the response by stock difference quantity.
+          type: string
+        itemInstance:
+          description: Filter the response by item instance.
+          type: string
+    #
+    # InventoryDocHeaderAttributes (extends ./core.yaml#/components/schemas/DocHeaderAttributes)
+    #
+    InventoryDocHeaderAttributes:
+      description: |
+        Specific attributes of a inventory document header. The attributes that are in common with the other types of document
+        are defined in the `DocHeaderAttributes` object.
+      type: object
+      properties:
+        warehouse:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: The warehouse.
+    InventoryDocHeaderAttributesWithDocHeader:
+      description: Complete set of attributes of a inventory document header
+      allOf:
+        - $ref: "#/components/schemas/InventoryDocHeaderAttributes"
+        - description: "`DocHeader` attributes."
+          type: object
+          required:
+            - docHeaderAttributes
+          properties:
+            docHeaderAttributes:
+              $ref: "./documents.yaml#/components/schemas/DocHeaderAttributes"
+    InventoryDocHeaderRelationships:
+      description: An inventory document's relationships. They extend generic document header's ones.
+      type: object
+      required:
+        - docHeader
+      properties:
+        docHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+          description: The generic document header linked to the inventory document header.
+    InventoryDocHeader:
+      description: An object that contains the information about a inventory document header.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "InventoryDocHeader"
+        id:
+          description: A string that uniquely identify an inventory document header.
+          type: string
+          example: "1"
+        attributes:
+          $ref: "#/components/schemas/InventoryDocHeaderAttributesWithDocHeader"
+        relationships:
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/DocHeaderRelationships"
+            - $ref: "#/components/schemas/InventoryDocHeaderRelationships"
+    InventoryDocHeaderIncluded:
+      description: Related document header and common document header relationships.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    InventoryDocHeaderResponse:
+      description: Single inventory document response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/InventoryDocHeader"
+        included:
+          $ref: "#/components/schemas/InventoryDocHeaderIncluded"
+    #
+    # InventoryDocHeaderListResponse
+    #
+    InventoryDocHeaderListResponse:
+      description: An object with a list of inventory document headers enriched with statistics.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of inventory document headers.
+          type: array
+          items:
+            $ref: "#/components/schemas/InventoryDocHeader"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/InventoryDocHeaderIncluded"
+    CommonInventoryDocLineRelationships:
+      description: Relationships that are common in inventory document line and line instances.
+      type: object
+      required:
+        - docItemUnitOfMeasurement
+        - stockItemUnitOfMeasurement
+      properties:
+        docItemUnitOfMeasurement:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        stockItemUnitOfMeasurement:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    InventoryDocLineAttributes:
+      description: The attributes of a inventory document line.
+      type: object
+      required:
+        - lineNumber
+        - docQuantity
+        - stockQuantity
+      properties:
+        lineNumber:
+          description: The line's number in the document.
+          type: string
+          example: "1"
+        warehouse:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+        expectedStockQuantity:
+          description: Expected stock quantity.
+          type: number
+          format: double
+          default: 0.0
+          example: 5.0
+        docQuantity:
+          description: Document quantity expressed in the `docItemUnitOfMeasurement` unit of measurement.
+          type: number
+          format: double
+          default: 0.0
+          example: 5.0
+        stockQuantity:
+          description: Document quantity expressed in the `stockItemUnitOfMeasurement` unit of measurement.
+          type: number
+          format: double
+          default: 0.0
+          example: 5.0
+        expectedDocQuantity:
+          description: Expected document quantity expressed in the document's unit of measurement.
+          type: number
+          format: double
+          minimum: 0.0
+          example: 5.0
+        docDiffQuantity:
+          description: The difference between the expected document quantity and the document quantity.
+          type: number
+          format: double
+          example: 5.0
+        stockDiffQuantity:
+          description: The difference between the expected stock quantity and the stock quantity.
+          type: number
+          format: double
+          example: 5.0
+        itemInstance:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Item Instance linked to the line.
+    InventoryDocLineRelationships:
+      description: The relationships of a inventory document line.
+      type: object
+      required:
+        - inventoryDocHeader
+        - item
+        - itemStatus
+      properties:
+        inventoryDocHeader:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+        item:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        itemStatus:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+    InventoryDocLineIncluded:
+      description: Related relationships of a inventory document line.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    InventoryDocLine:
+      description: An inventory document line.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "InventoryDocLine"
+        id:
+          description: A string that uniquely identify the object.
+          type: string
+          example: "I.LINE.1"
+        attributes:
+          $ref: "#/components/schemas/InventoryDocLineAttributes"
+        relationships:
+          allOf:
+            - $ref: "#/components/schemas/CommonInventoryDocLineRelationships"
+            - $ref: "#/components/schemas/InventoryDocLineRelationships"
+    InventoryDocLineResponse:
+      description: Single inventory document line.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/InventoryDocLine"
+        included:
+          $ref: "#/components/schemas/InventoryDocLineIncluded"
+    InventoryDocLineListResponse:
+      description: An object with a list of inventory document lines.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: A list of inventory document lines.
+          type: array
+          items:
+            $ref: "#/components/schemas/InventoryDocLine"
+        included:
+          $ref: "#/components/schemas/InventoryDocLineIncluded"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+    InventoryDocLineInstanceAttributes:
+      description: The attributes of an inventory document line instance.
+      type: object
+      required:
+        - commonLineAttributes
+      properties:
+        commonLineAttributes:
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/CommonDocLineAttributes"
+            - description: InventoryDocHeaderLineInstance attributes
+              type: object
+              properties:
+                expectedDocQuantity:
+                  description: Expected document quantity expressed in the document's unit of measurement.
+                  type: number
+                  format: double
+                  minimum: 0.0
+                docDiffQuantity:
+                  description: The difference between the expected document quantity and the document quantity.
+                  type: number
+                  format: double
+                  example: 5.0
+                stockDiffQuantity:
+                  description: The difference between the expected stock quantity and the stock quantity.
+                  type: number
+                  format: double
+                  example: 5.0
+    InventoryDocLineInstanceRelationships:
+      description: Relationships of an inventory document line instance.
+      type: object
+      required:
+        - itemInstance
+        - itemStatus
+      properties:
+        itemInstance:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        inventoryDocLine:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        itemStatus:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    InventoryDocLineInstance:
+      description: An inventory document line instance.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "InventoryDocLineInstance"
+        id:
+          description: A string that uniquely identify the object.
+          type: string
+          example: "I.LINE.INST.1"
+        attributes:
+          $ref: "#/components/schemas/InventoryDocLineInstanceAttributes"
+        relationships:
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/CommonDocLineRelationships"
+            - $ref: "#/components/schemas/CommonInventoryDocLineRelationships"
+            - $ref: "#/components/schemas/InventoryDocLineInstanceRelationships"
+    InventoryDocLineInstanceListResponse:
+      description: An object that contains a list of inventory document line instances.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: A list of inventory document line instances.
+          type: array
+          items:
+            $ref: "#/components/schemas/InventoryDocLineInstance"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    InventoryDocLineWithHeader:
+      description: |
+        InventoryDocLineWithHeader resource. Contains all attributes and relationships of the inventory document line and its
+        document header info.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "InventoryDocLineWithHeader"
+        id:
+          type: string
+        attributes:
+          allOf:
+            - $ref: "#/components/schemas/InventoryDocHeaderAttributesWithDocHeader"
+            - $ref: "#/components/schemas/InventoryDocLineAttributes"
+        relationships:
+          allOf:
+            - $ref: "./documents.yaml#/components/schemas/DocHeaderRelationships"
+            - $ref: "#/components/schemas/InventoryDocHeaderRelationships"
+            - $ref: "./documents.yaml#/components/schemas/CommonDocLineRelationships"
+            - $ref: "#/components/schemas/InventoryDocLineRelationships"
+    InventoryDocLineWithHeaderIncluded:
+      description: InventoryDocLineWithHeader related schemas.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    InventoryDocLineWithHeaderListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of inventory documents lines with their header info included.
+          type: array
+          items:
+            $ref: "#/components/schemas/InventoryDocLineWithHeader"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/InventoryDocLineWithHeaderIncluded"
+  parameters:
+    InventoryDocLineWithHeaderFiltersParameter:
+      name: filter
+      description: Complex filters for inventory document lines with header info included.
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/InventoryDocLineWithHeaderFilters"
+    InventoryDocHeaderFiltersParameter:
+      name: filter
+      description: Complex filters for inventory document headers.
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/InventoryDocHeaderFilters"
+    InventoryDocLineFiltersParameter:
+      name: filter
+      description: Complex filters for inventory document line.
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/InventoryDocLineFilters"
+paths:
+  /inventory-docs/headers/{headerId}:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+    get:
+      description: Returns a single inventory document header.
+      operationId: getInventoryDocHeader
+      tags:
+        - Inventory Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/InventoryDocHeaderResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /inventory-docs/headers:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of inventory document headers.
+      operationId: listInventoryDocHeaders
+      tags:
+        - Inventory Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/InventoryDocHeaderFiltersParameter"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/InventoryDocHeaderListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /inventory-docs/headers/{headerId}/lines:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+    get:
+      description: Returns a list of inventory document lines.
+      operationId: listInventoryDocLine
+      tags:
+        - Inventory Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "#/components/parameters/InventoryDocLineFiltersParameter"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/InventoryDocLineListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /inventory-docs/headers/{headerId}/linked-docs:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./documents.yaml#/components/parameters/headerId"
+    get:
+      description: Returns a list of all the documents linked to the given one.
+      operationId: getInventoryLinkedDocs
+      tags:
+        - Inventory Document
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./documents.yaml#/components/schemas/DocHeaderLiteListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /inventory-docs/lines:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns a list of inventory document lines with their header info included. Lines
+        can reference different inventory document headers.
+      operationId: listInventoryDocLines
+      tags:
+        - Inventory Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/InventoryDocLineWithHeaderFiltersParameter"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/InventoryDocLineWithHeaderListResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /inventory-docs/headers-export:
+    post:
+      description: Requests an export of inventory document headers.
+      operationId: exportInventoryDocHeaders
+      tags:
+        - Inventory Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/InventoryDocHeaderFiltersParameter"
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /inventory-docs/lines-export:
+    post:
+      description: Requests an export of inventory document lines.
+      operationId: exportInventoryDocLines
+      tags:
+        - Inventory Document
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/InventoryDocLineWithHeaderFiltersParameter"
+      responses:
+        "202":
+          description: Data export request accepted.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

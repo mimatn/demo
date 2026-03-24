@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: Vehicles API
+  version: "-"
+  description: Vehicles API
+tags:
+  - name: Vehicle
+    description: Vehicle resource object.
+components:
+  schemas:
+    Vehicle:
+      description: Vehicle resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Vehicle"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - descr
+            - vehicleTypeId
+          properties:
+            code:
+              description: Vehicle code/name.
+              type: string
+            descr:
+              description: Vehicle description.
+              type: string
+            vehicleTypeId:
+              description: Vehicle type. See dictionary `VehicleType`.
+              type: string
+            plateNum:
+              description: Vehicle's plate number.
+              type: string
+        relationships:
+          type: object
+          description: A Vehicle can be assigned to a warehouse.
+          properties:
+            warehouse:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    VehicleIncluded:
+      description: Related warehouse.
+      type: array
+      items:
+        items:
+          $ref: "./core.yaml#/components/schemas/Warehouse"
+    VehicleResponse:
+      description: Single Vehicle response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Vehicle"
+        included:
+          $ref: "#/components/schemas/VehicleIncluded"
+    VehicleListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: List of Vehicles.
+          type: array
+          items:
+            $ref: "#/components/schemas/Vehicle"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/VehicleIncluded"
+paths:
+  /vehicles/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The Vehicle id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a single vehicle.
+      operationId: getVehicle
+      tags:
+        - Vehicle
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/VehicleResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /vehicles:
+    get:
+      description: Returns a list of vehicles.
+      operationId: listVehicles
+      tags:
+        - Vehicle
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/filterSearch"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/VehicleListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

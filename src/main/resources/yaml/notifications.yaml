@@ -1,0 +1,218 @@
+openapi: 3.0.3
+info:
+  title: Notification API
+  version: "-"
+tags:
+  - name: Notification
+    description: |
+      The .one platform provides the various application modules with communication channels that allow them to send messages.  
+      For each instance of .one it is possible to configure multiple communication channels, each of which is identified by a unique id.  
+      Each communication channel has a configuration file that contains the parameters necessary to send messages via the channel itself.
+components:
+  schemas:
+    CommunicationChannelType:
+      description: The communication channel type. See dictionary `CommunicationChannelType`.
+      type: string
+      enum:
+        - CommunicationChannelType.Email
+      x-enum-varnames:
+        - EMAIL
+      readOnly: true
+    EmailAttachment:
+      description: Email attachment resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "EmailAttachment"
+        id:
+          type: string
+        attributes:
+          type: object
+          properties:
+            fileName:
+              description: File name (path included).
+              type: string
+            MIMEType:
+              description: File MIME type.
+              type: string
+        relationships:
+          type: object
+          description: The relationships of an Email attachment.
+          properties:
+            digitalContent:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    EmailAttachmentIncluded:
+      description: Email attachment related digital content.
+      type: array
+      items:
+        $ref: "./digitalContents.yaml#/components/schemas/DigitalContent"
+      uniqueItems: true
+    EmailAttachmentResponse:
+      description: Email Attachment response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/EmailAttachment"
+        included:
+          $ref: "#/components/schemas/EmailAttachmentIncluded"
+    EmailNotification:
+      description: Email notification resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "EmailNotification"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - sender
+            - subject
+            - content
+            - highPriority
+          properties:
+            communicationChannelTypeId:
+              $ref: "#/components/schemas/CommunicationChannelType"
+            sender:
+              description: Sender's email address.
+              type: string
+              # pattern: "^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,}$"
+              example: "mario.rossi@domain.it"
+            senderDisplayName:
+              description: Sender display name. If `NULL` sender mail should be displayed.
+              type: string
+            receiver:
+              description: Comma-separated recipient email addresses.
+              type: string
+              # pattern: "^(?:[\\w._%+-]+@[\\w.-]+\\.\\w{2,})+(?:,\\s*[\\w._%+-]+@[\\w.-]+\\.\\w{2,})*$"
+              example: "mario.rossi@domain.it,giuseppe.verdi@domain.it"
+            copyReceiver:
+              description: Comma-separated cc email addresses.
+              type: string
+              # pattern: "^(?:[\\w._%+-]+@[\\w.-]+\\.\\w{2,})+(?:,\\s*[\\w._%+-]+@[\\w.-]+\\.\\w{2,})*$"
+              example: "mario.rossi@domain.it,giuseppe.verdi@domain.it"
+            hiddenCopyReceiver:
+              description: Comma-separated ccn email addresses.
+              type: string
+              # pattern: "^(?:[\\w._%+-]+@[\\w.-]+\\.\\w{2,})+(?:,\\s*[\\w._%+-]+@[\\w.-]+\\.\\w{2,})*$"
+              example: "mario.rossi@domain.it,giuseppe.verdi@domain.it"
+            subject:
+              description: Email subject.
+              type: string
+            content:
+              description: Email body in HTML format.
+              type: string
+            highPriority:
+              description: True if the email message is high priority.
+              type: boolean
+              default: false
+            scheduledStartTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+              description: The timestamp when to send the email message. If null, the email message should be sent ASAP.
+            jobStatusId:
+              $ref: "./jobs.yaml#/components/schemas/JobStatus"
+              readOnly: true
+            startTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+            completionTs:
+              $ref: "./dataTypes.yaml#/components/schemas/apiDateTimeReadOnly"
+            resultMessage:
+              description: Result or error message when the task completes.
+              type: string
+              readOnly: true
+        relationships:
+          type: object
+          description: The relationships of an Email message.
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            identity:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+            attachments:
+              $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    EmailNotificationIncluded:
+      description: Email notification relationships.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    EmailNotificationRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/EmailNotification"
+    EmailNotificationResponse:
+      description: Email Notification response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/EmailNotification"
+        included:
+          $ref: "#/components/schemas/EmailNotificationIncluded"
+paths:
+  /notifications/channels/email:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Send notification via email.
+      operationId: sendEmail
+      tags:
+        - Notification
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Email notification to send.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/EmailNotificationRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EmailNotificationResponse"
+        "400":
+          description: Bad request.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /notifications/channels/email/attachments:
+    get:
+      description: This service should not be implemented. It is defined for code generation purposes only.
+      operationId: getEmailAttachment
+      tags:
+        - Notification
+      x-authorities: ["internalApi"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EmailAttachmentResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."

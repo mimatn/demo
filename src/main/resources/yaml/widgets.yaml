@@ -1,0 +1,270 @@
+openapi: 3.0.3
+info:
+  title: Widgets API
+  version: "-"
+tags:
+  - name: Widget
+    description: Dashboard widgets.
+components:
+  schemas:
+    #
+    # Widget resources definition
+    #
+    WidgetCategory:
+      description: Dashboard widget can be grouped by a category. See dictionary `WidgetCategory`.
+      type: string
+      enum:
+        - WidgetCategory.Item
+        - WidgetCategory.Customer
+        - WidgetCategory.Communication
+        - WidgetCategory.Sales
+    WidgetPlaceholder:
+      description: |
+        A widget can be represented in four different formats. See dictionary `WidgetPlaceholder`.
+      type: string
+      enum:
+        - WidgetPlaceholder.sm
+        - WidgetPlaceholder.md
+        - WidgetPlaceholder.lg
+        - WidgetPlaceholder.xl
+      x-enum-varnames:
+        - SM
+        - MD
+        - LG
+        - XL
+    Widget:
+      description: Widget resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: Widget
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - descr
+            - widgetCategoryId
+            - sequenceNum
+            - baseWidgetPlaceholderId
+            - availablePlaceholderIds
+          properties:
+            title:
+              description: Widget title.
+              type: string
+            descr:
+              description: Widget description.
+              type: string
+            widgetCategoryId:
+              $ref: "#/components/schemas/WidgetCategory"
+            sequenceNum:
+              description: Determines the order of the widgets.
+              type: integer
+              minimum: 0
+              default: 0
+            baseWidgetPlaceholderId:
+              $ref: "#/components/schemas/WidgetPlaceholder"
+            availablePlaceholderIds:
+              type: array
+              uniqueItems: true
+              items:
+                $ref: "#/components/schemas/WidgetPlaceholder"
+            icon:
+              description: Widget icon. See dictionary `Icon`.
+              type: string
+        relationships:
+          type: object
+          description: A widget refers to an app and has a permission.
+          required:
+            - app
+            - permission
+          properties:
+            app:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+            permission:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    WidgetIncluded:
+      description: Widget related app and permission.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    WidgetResponse:
+      description: Single Widget response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Widget"
+        included:
+          $ref: "#/components/schemas/WidgetIncluded"
+    WidgetListResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: List of Widgets.
+          type: array
+          items:
+            $ref: "#/components/schemas/Widget"
+        included:
+          $ref: "#/components/schemas/WidgetIncluded"
+    #
+    # TallyWidget
+    #
+    TallyWidget:
+      description: This widget has a main title and a set of counters, each with its own description.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: TallyWidget
+        id:
+          type: string
+        attributes:
+          type: object
+          properties:
+            counters:
+              description: List of counters.
+              type: array
+              items:
+                type: object
+                properties:
+                  tally:
+                    description: Tally.
+                    type: integer
+                    readOnly: true
+                  descr:
+                    description: Tally description.
+                    type: string
+                    readOnly: true
+                  color:
+                    description: A string that defines the color to use in this widget.
+                    type: string
+                    example: "#000000"
+                readOnly: true
+                uniqueItems: true
+    TallyWidgetResponse:
+      description: Single Tally Widget response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/TallyWidget"
+    RatioTrackerWidget:
+      description: This widget has a main title and a set of ratio trackers, each with its own description.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: RatioTrackerWidget
+        id:
+          type: string
+        attributes:
+          type: object
+          properties:
+            trackers:
+              description: List of ratio trackers.
+              type: array
+              items:
+                type: object
+                properties:
+                  total:
+                    description: Total number.
+                    type: integer
+                    minimum: 0
+                    readOnly: true
+                  percentage:
+                    description: Percentage value.
+                    type: number
+                    format: double
+                    readOnly: true
+                  descr:
+                    description: Counter description.
+                    type: string
+                    readOnly: true
+                  color:
+                    description: A string that defines the color to use in this widget.
+                    type: string
+                    example: "#000000"
+                readOnly: true
+                uniqueItems: true
+    RatioTrackerWidgetResponse:
+      description: Single Ratio Tracker Widget response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/RatioTrackerWidget"
+  parameters:
+    widgetId:
+      name: widgetId
+      in: path
+      description: The widget id
+      required: true
+      schema:
+        type: string
+paths:
+  /widgets:
+    get:
+      description: Returns a list of widgets for the given app id.
+      operationId: listWidgets
+      tags:
+        - Widget
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter[appId]"
+          in: query
+          description: Filter the response by app id. The user must also have the permission to view the organization.
+          required: true
+          style: form
+          schema:
+            type: string
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Search the given string in title and descr attributes.
+                type: string
+              widgetCategoryId:
+                description: Filter the response by widget category id.
+                type: string
+      responses:
+        "200":
+          description: Widget list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/WidgetListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

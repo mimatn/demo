@@ -1,0 +1,128 @@
+openapi: 3.0.3
+info:
+  title: Customer Contacts API
+  version: "-"
+tags:
+  - name: Business Hours
+    description: |
+      Endpoints related to retrieving business operating hours by weekday.
+      Each day can contain multiple time slots, with support for indicating whether the business is open on holidays.
+components:
+  schemas:
+    WeeklyTimeSlot:
+      description: Type of weekly time slot. See dictionary `WeeklyTimeSlotType`.
+      type: string
+      enum:
+        - WeeklyTimeSlotType.AccessProfile
+        - WeeklyTimeSlotType.Delivery
+        - WeeklyTimeSlotType.Opening
+      x-enum-varnames:
+        - AccessProfile
+        - Delivery
+        - Opening
+    TimeSlot:
+      type: object
+      required:
+        - open
+        - close
+        - isOpenOnHolidays
+      properties:
+        open:
+          type: string
+          description: The opening time of the business in `HH:mm` format.
+          example: "09:00"
+        close:
+          type: string
+          description: The closing time of the business in `HH:mm` format.
+          example: "17:00"
+        isOpenOnHolidays:
+          type: boolean
+          description: If true this time slot is valid even if the day is a holiday.
+          example: false
+    DaySchedule:
+      type: array
+      items:
+        $ref: "#/components/schemas/TimeSlot"
+    BusinessHours:
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "BusinessHours"
+        id:
+          type: string
+        attributes:
+          type: object
+          properties:
+            weeklyTimeSlotTypeId:
+              $ref: "#/components/schemas/WeeklyTimeSlot"
+            monday:
+              $ref: "#/components/schemas/DaySchedule"
+            tuesday:
+              $ref: "#/components/schemas/DaySchedule"
+            wednesday:
+              $ref: "#/components/schemas/DaySchedule"
+            thursday:
+              $ref: "#/components/schemas/DaySchedule"
+            friday:
+              $ref: "#/components/schemas/DaySchedule"
+            saturday:
+              $ref: "#/components/schemas/DaySchedule"
+            sunday:
+              $ref: "#/components/schemas/DaySchedule"
+    BusinessHoursResponse:
+      description: Business hours response.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/BusinessHours"
+paths:
+  /parties/{id}/business-hours:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The ID of the party.
+        schema:
+          type: string
+      - name: filter[weeklyTimeSlotTypeId]
+        in: query
+        description: Filter the response by weekly time slot type.
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Returns the business hours for a given party over the next 7 days, starting from today.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getCustomerAccount |
+        | getSupplier |
+      operationId: getPartyBusinessHours
+      tags:
+        - Business Hours
+      x-authorities:
+        - getCustomerAccount
+        - getSupplier
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BusinessHoursResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

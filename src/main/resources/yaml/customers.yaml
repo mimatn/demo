@@ -1,0 +1,2144 @@
+openapi: 3.0.3
+info:
+  title: Customers API
+  version: "-"
+  description: APIs for customers
+tags:
+  - name: Customer
+    description: |
+      A Customer has a representation independent from the organization, called 'Customer' and one which depends on the organization,
+      which is called 'CustomerAccount' and can be thought as an extension of the Customer.
+      Some attributes are defined only for the Customer resource, which can exist by its own, 
+      while a CustomerAccount always refers to a Customer and includes its attributes and its relationships.
+
+      A customer has a 'customer type', like 'sell to', 'bill to', 'deliver to' and may have a hierarchical structure 
+      (see relationship parentCustomer). 
+      For example two 'sell to' customers can have the same 'bill to' parent, which models the use case when the invoice for the 
+      goods ordered by the 'sell to' customer is payed by the 'bill to' parent customer.
+
+      [TODO: DEPRECATE?] To simplify development on the client side, some endpoints of the API supports also a 'CustomerAccountFull' object 
+      which has the same id as the CustomerAccount and also has the attributes inherited from the related Customer.
+
+components:
+  schemas:
+    CustomerOperations:
+      type: object
+      readOnly: true
+      properties:
+        operations:
+          $ref: "./core.yaml#/components/schemas/Operations"
+    CreditStatus:
+      description: |
+        How to behave when creating a document based on the credit status:
+        - None = customer not blocked;
+        - AuthRequest = all customer documents must be subject to authorization; 
+        - Blocked = customer blocked for administrative reasons. 
+        See dictionary CreditStatus
+      type: string
+      enum:
+        - CreditStatus.None
+        - CreditStatus.Blocked
+        - CreditStatus.AuthRequest
+    EligibleCustomerTypeListResponse:
+      description: Customer type information.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required:
+              - type
+              - id
+              - attributes
+            properties:
+              type:
+                type: string
+                default: "CustomerType"
+              id:
+                type: string
+              attributes:
+                type: object
+                required:
+                  - descr
+                properties:
+                  descr:
+                    type: string
+                  code:
+                    type: string
+                  docNumberRangeId:
+                    description: |
+                      If the doc number range is specified, then during customer creation,
+                      the code is generated automatically.
+                    type: string
+    CustomerAttributes:
+      type: object
+      required:
+        - customerTypeId
+        - code
+        - name
+        - taxNumber
+        - fiscalCode
+        - addresses
+        - emails
+        - phones
+      properties:
+        customerTypeId:
+          description: Customer type, see dictionary "CustomerType"
+          type: string
+          example: "BillTo"
+        code:
+          description: Code of the customer in the ERP system. This value is included in a generic search.
+          type: string
+        name:
+          description: Business name of the customer's company
+          type: string
+          example: "Mario Rossi Food & Drinks Srl"
+        descr:
+          description: Additional description of the customer (for example a shop sign)
+          type: string
+          example: "BAR SPORT"
+        taxNumber:
+          description: The tax number. Usually the "VAT" number.
+          type: string
+          example: "02479320265"
+        fiscalCode:
+          description: The customer's fiscal code.
+          type: string
+          example: "02479320265"
+        customerStatusId:
+          description: Customer status. See dictionary "CustomerStatus"
+          type: string
+          example: "Active"
+        invoicingIdentificationCode:
+          description: Customer identification code used in the national invoicing system. For Italy "SDI"
+          type: string
+        legalMail:
+          description: Legal email. For Italy is "PEC"
+          type: string
+        addresses:
+          description: List of addresses for this customer. The main address is the one with sequenceNum=0.
+          type: array
+          items:
+            $ref: "./core.yaml#/components/schemas/Address"
+        emails:
+          description: List of emails for this customer. The main email is the one with sequenceNum=0.
+          type: array
+          items:
+            $ref: "./core.yaml#/components/schemas/Email"
+        phones:
+          description: List of phones for this customer. The main phone is the one with sequenceNum=0.
+          type: array
+          items:
+            $ref: "./core.yaml#/components/schemas/Phone"
+        customerStatusChangeDate:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        customerLifecycle:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Customer's lifecycle status; the `code` attribute contains the code of the colour. See dictionary `CustomerLifecycle`
+        ministerialCode:
+          description: Ministerial code.
+          type: string
+        isDraft:
+          $ref: "./core.yaml#/components/schemas/isDraft"
+        lastChangeTs:
+          $ref: "./core.yaml#/components/schemas/lastChangeTs"
+        isLinkedToUser:
+          description: |
+            True if the customer is either linked to `linkedUserProfileId` (if present) or to the caller when the query
+            param is missing. False otherwise.
+          type: boolean
+          readOnly: true
+          default: false
+    CustomerAttributesLite:
+      description: Customer editable attributes
+      type: object
+      required:
+        - code
+        - name
+        - descr
+      properties:
+        code:
+          description: Code of the customer in the ERP system. This value is included in a generic search.
+          type: string
+        name:
+          description: Business name of the customer's company
+          type: string
+          example: "Mario Rossi Food & Drinks Srl"
+        descr:
+          description: Additional description of the customer (for example a shop sign)
+          type: string
+          example: "BAR SPORT"
+        taxNumber:
+          description: The tax number. Usually the "VAT" number.
+          type: string
+          example: "02479320265"
+        fiscalCode:
+          description: The customer's fiscal code.
+          type: string
+          example: "02479320265"
+        invoicingIdentificationCode:
+          description: Customer identification code used in the national invoicing system. For Italy "SDI"
+          type: string
+        legalMail:
+          description: Legal email. For Italy is "PEC"
+          type: string
+        ministerialCode:
+          description: Ministerial code.
+          type: string
+        addresses:
+          description: |
+            List of addresses for this customer. The main address is the one with `sequenceNum` = 0.
+              * If `null`, no changes will be applied;
+              * If `empty array`, all the elements in the resource array will be deleted;
+              * If `non-empty array`, all the elements in the resource array will be replaced.
+          type: array
+          items:
+            $ref: "./core.yaml#/components/schemas/Address"
+        emails:
+          description: |
+            List of emails for this customer. The main email is the one with `sequenceNum` = 0.
+              * If `null`, no changes will be applied;
+              * If `empty array`, all the elements in the resource array will be deleted;
+              * If `non-empty array`, all the elements in the resource array will be replaced.
+          type: array
+          items:
+            $ref: "./core.yaml#/components/schemas/Email"
+        phones:
+          description: |
+            List of phones for this customer. The main phone is the one with `sequenceNum` = 0.
+              * If `null`, no changes will be applied;
+              * If `empty array`, all the elements in the resource array will be deleted;
+              * If `non-empty array`, all the elements in the resource array will be replaced.
+          type: array
+          items:
+            $ref: "./core.yaml#/components/schemas/Phone"
+        externalCode:
+          description: External code.
+          type: string
+        areaSizeMq:
+          description: Area size (expressed in square metre).
+          type: number
+          minimum: 0
+    CustomerRelationships:
+      description: |
+        - parentCustomer: Parent customer, if it exists. For example a "sell to" customer usually has a "bill to" parent.
+        - country: The customer's country.
+        - language: The preferred language of this customer.
+      type: object
+      required:
+        - country
+        - language
+      properties:
+        parentCustomer:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneNullable"
+        country:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        language:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CustomerRelationshipsLite:
+      description: |
+        - country: The customer's country.
+        - language: The preferred language of this customer.
+      type: object
+      required:
+        - country
+        - language
+      properties:
+        country:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        language:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    Customer:
+      description: Customer resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Customer"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/CustomerAttributes"
+        relationships:
+          $ref: "#/components/schemas/CustomerRelationships"
+    CustomerIncluded:
+      description: "Related entities data: Customer, Country, Language"
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    CustomerResponse:
+      description: Singular Customer
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Customer"
+        included:
+          $ref: "#/components/schemas/CustomerIncluded"
+    CustomerListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of Customers
+          type: array
+          items:
+            $ref: "#/components/schemas/Customer"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CustomerIncluded"
+    CustomerRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Customer"
+    #
+    # CustomerInfo resource. Include customer's basic info only.
+    #
+    CustomerInfo:
+      description: Customer resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "CustomerInfo"
+        id:
+          type: string
+        attributes:
+          type: object
+          properties:
+            customerTypeId:
+              description: Customer type, see dictionary "CustomerType"
+              type: string
+              example: "BillTo"
+            code:
+              description: Code of the customer in the ERP system. This value is included in a generic search.
+              type: string
+            name:
+              description: Business name of the customer's company
+              type: string
+              example: "Mario Rossi Food & Drinks Srl"
+            descr:
+              description: Additional description of the customer (for example a shop sign)
+              type: string
+              example: "BAR SPORT"
+            taxNumber:
+              description: The tax number. Usually the "VAT" number.
+              type: string
+              example: "02479320265"
+            fiscalCode:
+              description: The customer's fiscal code.
+              type: string
+              example: "02479320265"
+            customerStatusId:
+              description: Customer status. See dictionary "CustomerStatus"
+              type: string
+              example: "Active"
+            addresses:
+              description: List of addresses for this customer. The main address is the one with sequenceNum=0.
+              type: array
+              items:
+                $ref: "./core.yaml#/components/schemas/Address"
+            docsNum:
+              description: Number of the documents related to the customer
+              type: integer
+              minimum: 0
+    CustomerInfoListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of CustomerInfo
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerInfo"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+    #
+    # CustomerAccount objects
+    #
+    CustomerAccountAttributes:
+      type: object
+      required:
+        - customerId
+        - code
+        - minDocAmount
+        - creditStatusId
+        - mandateCustomer
+        - processingStatusId
+        - isPublished
+      properties:
+        code:
+          description: Customer management code in the organization
+          type: string
+        salesChannel:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Sales channel. See dictionary "SalesChannel"
+        creditLimit:
+          description: Credit limit, expressed in the currency of the organization.
+          type: number
+          # TODO FIXME currency of credit limit is not clear
+        exposure:
+          description: Customer exposure excluding open items already listed in CustomerLedgerEntries (eg DDT to be invoiced, Orders to be shipped)
+          type: number
+        creditStatusId:
+          $ref: "#/components/schemas/CreditStatus"
+        creditStatusType:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Possible reason for the administrative block. See dictionary "CreditStatusType"
+        minDocAmount:
+          description: If not 0, it is the minimum value of the document that this customer can issue
+          type: number
+        shippingMethod:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Shipping method. See dictionary "ShippingMethod".
+        deliveryMode:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Delivery mode. See dictionary "DeliveryMode".
+        externalDocType:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: The type of the customer's last document
+        lastDocumentDate:
+          description: Date of the last document issued to the customer
+          type: string
+        customerCategory:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Customer category. See dictionary "CustomerCategory"
+        customerSegment:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Customer segment. See dictionary "CustomerSegment"
+        isDraft:
+          $ref: "./core.yaml#/components/schemas/isDraft"
+        lastChangeTs:
+          $ref: "./core.yaml#/components/schemas/lastChangeTs"
+        customerId:
+          description: |
+            Id of the customer, which contains the main info (as descr, addresses...). 
+
+            For a new Customer it can be an empty string. 
+            In this case the attribute "customerAttributes" is mandatory: the server will save a new Customer entity 
+            and will calculate a new id, which will be returned in the response.
+          type: string
+        customerDivision:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Customer Division. See dictionary "CustomerDivision".
+        storeType:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Store Type. See dictionary "StoreType".
+        priceCategory:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Price Category. See dictionary "PriceCategory".
+        customerContractType:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Customer contract type. See dictionary "CustomerContractType".
+        mandateCustomer:
+          description: Customer is included in one or more sales mandates, his choice is limited to the articles subject to the mandate
+          type: boolean
+          default: false
+        courier:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: For more details see _Courier_ dictionary.
+        processingStatusId:
+          $ref: "./core.yaml#/components/schemas/ProcessingStatus"
+          readOnly: true
+          default: "ProcessingStatus.Released"
+        entityAttributes:
+          description: The dynamic attributes that may be associated to the customer accounts.
+          type: array
+          items:
+            $ref: "./entityAttributes.yaml#/components/schemas/EntityAttributeValue"
+        commissionCustomerGroupId:
+          description: Commission customer group. See dictionary `CommissionCustomerGroup`.
+          type: string
+        externalCode:
+          description: External code.
+          type: string
+        areaSizeMq:
+          description: Area size (expressed in square metre).
+          type: number
+          minimum: 0
+        customerGroup:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Customer group.
+        customerSalesCondition:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Customer sales condition.
+        customerSalesNet:
+          $ref: "./core.yaml#/components/schemas/SimpleEntity"
+          description: Customer sales Net.
+        isPublished:
+          description: |
+            True if customer's processing status is `Released`, false otherwise. In case of a customer with ongoing changes,
+            the processing status is always referred to the original version of the item.
+          type: boolean
+          default: false
+        updateEnabled:
+          description: |
+            Flag indicating whether the customer is editable or not. It depends on the customerType and the organization.
+          type: boolean
+          default: true
+          readOnly: true
+        deleteEnabled:
+          description: |
+            Flag indicating whether the customer can be deleted or not. It depends on the customerType and the organization.
+          type: boolean
+          default: true
+          readOnly: true
+    CustomerAccountAttributesLite:
+      type: object
+      required:
+        - code
+        - creditStatusId
+        - mandateCustomer
+      properties:
+        code:
+          description: Customer management code in the organization
+          type: string
+        salesChannelId:
+          description: Sales channel. See dictionary "SalesChannel"
+          type: string
+        creditLimit:
+          description: Credit limit, expressed in the currency of the organization.
+          type: number
+          # TODO FIXME currency of credit limit is not clear
+        creditStatusId:
+          $ref: "#/components/schemas/CreditStatus"
+        creditStatusTypeId:
+          description: Possible reason for the administrative block. See dictionary "CreditStatusType"
+          type: string
+        shippingMethodId:
+          description: Shipping method. See dictionary "ShippingMethod".
+          type: string
+        deliveryModeId:
+          description: Delivery mode. See dictionary "DeliveryMode".
+          type: string
+        customerCategoryId:
+          description: Customer category. See dictionary "CustomerCategory"
+          type: string
+        customerSegmentId:
+          description: Customer segment. See dictionary "CustomerSegment"
+          type: string
+        customerDivisionId:
+          description: Customer Division. See dictionary "CustomerDivision".
+          type: string
+        storeTypeId:
+          description: Store Type. See dictionary "StoreType".
+          type: string
+        priceCategoryId:
+          description: Price Category. See dictionary "PriceCategory".
+          type: string
+        customerContractTypeId:
+          description: Customer contract type. See dictionary "CustomerContractType".
+          type: string
+        mandateCustomer:
+          description: Customer is included in one or more sales mandates, his choice is limited to the articles subject to the mandate
+          type: boolean
+        courierId:
+          description: For more details see _Courier_ dictionary.
+          type: string
+        entityAttributes:
+          description: The dynamic attributes that may be associated to the customer accounts.
+          type: array
+          items:
+            $ref: "./entityAttributes.yaml#/components/schemas/EntityAttributeValue"
+        commissionCustomerGroupId:
+          description: Commission customer group. See dictionary `CommissionCustomerGroup`.
+          type: string
+    CustomerAccountRelationships:
+      description: |
+        A CustomerAccount:
+          - belongs to an Organization
+          - can have a parent CustomerAccount. For example a "Sell To" customer can have a "Bill To" parent
+          - has a currency. Default for documents created for this customer.
+          - has a PaymentCondition
+          - belongs to a TaxRegime (see Taxes)
+          - can have a default Warehouse from which it receives goods
+          - can have one or more Tags
+          - can have one or more Notes
+          - can be associated to one or more HierarchyNodes
+          - can have commission cut-off rule
+      type: object
+      required:
+        - organization
+        - currency
+        - taxRegime
+      properties:
+        organization:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+          description: Organization to which the customer belongs
+        parentCustomerAccount:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        currency:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        paymentCondition:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        taxRegime:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        warehouse:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        tags:
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+          description: tags of this customer
+        notes:
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+        hierarchyNodes:
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+        currentDraftUserProfile:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        commissionCutOff:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CustomerAccountRelationshipsLite:
+      description: |
+        The editable relationships for a CustomerAccount are:
+          - currency
+          - taxRegime
+      type: object
+      required:
+        - currency
+        - taxRegime
+      properties:
+        currency:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        paymentCondition:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        taxRegime:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        warehouse:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        commissionCutOff:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CustomerAccountAttributesWithCustomer:
+      allOf:
+        - $ref: "#/components/schemas/CustomerAccountAttributes"
+        - $ref: "#/components/schemas/CustomerOperations"
+        - description: Customer attributes
+          type: object
+          properties:
+            customerAttributes:
+              $ref: "#/components/schemas/CustomerAttributes"
+    CustomerAccountAttributesWithCustomerLite:
+      allOf:
+        - $ref: "#/components/schemas/CustomerAccountAttributesLite"
+        - description: Customer Account editable attributes
+          type: object
+          required:
+            - customerAttributes
+          properties:
+            customerAttributes:
+              $ref: "#/components/schemas/CustomerAttributesLite"
+    CustomerAccount:
+      description: CustomerAccount resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CustomerAccount"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/CustomerAccountAttributesWithCustomer"
+        relationships:
+          $ref: "#/components/schemas/CustomerAccountFullRelationships"
+    CustomerAccountLite:
+      description: CustomerAccount update resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CustomerAccountLite"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/CustomerAccountAttributesWithCustomerLite"
+        relationships:
+          $ref: "#/components/schemas/CustomerAccountFullRelationshipsLite"
+    CustomerAccountIncluded:
+      description: Related entities data.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    CustomerAccountResponse:
+      description: Singular CustomerAccount
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerAccount"
+        included:
+          $ref: "#/components/schemas/CustomerAccountIncluded"
+    CustomerAccountListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of CustomerAccounts
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerAccount"
+        meta:
+          $ref: "#/components/schemas/CustomerAccountListMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CustomerAccountIncluded"
+    CustomerAccountListMeta:
+      description: Meta information for the CustomerAccount list response
+      type: object
+      required:
+        - recordCount
+      properties:
+        recordCount:
+          description: The total number of resources
+          type: integer
+        pageCount:
+          description: The total number of pages
+          type: integer
+        maxElementsManageTags:
+          description: The maximum number of customer accounts allowed for managing tags in a single operation.
+          type: integer
+        maxElementsNewTask:
+          description: The maximum number of customer accounts allowed for creating a new task in a single operation.
+          type: integer
+    CustomerAccountCreate:
+      description: CustomerAccount create resource
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CustomerAccountCreate"
+        id:
+          type: string
+        attributes:
+          type: object
+          required:
+            - code
+            - name
+            - customerTypeId
+          properties:
+            code:
+              description: Customer code
+              type: string
+            name:
+              description: Customer name
+              type: string
+            customerTypeId:
+              description: Customer type id. See dictionary "CustomerType".
+              type: string
+        relationships:
+          type: object
+          required:
+            - organization
+          properties:
+            organization:
+              $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    CustomerAccountRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerAccountCreate"
+    CustomerAccountRequestLite:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerAccountLite"
+    #
+    # CustomerAccountFull objects
+    #
+    CustomerAccountFullIncluded:
+      description: Related entities data.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    CustomerAccountFullResponse:
+      description: Singular CustomerAccountFull
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerAccountFull"
+        included:
+          $ref: "#/components/schemas/CustomerAccountFullIncluded"
+    CustomerAccountFullListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of CustomerAccountFulls
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerAccountFull"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/CustomerAccountFullIncluded"
+    CustomerAccountFullAttributes:
+      description: CustomerAccountFull resource includes attributes from Customer and from CustomerAccount
+      allOf:
+        - $ref: "#/components/schemas/CustomerAttributes"
+        - $ref: "#/components/schemas/CustomerAccountAttributes"
+        - $ref: "#/components/schemas/CustomerOperations"
+    CustomerAccountFullRelationships:
+      description: CustomerAccountFull resource includes relationships from Customer and CustomerAccount
+      allOf:
+        - $ref: "#/components/schemas/CustomerRelationships"
+        - $ref: "#/components/schemas/CustomerAccountRelationships"
+    CustomerAccountFullRelationshipsLite:
+      description: CustomerAccountFull resource includes editable relationships from Customer and CustomerAccount
+      allOf:
+        - $ref: "#/components/schemas/CustomerRelationshipsLite"
+        - $ref: "#/components/schemas/CustomerAccountRelationshipsLite"
+    CustomerAccountFull:
+      # FIXME TODO Deprecate CustomerAccountFull and use instead CustomerAccount which now includes Customer attributes
+      deprecated: false
+      description: CustomerAccountFull resource includes attributes from CustomerAccount and from Customer
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "CustomerAccountFull"
+        id:
+          description: the id of the CustomerAccount
+          type: string
+        attributes:
+          $ref: "#/components/schemas/CustomerAccountFullAttributes"
+        relationships:
+          $ref: "#/components/schemas/CustomerAccountFullRelationships"
+    CustomerStatusRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: The desired customer status id. See dictionary "CustomerStatus"
+          type: string
+          example: Active
+    LinkableCustomerAccount:
+      description: A CustomerAccount that can be linked to an external entity
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "LinkableCustomerAccount"
+        id:
+          type: string
+        attributes:
+          $ref: "#/components/schemas/LinkableCustomerAccountAttributesWithCustomer"
+    LinkingInfo:
+      description: Linking info
+      type: object
+      properties:
+        linkId:
+          description: The id of the link to the external entity, if already linked, or null if not linked.
+          type: string
+    LinkableCustomerAccountAttributesWithCustomer:
+      allOf:
+        - $ref: "#/components/schemas/LinkingInfo"
+        - $ref: "#/components/schemas/CustomerAccountAttributes"
+        - description: Customer attributes
+          type: object
+          properties:
+            customerAttributes:
+              $ref: "#/components/schemas/CustomerAttributes"
+    CustomerTask:
+      description: Party task resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          type: string
+          default: "Task"
+        id:
+          type: string
+        attributes:
+          allOf:
+            - $ref: "./tasks.yaml#/components/schemas/TaskAttributes"
+            - description: Task to be created can be assigned to the Party or to the Manager.
+              type: object
+              properties:
+                assigneeType:
+                  $ref: "./tasks.yaml#/components/schemas/AssigneeType"
+        relationships:
+          $ref: "./tasks.yaml#/components/schemas/TaskRelationships"
+    CustomerTaskRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CustomerTask"
+    CustomerAccountHistoryListResponse:
+      description: List of CustomerAccount history entries.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required:
+              - type
+              - id
+              - attributes
+            properties:
+              type:
+                type: string
+                default: "CustomerAccountAncestor"
+              id:
+                description: The id of the customer account.
+                type: string
+              attributes:
+                type: object
+                required:
+                  - code
+                  - name
+                  - customerStatusId
+                properties:
+                  statId:
+                    description: |
+                      Statistical Identification Code:
+                      For former customers, the statistical ID corresponds to the related active customer. 
+                      If multiple customers have been involved over time, they all share the same statistical ID.
+
+                      For customers with no changes, the statistical ID equals their own ID.
+                    type: string
+                  code:
+                    description: Code of the customer account.
+                    type: string
+                  name:
+                    description: Business name of the customer's company.
+                    type: string
+                    example: "Mario Rossi Food & Drinks Srl"
+                  customerStatusId:
+                    description: Customer status. See dictionary `CustomerStatus`.
+                    type: string
+                    example: "Active"
+                  customerStatusChangeDate:
+                    description: Date of the last change in the customer status.
+                    type: string
+                    format: date
+    SalesOrderEligibility:
+      description: Sales order eligibility for a customer account.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+      properties:
+        type:
+          type: string
+          default: "SalesOrderEligibility"
+        id:
+          type: string
+          description: The CustomerAccount id
+        attributes:
+          type: object
+          properties:
+            canOrder:
+              type: boolean
+              description: True if the customer can place an order
+            eligibleDocTypes:
+              description: List of eligible document types (empty if cannot order)
+              type: array
+              items:
+                type: object
+                properties:
+                  docTypeId:
+                    type: string
+                    description: Document type id
+                  code:
+                    type: string
+                    description: Document type code
+                  descr:
+                    type: string
+                    description: Document type description
+                  priceListByDeliveryDate:
+                    type: boolean
+                    description: |
+                      True if the reference date to determine the validity of the price list is the 
+                      delivery date, false otherwise.
+                  deliveryDateTypeId:
+                    $ref: "./documents.yaml#/components/schemas/DeliveryDateType"
+                  checkAvailabilityStockQty:
+                    type: boolean
+                    description: True if the system must check the availability of stock quantity
+                  priceVisibilityModeId:
+                    $ref: "./documents.yaml#/components/schemas/PriceVisibilityMode"
+            billToCustomerAccountId:
+              type: string
+              description: The billing CustomerAccount id (empty if cannot order)
+            authorizations:
+              description: List of authorizations. Contains eventual blocks to place an order.
+              type: array
+              items:
+                type: object
+                properties:
+                  blocked:
+                    type: boolean
+                    description: True if blocked.
+                  creditStatusId:
+                    $ref: "#/components/schemas/CreditStatus"
+    SalesOrderEligibilityResponse:
+      description: Sales order eligibility response
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/SalesOrderEligibility"
+  parameters:
+    customerAccountId:
+      name: customerAccountId
+      in: path
+      description: The customer account id
+      required: true
+      schema:
+        type: string
+    customerTypeId:
+      name: filter[customerTypeId]
+      in: query
+      description: The customer type id
+      required: true
+      schema:
+        type: string
+    digitalContentId:
+      name: filter[digitalContentId]
+      in: query
+      description: The digital content id
+      required: true
+      schema:
+        type: string
+    appId:
+      name: filter[appId]
+      in: query
+      description: The app id
+      required: true
+      schema:
+        type: string
+    customerAccountFilters:
+      name: "filters"
+      in: query
+      description: Filter group.
+      required: true
+      style: deepObject
+      schema:
+        type: object
+        properties:
+          s:
+            description: Generic query string applied on the `code`, `name`, `descr`, `fiscalCode` attributes.
+            type: string
+          parentCustomerId:
+            description: Filter the response by Parent Customer Id
+            type: string
+          customerType:
+            description: Filter the response by Customer Type Id
+            type: string
+          customerStatusId:
+            description: Filter the response by Customer Status Id
+            type: string
+            example: "in:Active"
+          tag:
+            description: Filter the response by Tag Id
+            type: string
+          salesChannel:
+            description: Filter the response by Sales Channel Id
+            type: string
+          customerCategory:
+            description: Filter the response by Customer Category Id
+            type: string
+          customerSegment:
+            description: Filter the response by Customer Segment Id
+            type: string
+          lastChangeTs:
+            description: Filter the response by Last Change TS.
+            type: string
+            example: "gt:2022-02-25T00:00:00.0Z"
+          warehouse:
+            description: Filter the response by warehouse.
+            type: string
+          paymentCondition:
+            description: Filter the response by payment condition.
+            type: string
+          creditStatusId:
+            description: Filter the response by credit status id.
+            type: string
+          isLinkedToUser:
+            description: Filters customers considering if they are linked to the user or not.
+            type: string
+          marketplace:
+            description: Filters customers considering if marketplace is active.
+            type: string
+          customerGroup:
+            description: Filter customers by hierarchy node of type `HierarchyType.CustomerGroup`.
+            type: string
+          customerSalesCondition:
+            description: Filter customers by hierarchy node of type `HierarchyType.CustomerSalesCondition`.
+            type: string
+          customerSalesNet:
+            description: Filter customers by hierarchy node of type `HierarchyType.SalesNet`.
+            type: string
+          customerId:
+            description: Filters customer accounts by customer id.
+            type: string
+          isPublished:
+            description: |
+              When `true` only customers with processing status `Released` are considered. In case of customers with
+              ongoing changes, the processing status considered by this filter is always the original customer's one.
+            type: string
+          docTypeId:
+            description: Filters customers by an associated document type.
+            type: string
+paths:
+  /customers/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The Customer id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a Customer
+      operationId: getCustomer
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    delete:
+      description: "[delete](https://jsonapi.org/format/#crud-deleting) a Customer"
+      operationId: deleteCustomer
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customers:
+    get:
+      description: |
+        Returns a collection of Customers.
+      operationId: listCustomers
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                type: string
+              taxNumber:
+                description: Filter by TaxNumber (the complete string)
+                type: string
+              parentCustomerId:
+                description: Filter by ParentCustomerId
+                type: string
+              isLinkedToUser:
+                description: Filters customers considering if they are linked to the user or not.
+                type: string
+              marketplace:
+                description: Filters customers considering if marketplace is active.
+                type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Customer list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customers/{id}/status:
+    parameters:
+      - name: id
+        in: path
+        description: The Customer id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: |
+        Updates the status of a customer.
+
+        To access the service you need at least one of the following permissions:
+        |     Permission (one of)     |
+        |:---------------------------:|
+        | updateCustomerAccountStatus |
+      operationId: updateCustomerStatus
+      x-authorities: ["updateCustomerAccountStatus"]
+      tags:
+        - Customer
+      requestBody:
+        description: Desired customer status.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CustomerStatusRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: The CustomerAccount id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Get a CustomerAccount
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | getCustomerAccount |
+      operationId: getCustomerAccount
+      tags:
+        - Customer
+      x-authorities:
+        - getCustomerAccount
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerAccountResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: |
+        [Update](https://jsonapi.org/format/#crud-updating) a CustomerAccount.
+
+        To access the service you need at least one of the following permissions:
+        |  Permission (one of)   |
+        |:----------------------:|
+        |  updateCustomerAccount |
+      operationId: updateCustomerAccount
+      x-authorities: ["updateCustomerAccount"]
+      tags:
+        - Customer
+      requestBody:
+        description: CustomerAccount to patch
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CustomerAccountRequestLite"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#crud-updating-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerAccountResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: "[Delete](https://jsonapi.org/format/#crud-deleting) a CustomerAccount"
+      operationId: deleteCustomerAccount
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/{id}/tasks:
+    get:
+      description: |
+        Returns a paginated list of tasks for the given customer from the last 12 months.
+
+        The list is ordered as follows:
+          * Incomplete overdue tasks, sorted by due date in ascending order (the earliest overdue task appears first);
+          * Incomplete upcoming tasks, sorted by due date in ascending order (the task with the nearest upcoming due
+          date appears first);
+          * Completed tasks, sorted by due date in descending order (the most recently due completed task appears first).
+      operationId: listCustomerTasks
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      parameters:
+        - name: id
+          in: path
+          description: The CustomerAccount id
+          required: true
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: "filter"
+          in: query
+          description: |
+            Filter group. The only supported filter is `taskCompleted` which can be used to filter tasks by their
+            completion status.
+            * `taskCompleted=eq:true` returns only completed tasks. In this case the list is sorted by due date in 
+            descending order.
+            * `taskCompleted=eq:false` returns only incomplete tasks. In this case the list is sorted by due date in 
+            ascending order.
+            * If not specified, both completed and incomplete tasks are returned. The default sorting is applied.
+          required: true
+          style: deepObject
+          schema:
+            properties:
+              taskCompleted:
+                description: |
+                  Filter the response by task completion status. True for completed tasks, false for incomplete tasks.
+                type: string
+      responses:
+        "200":
+          description: Tasks list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/PartyTaskListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts:
+    get:
+      description: |
+        Returns a collection of CustomerAccounts.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listCustomerAccounts |
+      operationId: listCustomerAccounts
+      tags:
+        - Customer
+      x-authorities:
+        - listCustomerAccounts
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/LinkedUserProfileId"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/customerAccountFilters"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./jsonapi.yaml#/components/parameters/marketplace"
+      responses:
+        "200":
+          description: CustomerAccount list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerAccountListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: |
+        Create a CustomerAccount
+
+        To access the service you need at least one of the following permissions:
+        |  Permission (one of)   |
+        |:----------------------:|
+        |  createCustomerAccount |
+      operationId: createCustomerAccount
+      tags:
+        - Customer
+      x-authorities:
+        - createCustomerAccount
+      requestBody:
+        description: CustomerAccount to post
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CustomerAccountRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerAccountResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/export:
+    post:
+      summary: exportCustomerAccounts
+      description: Request an export of a list of customer accounts.
+      operationId: exportCustomerAccounts
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/utcOffset"
+        - $ref: "./core.yaml#/components/parameters/templateIdParamRequired"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/customerAccountFilters"
+      responses:
+        "202":
+          description: Data export request accepted
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/{customerAccountId}/kpis/{kpiId}:
+    parameters:
+      - $ref: "#/components/parameters/customerAccountId"
+      - name: kpiId
+        in: path
+        description: The KPI id
+        required: true
+        schema:
+          $ref: "./jsonapi.yaml#/components/schemas/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get a single KPI defined for this CustomerAccount
+      operationId: getCustomerAccountKPI
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /customer-accounts/{id}/kpis:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+      - name: id
+        in: path
+        description: The CustomerAccount id
+        required: true
+        schema:
+          $ref: "./jsonapi.yaml#/components/schemas/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get all KPIs defined for this CustomerAccount
+      operationId: listCustomerAccountKPIs
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /customer-accounts/{id}/clusters:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+      - name: id
+        in: path
+        description: The CustomerAccount id
+        required: true
+        schema:
+          $ref: "./jsonapi.yaml#/components/schemas/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Get all Clusters defined for this CustomerAccount
+      operationId: listCustomerAccountClusters
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./clusters.yaml#/components/schemas/ClusterListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /customer-accounts/sheets:
+    get:
+      description: Returns a collection of FormSheets, which depend on the customerTypeId
+      operationId: listCustomerAccountSheets
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./entityAttributes.yaml#/components/parameters/appIdFilter"
+        - name: "filter[customerTypeId]"
+          in: query
+          description: Filter the response by customer type id.
+          required: true
+          style: form
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Sheet list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./entityAttributes.yaml#/components/schemas/EntitySheetListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/{id}/edit:
+    parameters:
+      - name: id
+        in: path
+        description: The CustomerAccount id
+        required: true
+        schema:
+          type: string
+      - name: customerTypeId
+        in: query
+        description: The customer type id.
+        required: false
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Edit a Customer Account.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of)   |
+        |:---------------------:|
+        | updateCustomerAccount |
+      operationId: editCustomerAccount
+      x-authorities:
+        - updateCustomerAccount
+      tags:
+        - Customer
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerAccountResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/{id}/publish:
+    parameters:
+      - name: id
+        in: path
+        description: The CustomerAccount id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Publish a Customer Account
+      operationId: publishCustomerAccount
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerAccountResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/tags:
+    patch:
+      description: |
+        Tag a set of up to 1000 customer accounts.
+
+        To access the service you need at least one of the following permissions:
+        |       Permission (one of)      | 
+        |:------------------------------:|
+        |   replaceCustomerAccountTags   |
+      operationId: manageCustomerAccountTags
+      tags:
+        - Customer
+      x-authorities: ["replaceCustomerAccountTags"]
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/LinkedUserProfileId"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/customerAccountFilters"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        description: List of tags that are going to replace entirely the existing associations.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              allOf:
+                - $ref: "./core.yaml#/components/schemas/Tags"
+                - description: Tags can be added, replaced or removed.
+                  type: object
+                  properties:
+                    action:
+                      $ref: "./core.yaml#/components/schemas/TagsOperation"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/Tags"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/tasks:
+    post:
+      description: |
+        Create a task for each customer that satisfies the provided filters and associate the task to them.
+      operationId: createTaskForCustomerAccounts
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/LinkedUserProfileId"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/customerAccountFilters"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        description: The new task to create
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CustomerTaskRequest"
+      responses:
+        "202":
+          description: "[Accepted](https://jsonapi.org/format/#crud-updating-responses-202)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/{customerAccountId}/tags:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "#/components/parameters/customerAccountId"
+    patch:
+      description: |
+        Replace the tags associated to the given customer account id.
+
+        To access the service you need at least one of the following permissions:
+        |    Permission (one of)     | 
+        |:--------------------------:|
+        | replaceCustomerAccountTags |
+      operationId: replaceCustomerAccountTags
+      tags:
+        - Customer
+      x-authorities: ["replaceCustomerAccountTags"]
+      requestBody:
+        description: List of tags that are going to replace entirely the existing associations.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./core.yaml#/components/schemas/Tags"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/Tags"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/{customerAccountId}/tags/{tagId}:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "#/components/parameters/customerAccountId"
+      - $ref: "./core.yaml#/components/parameters/tagId"
+    post:
+      description: |
+        Links the tag identified by `tagId` to the customer account identified by `customerAccountId`.
+
+        To access the service you need at least one of the following permissions:
+        |   Permission (one of)   | 
+        |:-----------------------:|
+        |    linkTagToCustomer    |
+        |   replaceCustomerTags   |
+      operationId: linkTagToCustomerAccount
+      tags:
+        - Customer
+      x-authorities: ["linkTagToCustomer", "replaceCustomerTags"]
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: |
+        Unlinks the tag `tagId` from the customer account `customerAccountId`.
+
+        To access the service you need at least one of the following permissions:
+        |    Permission (one of)    | 
+        |:-------------------------:|
+        |   unlinkTagFromCustomer   |
+        |    replaceCustomerTags    |
+      operationId: unlinkTagFromCustomerAccount
+      tags:
+        - Customer
+      x-authorities: ["unlinkTagFromCustomer", "replaceCustomerTags"]
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/bulk-update/data-upload:
+    parameters:
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - name: filter[appId]
+        in: query
+        description: The app id
+        required: true
+        schema:
+          type: string
+      - $ref: "#/components/parameters/customerTypeId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Uploads an Excel file used for customers bulk update. 
+        The response will contain all Excel columns (but the one referring to customers' id) 
+        and all the customers' attributes available for bulk update
+      operationId: uploadExcelForBulkUpdate
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      requestBody:
+        required: true
+        content:
+          application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+            schema:
+              type: string
+              format: binary
+          application/vnd.ms-excel:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: |
+            The response contains two lists.
+            One list refers to the attributes to be mapped, the other refers to the attributes available for mapping.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/BulkUpdateDataImportInfoResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/bulk-update:
+    parameters:
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "#/components/parameters/customerTypeId"
+      - $ref: "#/components/parameters/digitalContentId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Updates a set of customer accounts based on the Excel file identified by digitalContentId 
+        and previously uploaded using `uploadExcelForBulkUpdate` service.
+      operationId: bulkUpdate
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: Excel import attributes mapping
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "./core.yaml#/components/schemas/BulkUpdateDataRequest"
+      responses:
+        "202":
+          description: "[Accepted](https://jsonapi.org/format/#crud-updating-responses-202)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/info"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customers/types:
+    parameters:
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of customer types that can be used to create the customer account.
+      operationId: listEligibleCustomerTypesForCreate
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/EligibleCustomerTypeListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customers/types/{customerTypeId}:
+    parameters:
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - name: customerTypeId
+        in: path
+        description: The customer type id
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of customer types that can be used to modify the customer's type.
+      operationId: listEligibleCustomerTypesForUpdate
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/SimpleEntityListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /customer-accounts/{id}/history:
+    parameters:
+      - name: id
+        in: path
+        description: The CustomerAccount id
+        required: true
+        schema:
+          $ref: "./jsonapi.yaml#/components/schemas/id"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Retrieves the customer accounts related to a specified customer account, including their status (ACTIVE or 
+        INACTIVE).
+
+        If the customer is **ACTIVE**: Returns a list of all previous customer accounts (ancestors) that reference this 
+        account as their successor.
+
+        If the customer is **INACTIVE**: Returns a single record pointing to the active successor account that inherited 
+        this customer account.
+      operationId: getCustomerAccountHistory
+      tags:
+        - Customer
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/CustomerAccountHistoryListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /customer-accounts/{customerAccountId}/sales-order-eligibility:
+    parameters:
+      - name: customerAccountId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The CustomerAccount id
+      - name: x-Marketplace
+        in: header
+        required: false
+        schema:
+          type: string
+        description: Marketplace context (optional)
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - name: "filter[appId]"
+        in: query
+        description: Filter the response by application. The user must be enabled for the application in the filter.
+        required: true
+        style: form
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      operationId: getSalesOrderEligibility
+      description: |
+        Checks if the customer can place a sales order and returns eligible document types, billing customer, and 
+        authorizations.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | createSalesOrder |
+        | updateSalesOrder |
+      tags:
+        - Customer
+      x-authorities:
+        - createSalesOrder
+        - updateSalesOrder
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)."
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/SalesOrderEligibilityResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)."
+  /customers/{id}/calendar-events:
+    get:
+      description: |
+        Returns a paginated list of events for the given customer.
+
+        To access the service you need at least one of the following permissions:
+        | Permission (one of) |
+        |:-:|
+        | listCalendars |
+      operationId: listCustomerCalendarEvents
+      tags:
+        - Customer
+      x-authorities:
+        - listCalendars
+      parameters:
+        - name: id
+          in: path
+          description: The Customer id
+          required: true
+          schema:
+            type: string
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - name: "filter"
+          in: query
+          description: Filter group
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              startDate:
+                type: string
+                description: Filter events by start date.
+              endDate:
+                type: string
+                description: Filter events by end date.
+              mineOnly:
+                type: string
+                description: Filter events assigned to the current user only.
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: Customer event list response
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./tasks.yaml#/components/schemas/CalendarEventListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"

@@ -1,0 +1,1865 @@
+openapi: 3.0.3
+info:
+  title: Access control API
+  version: "-"
+  description: APIs to manage access control.
+tags:
+  - name: Zone
+    description: A delimited area in the space. Zones can be hierarchically organized.
+  - name: Access Gate
+    description: A physical gate which connects two zones.
+  - name: Badge Holder
+    description: A person who owns a badge.
+  - name: Access Journal
+    description: The journal of all accesses in an access control system.
+  - name: Access Group
+    description: Categories that group badge holders and that determine if they are allowed or not to go through a gate.
+#
+# Components
+#
+components:
+  #
+  # Schemas
+  #
+  schemas:
+    #
+    # ZoneTypeTotal
+    #
+    ZoneTypeTotal:
+      description: An object that contains calculations for a specific zone type.
+      type: object
+      required:
+        - typeId
+        - zonesCount
+        - badgeHoldersInCount
+      properties:
+        typeId:
+          description: A `ZoneType`. See `ZoneType` dictionary.
+          type: string
+          example: "ZoneType.Bunker"
+        zonesCount:
+          description: Total number of zones of type equals to `type`.
+          type: integer
+          minimum: 0
+          default: 0
+        badgeHoldersInCount:
+          description: Total number of badge holders whose last access is in a zone with type equals to `type`.
+          type: integer
+          minimum: 0
+          default: 0
+    #
+    # ZoneAttributes
+    #
+    ZoneAttributes:
+      description: The attributes of a `Zone` resource.
+      type: object
+      required:
+        - descr
+        - zoneTypeId
+      properties:
+        code:
+          description: The code of the `Zone`.
+          type: string
+          example: "Z.CODE.1"
+        descr:
+          description: The description of the `Zone`.
+          type: string
+          example: "This is a zone!"
+        zoneTypeId:
+          description: The type of the `Zone`. See `ZoneType` dictionary.
+          type: string
+          example: "ZoneType.Normal"
+        badgeHoldersInCount:
+          description: The total number of badge holders whose last positive access has been into the zone.
+          type: integer
+          minimum: 0
+          default: 0
+          readOnly: true
+          example: 10
+        subZonesTotals:
+          description: A set with calculation on zone's children aggregated by zone type.
+          type: array
+          items:
+            $ref: "#/components/schemas/ZoneTypeTotal"
+          uniqueItems: true
+          readOnly: true
+          default: []
+          example: |
+            ```
+            [
+              { 
+                "typeId": "ZoneType.Bunker", 
+                "zonesCount": 3, 
+                "badgeHoldersInCount": 5 
+              },
+              { "typeId": "ZoneType.Office", 
+                "zonesCount": 1, 
+                "badgeHoldersInCount": 10 }
+            ]
+            ```
+        level:
+          description: The level of the zone when considered inside a zone hierarchy.
+          type: integer
+          example: 0
+        childrenCount:
+          description: How many zones are children of this one.
+          type: integer
+          default: 0
+    #
+    # ZoneRelationships
+    #
+    ZoneRelationships:
+      description: The relationships of a `Zone` resource.
+      type: object
+      required:
+        - organization
+      properties:
+        parentZone:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        notes:
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+        emergency:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneReadOnly"
+        organization:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        children:
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    #
+    # Zone
+    #
+    Zone:
+      description: A `Zone` resource.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "Zone"
+        id:
+          description: A string that uniquely identifies the object.
+          type: string
+          example: "ZONE.1"
+        attributes:
+          $ref: "#/components/schemas/ZoneAttributes"
+        relationships:
+          $ref: "#/components/schemas/ZoneRelationships"
+    #
+    # ZoneIncluded
+    #
+    ZoneIncluded:
+      description: The  set of `Zone` related schemas.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # ZoneRequest
+    #
+    ZoneRequest:
+      description: An object that contains a `Zone` resource.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Zone"
+    #
+    # ZoneResponse
+    #
+    ZoneResponse:
+      description: An object that contain a single `Zone` resource.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Zone"
+        included:
+          $ref: "#/components/schemas/ZoneIncluded"
+    #
+    # ZoneListResponse
+    #
+    ZoneListResponse:
+      description: An object that contain a list of `Zone` resources.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Zone"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/ZoneIncluded"
+    #
+    # ZoneEmergencyStatus
+    #
+    ZoneEmergencyStatus:
+      description: An enum that describes the possible statuses of an emergency. See _ZoneEmergencyStatus_ dictionary.
+      type: string
+      enum:
+        - ZoneEmergencyStatus.Over
+        - ZoneEmergencyStatus.Started
+      x-enum-varnames:
+        - over
+        - started
+    #
+    # ZoneEmergencyAttributes
+    #
+    ZoneEmergencyAttributes:
+      description: The attributes that describes a zone emergency.
+      type: object
+      required:
+        - emergencyStatusId
+        - startTs
+      properties:
+        emergencyStatusId:
+          $ref: "#/components/schemas/ZoneEmergencyStatus"
+        startTs:
+          description: The date and time when the emergency begins.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+        endTs:
+          description: The date and time when the emergency finishes. If `null`, the emergency is still in progress.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+    #
+    # ZoneEmergencyRelationships
+    #
+    ZoneEmergencyRelationships:
+      description: Entities related to a zone emergency.
+      type: object
+      required:
+        - zones
+      properties:
+        zones:
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    #
+    # ZoneEmergency
+    #
+    ZoneEmergency:
+      description: An emergency alert used to represent a dangerous situation in a particular zone.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "ZoneEmergency"
+        id:
+          description: A string that uniquely identify the object.
+          type: string
+          example: "EMERGENCY.1"
+        attributes:
+          $ref: "#/components/schemas/ZoneEmergencyAttributes"
+        relationships:
+          $ref: "#/components/schemas/ZoneEmergencyRelationships"
+    #
+    # ZoneEmergencyIncluded
+    #
+    ZoneEmergencyIncluded:
+      description: An object that contains resources related to a zone emergency in their full form.
+      type: array
+      uniqueItems: true
+      items:
+        type: object
+    #
+    # ZoneEmergencyResponse
+    #
+    ZoneEmergencyResponse:
+      description: An object that contains a single `ZoneEmergency` resource.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ZoneEmergency"
+        included:
+          $ref: "#/components/schemas/ZoneEmergencyIncluded"
+    #
+    # ZoneEmergencyListResponse
+    #
+    ZoneEmergencyListResponse:
+      description: An object that contains a list of `ZoneEmergency` resources.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of `ZoneEmergency` resources.
+          type: array
+          items:
+            $ref: "#/components/schemas/ZoneEmergency"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/ZoneEmergencyIncluded"
+    #
+    # AccessGateDirection
+    #
+    AccessGateDirection:
+      description: |
+        Describes the possible directions an access gate can have. See `AccessGateDirection` dictionary.
+      type: string
+      enum:
+        - AccessGateDirection.In
+        - AccessGateDirection.Out
+        - AccessGateDirection.BiDi
+      x-enum-varnames:
+        - dirIn
+        - dirOut
+        - biDi
+    #
+    # AccessGateDirection
+    #
+    AccessOutcome:
+      description: Describes the possible outcomes of an access. See `AccessOutcome` dictionary.
+      type: string
+      enum:
+        - AccessOutcome.Ok
+        - AccessOutcome.OkForced
+        - AccessOutcome.Expired
+      x-enum-varnames:
+        - ok
+        - okForced
+        - expired
+    #
+    # AccessGateAttributes
+    #
+    AccessGateAttributes:
+      description: The attributes of an `AccessGate` resource.
+      type: object
+      required:
+        - descr
+        - directionId
+      properties:
+        descr:
+          description: A text that describes the access gate.
+          type: string
+          example: "Entrance access gate"
+        directionId:
+          $ref: "#/components/schemas/AccessGateDirection"
+    #
+    # AccessGateRelationships
+    #
+    AccessGateRelationships:
+      description: An object that defines the relationships of an `AccessGate` resource.
+      type: object
+      required:
+        - organization
+        - fromZone
+        - toZone
+        - accessGroups
+        - roles
+      properties:
+        organization:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        fromZone:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        toZone:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        accessGroups:
+          $ref: "./jsonapi.yaml#/components/schemas/relToManyWithMeta"
+        roles:
+          $ref: "./jsonapi.yaml#/components/schemas/relToMany"
+    #
+    # AccessGate
+    #
+    AccessGate:
+      description: |
+        An access gate is a physical gate which connects two zones. It can be passed through according to its
+        direction which can be either one way (in/out) or bi-directional.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string which describes the type of the object.
+          type: string
+          default: "AccessGate"
+        id:
+          description: A string that uniquely identify an access gate.
+          type: string
+          example: "ACCESS.GATE.1"
+        attributes:
+          $ref: "#/components/schemas/AccessGateAttributes"
+        relationships:
+          $ref: "#/components/schemas/AccessGateRelationships"
+    #
+    # AccessGateIncluded
+    #
+    AccessGateIncluded:
+      description: Related relationships of an access gate.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # AccessGateRequest
+    #
+    AccessGateRequest:
+      description: An object used to create or update an access gate.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/AccessGate"
+    #
+    # AccessGateResponse
+    #
+    AccessGateResponse:
+      description: An object that contains a single access gate resource.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/AccessGate"
+        included:
+          $ref: "#/components/schemas/AccessGateIncluded"
+    #
+    # AccessGateListResponse
+    #
+    AccessGateListResponse:
+      description: An object that contains a list of `AccessGate` resources.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of `AccessGate` resources.
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessGate"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/AccessGateIncluded"
+    #
+    # AccessGateFilters
+    #
+    AccessGateFilters:
+      description: The set of filters that can be applied on an access gate.
+      type: object
+      properties:
+        s:
+          description: Generic query that filters access gates by description.
+          type: string
+        fromZone:
+          description: The zone on the left side of an access gate.
+          type: string
+          example: "ZONE.1"
+        fromZoneType:
+          description: The type of the from zone.
+          type: string
+          example: "ZoneType.Bunker"
+        toZone:
+          description: The zone on the right side of an access gate.
+          type: string
+          example: "ZONE.2"
+        toZoneType:
+          description: The type of the to zone.
+          type: string
+          example: "ZoneType.Office"
+    #
+    # AccessJournalEntryAttributes
+    #
+    AccessJournalEntryAttributes:
+      description: The attributes of an `AccessJournalEntry` resource.
+      type: object
+      required:
+        - accessGateDirectionId
+        - badgeHolderInstanceId
+        - accessTs
+      properties:
+        accessGateDirectionId:
+          $ref: "#/components/schemas/AccessGateDirection"
+        accessOutcomeId:
+          readOnly: true
+          allOf:
+            - $ref: "#/components/schemas/AccessOutcome"
+        badgeHolderInstanceId:
+          description: The badge holder's type, e.g human or driver. See `BadgeHolderInstance` dictionary.
+          type: string
+          example: "BadgeHolderInstance.Human"
+        accessTs:
+          description: When the access happened in time.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+    #
+    # AccessJournalEntryRelationships
+    #
+    AccessJournalEntryRelationships:
+      description: The relationships of an `AccessJournalEntry` resource.
+      type: object
+      required:
+        - organization
+        - accessGate
+      properties:
+        organization:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        badgeHolder:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMetaReadOnly"
+        badge:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        vehicle:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        accessGate:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        fromZone:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMetaReadOnly"
+        toZone:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMetaReadOnly"
+        device:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        userProfile:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        refAccessJournal:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMetaReadOnly"
+        vehicleAccessJournal:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMetaReadOnly"
+    #
+    # AccessJournalEntry
+    #
+    AccessJournalEntry:
+      description: |
+        An entry in the access journal. It represents an access of a badge holder from a zone to another through an 
+        access gate.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string which describes the type of the object.
+          type: string
+          default: "AccessJournalEntry"
+        id:
+          description: A string that uniquely identify an access journal entry.
+          type: string
+          example: "ACCESS.ENTRY.1"
+        attributes:
+          $ref: "#/components/schemas/AccessJournalEntryAttributes"
+        relationships:
+          $ref: "#/components/schemas/AccessJournalEntryRelationships"
+    #
+    # AccessJournalEntryIncluded
+    #
+    AccessJournalEntryIncluded:
+      description: Related relationships of an access journal entry.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # AccessJournalEntryListResponse
+    #
+    AccessJournalEntryListResponse:
+      description: An object that contains a list of `AccessJournalEntry` resources.
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          description: The list of `AccessJournalEntry` resources.
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessJournalEntry"
+        meta:
+          $ref: "./jsonapi.yaml#/components/schemas/PaginationMeta"
+        links:
+          $ref: "./jsonapi.yaml#/components/schemas/pagination"
+        included:
+          $ref: "#/components/schemas/AccessJournalEntryIncluded"
+    #
+    # AccessJournalEntryRequest
+    #
+    AccessJournalEntryRequest:
+      description: An object that contains a single `AccessJournalEntry` resource.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/AccessJournalEntry"
+    #
+    # AccessJournalEntryResponse
+    #
+    AccessJournalEntryResponse:
+      description: An object that contains a single `AccessJournalEntry` resource.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/AccessJournalEntry"
+        included:
+          $ref: "#/components/schemas/AccessJournalEntryIncluded"
+    #
+    # AccessJournalEntryFilters
+    #
+    AccessJournalEntryFilters:
+      description: The set of filters that can be applied on an access journal entry.
+      type: object
+      properties:
+        s:
+          description: Generic text search filter. It considers code and description.
+          type: string
+        fromZone:
+          description: The zone on the left side of an access gate.
+          type: string
+          example: "ZONE.1"
+        toZone:
+          description: The zone on the right side of an access gate.
+          type: string
+          example: "ZONE.2"
+        accessGate:
+          description: The access gate where the access happened.
+          type: string
+          example: "ACCESS.GATE.1"
+    #
+    # ZonesFilters
+    #
+    ZonesFilters:
+      type: object
+      properties:
+        s:
+          description: Filters zones by code and description. This is a **plain** filter.
+          type: string
+          example: "QRY.CODE"
+        zone:
+          description: Filter zones by id. This is a **plain** filter.
+          type: string
+          example: "eq:ZONE.1"
+        subZone:
+          description: Filter hierarchies by zone id. This is a **hierarchy** filter.
+        zoneTypeId:
+          description: Filters zones by type. This is a **plain** filter.
+          type: string
+          example: "eq:ZoneType.Normal"
+        subZoneTypeId:
+          description: Filters hierarchies by zone type. This is a **hierarchy** filter.
+          type: string
+          example: "eq:ZoneType.Bunker"
+        emergencyStatusId:
+          description: Filter zones by emergency status. This is a **plain** filter.
+          type: string
+          example: "eq:EmergencyStatus.Started"
+        badgeHoldersPresent:
+          description: |
+            If `eq:true`, filters zones that currently have at least one badge holder inside. 
+            If `eq:false`, filters zones that currently have no badge holders inside. This is a **plain** filter.
+          type: string
+          example: "eq:true"
+    #
+    # ZoneEmergenciesFilters
+    #
+    ZoneEmergenciesFilters:
+      type: object
+      properties:
+        startTs:
+          description: Filters the emergencies by start date and time.
+          type: string
+        endTs:
+          description: Filters the emergencies by end date and time.
+          type: string
+        emergencyStatusId:
+          description: Filters the emergencies by their status.
+          type: string
+    #
+    # BadgeAttributes
+    #
+    BadgeAttributes:
+      description: The attributes that describes a badge.
+      type: object
+      required:
+        - expiryDate
+      properties:
+        barcode:
+          description: A barcode associated to the badge used to scan it with barcode readers.
+          type: string
+          example: "ABC-1234"
+        badgeLockReasonId:
+          description: |
+            Why the badge has been locked. If `null` the badge is not blocked. See _BadgeLockReason_ dictionary.
+          type: string
+          example: "BadgeLockReason.Expired"
+        expiryDate:
+          description: When the badge will become invalid in .one.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+    #
+    # BadgeRelationships
+    #
+    BadgeRelationships:
+      description: Entities related to a badge.
+      type: object
+      required:
+        - organization
+      properties:
+        organization:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        badgeHolder:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+    #
+    # Badge
+    #
+    Badge:
+      description: Usually a NFC card used to gain access to a restricted zone.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "Badge"
+        id:
+          description: A string that uniquely identify the object.
+          type: string
+          example: "BADGE.1"
+        attributes:
+          $ref: "#/components/schemas/BadgeAttributes"
+        relationships:
+          $ref: "#/components/schemas/BadgeRelationships"
+    #
+    # BadgeIncluded
+    #
+    BadgeIncluded:
+      description: Relationships of a badge in their extended form.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # BadgeResponse
+    #
+    BadgeResponse:
+      description: An object that contains a single badge resource.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/Badge"
+        included:
+          $ref: "#/components/schemas/BadgeIncluded"
+    #
+    # BadgeHolderAttributes
+    #
+    BadgeHolderAttributes:
+      description: The attributes that describe a badge holder resource.
+      type: object
+      required:
+        - code
+        - firstName
+        - lastName
+        - startDate
+        - endDate
+        - locked
+      properties:
+        code:
+          description: A code associated to a badge holder. Usually it is an alphanumeric code.
+          type: string
+          example: "BH.CODE.1"
+        firstName:
+          description: The badge holder's first name.
+          type: string
+          example: "Mario"
+        lastName:
+          description: The badge holder's last name.
+          type: string
+          example: "Rossi"
+        startDate:
+          description: The timestamp from which the badge holder is considered valid in .one.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        endDate:
+          description: The timestamp until which the badge holder is considered valid in .one.
+          allOf:
+            - $ref: "./dataTypes.yaml#/components/schemas/apiDate"
+        locked:
+          description: True when the badge holder is locked, false otherwise.
+          type: boolean
+          default: false
+          example: false
+        badgeHolderLockReasonId:
+          description: |
+            Why a badge holder has been locked. It is `null` if the badge holder is not locked. See 
+            `BadgeHolderLockReason` dictionary.
+          type: string
+          example: "BadgeHolderLockReason.Expired"
+    #
+    # BadgeHolderRelationships
+    #
+    BadgeHolderRelationships:
+      description: Related entities of a badge holder.
+      type: object
+      required:
+        - organization
+        - accessGroups
+      properties:
+        organization:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOneWithMeta"
+        userProfile:
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        accessGroups:
+          $ref: "./jsonapi.yaml#/components/schemas/relToManyWithMeta"
+    #
+    # BadgeHolder
+    #
+    BadgeHolder:
+      description: A person who owns a badge.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "BadgeHolder"
+        id:
+          description: A string that uniquely identify the object.
+          type: string
+          example: "BADGE.HOLDER.1"
+        attributes:
+          $ref: "#/components/schemas/BadgeHolderAttributes"
+        relationships:
+          $ref: "#/components/schemas/BadgeHolderRelationships"
+    #
+    # BadgeHolderIncluded
+    #
+    BadgeHolderIncluded:
+      description: Relationships of a badge holder in their extended form.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # BadgeHolderResponse
+    #
+    BadgeHolderResponse:
+      description: An object that contains a single badge holder resource.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/BadgeHolder"
+        included:
+          $ref: "#/components/schemas/BadgeHolderIncluded"
+    #
+    # ManualAccessData
+    #
+    ManualAccessData:
+      description: Data needed to manually log a badge holder's access through an access gate.
+      type: object
+      required:
+        - accessGateId
+        - accessGateDirectionId
+        - accessTs
+        - organizationId
+      properties:
+        accessGateId:
+          description: The id of the access gate where the manual access is required.
+          type: string
+          example: "ACCESS.GATE.1"
+        accessGateDirectionId:
+          $ref: "#/components/schemas/AccessGateDirection"
+        accessTs:
+          $ref: "./dataTypes.yaml#/components/schemas/apiDateTime"
+        organizationId:
+          description: The reference organization.
+          type: string
+    #
+    # ManualAccessRequest
+    #
+    ManualAccessRequest:
+      description: An object that is used to manually log a badge holder's access.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/ManualAccessData"
+    #
+    # AccessGroupAttributes
+    #
+    AccessGroupAttributes:
+      description: The attributes that describe an access group.
+      type: object
+      required:
+        - descr
+      properties:
+        code:
+          description: A short string associate to the access group.
+          type: string
+          example: "AG-1-CODE"
+        descr:
+          description: A complete description of the access group.
+          type: string
+          example: "Maintenance people"
+    #
+    # AccessGroupRelationships
+    #
+    AccessGroupRelationships:
+      description: Resources related to an access gate.
+      type: object
+      required:
+        - accessGates
+        - badgeHolders
+      properties:
+        organization:
+          description: The organization the access group belongs to.
+          $ref: "./jsonapi.yaml#/components/schemas/relToOne"
+        accessGates:
+          description: The access gates the group is associated to.
+          $ref: "./jsonapi.yaml#/components/schemas/relToManyReadOnly"
+        badgeHolders:
+          description: The badge holders that belongs to the access group.
+          $ref: "./jsonapi.yaml#/components/schemas/relToManyReadOnly"
+    #
+    # AccessGroup
+    #
+    AccessGroup:
+      description: |
+        An access group is a label that categorizes badge holders and it is used as a discriminant during access 
+        validation. Concretely, an access group can be associated to multiple badge holders and to multiple access gates.
+      type: object
+      required:
+        - type
+        - id
+        - attributes
+        - relationships
+      properties:
+        type:
+          description: A string that describes the type of the object.
+          type: string
+          default: "AccessGroup"
+        id:
+          description: A string that uniquely identifies the object.
+          type: string
+          example: "AG.1"
+        attributes:
+          $ref: "#/components/schemas/AccessGroupAttributes"
+        relationships:
+          $ref: "#/components/schemas/AccessGroupRelationships"
+    #
+    # AccessGroupIncluded
+    #
+    AccessGroupIncluded:
+      description: An object that contains access group's relationships in expanded form.
+      type: array
+      items:
+        type: object
+      uniqueItems: true
+    #
+    # AccessGroupListResponse
+    #
+    AccessGroupListResponse:
+      description: An object that contains a list of access groups.
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: A list of access groups.
+          type: array
+          items:
+            $ref: "#/components/schemas/AccessGroup"
+        included:
+          $ref: "#/components/schemas/AccessGroupIncluded"
+    CheckoutPersonnel:
+      type: object
+      required:
+        - type
+        - attributes
+      properties:
+        type:
+          type: string
+          enum: [CheckoutPersonnel]
+          description: Resource type.
+        attributes:
+          type: object
+          required:
+            - allZones
+          properties:
+            allZones:
+              type: boolean
+              description: If `true`, reset all zones. If `false`, reset only the specified zones and their sub-zones.
+            zoneIds:
+              type: array
+              items:
+                type: string
+              description: List of zone IDs to reset (used if `allZones` is `false`).
+              uniqueItems: true
+              default: []
+    CheckoutPersonnelRequest:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: "#/components/schemas/CheckoutPersonnel"
+  #
+  # Parameters
+  #
+  parameters:
+    ZoneId:
+      description: The id of a `Zone`.
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    ZoneEmergencyId:
+      description: The id of a `ZoneEmergency`.
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    AccessGateFiltersParameter:
+      name: filter
+      description: Complex filters for access gate.
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/AccessGateFilters"
+    AccessJournalEntryFiltersParameter:
+      name: filter
+      description: Complex filters for access journal entry.
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/AccessJournalEntryFilters"
+    ZonesFiltersParameter:
+      name: filter
+      description: |
+        The set of filters that can be applied on a list of zones. Due to zones' hierarchical organization, these filters
+        can be divided into two groups: plain filters and hierarchy filters. The former group is used to filter out zones
+        without considering hierarchies, i.e. like zones are all plain. On the other hand, the latter group is used to
+        refine zones' hierarchies. For example, it could be interesting to retrieve all zones with a specific type 
+        (this is a plain filter) or to retrieve all zones that have, among their children, zones with a specific type 
+        (this is hierarchy filter).
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/ZonesFilters"
+    ZoneEmergencyFilterParameter:
+      name: filter
+      description: ""
+      in: query
+      required: true
+      schema:
+        $ref: "#/components/schemas/ZoneEmergenciesFilters"
+#
+# Paths
+#
+paths:
+  /zones:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of `Zone` resources.
+      operationId: listZones
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/ZonesFiltersParameter"
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ZoneListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Creates a `Zone` resource.
+      operationId: createZone
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The zone to post.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ZoneRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ZoneResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /zones/hierarchies:
+    get:
+      description: |
+        Returns the zones in the organization provided as parameter. For each zone is specified at which level of the
+        hierarchy it is and which is its parent zone. Combining these two information the client can organize zones
+        hierarchically.
+      operationId: listZoneHierarchies
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ZoneListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /zones/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ZoneId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns the `Zone` with the provided id.
+      operationId: getZone
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ZoneResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      description: Updates the `Zone` with the provided id.
+      operationId: updateZone
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The zone to update.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ZoneRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ZoneResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: Deletes the `Zone` with the provided id.
+      operationId: deleteZone
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /zones/{id}/sub-zones:
+    parameters:
+      - $ref: "#/components/parameters/ZoneId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns the zones that are children of the one with the provided id.
+      operationId: listSubZones
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "#/components/parameters/ZonesFiltersParameter"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ZoneListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /zones/{id}/head-count:
+    parameters:
+      - $ref: "#/components/parameters/ZoneId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Triggers the head count procedure for the zone specified in the path to count again people in it. Calling
+        this API will produce a movement with direction OUT for all badge holders currently in the target zone. 
+        Moreover, a message will be sent to the zone such that it is notified of the head count request.
+      operationId: doHeadCountInZone
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AccessJournalEntryListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /zones/{id}/hierarchy:
+    parameters:
+      - $ref: "#/components/parameters/ZoneId"
+    get:
+      description: Returns the hierarchy to which the zone in the path belongs to.
+      operationId: getZoneHierarchy
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ZoneListResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /zones/check-out-personnel:
+    parameters:
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Sets the personnel count to zero for all zones or for the specified list of zones.
+
+        **IMPORTANT**: this operation can be performed only for zones that do not have any active emergency and they
+        must be of type `ZoneType.Bunker`.
+      operationId: checkOutPersonnel
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      requestBody:
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/CheckoutPersonnelRequest"
+      responses:
+        "200":
+          description: Personnel count reset.
+        "400":
+          description: Bad request
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /access/gates:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of `AccessGate` resources.
+      operationId: listAccessGates
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/AccessGateFiltersParameter"
+      tags:
+        - Access Gate
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AccessGateListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    post:
+      description: Creates a new access gate.
+      operationId: createAccessGate
+      tags:
+        - Access Gate
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The data needed to create a new access gate.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/AccessGateRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AccessGateResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /access/gates/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the access gate identified by the id provided in the path.
+      operationId: getAccessGate
+      tags:
+        - Access Gate
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AccessGateResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+    patch:
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      description: Updates the access gate identified by the id in the path.
+      operationId: updateAccessGate
+      tags:
+        - Access Gate
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The data needed to update the access gate with the id in the path.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/AccessGateRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AccessGateResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      description: Deletes the access gate identified by the id in the path, if it exists.
+      operationId: deleteAccessGate
+      tags:
+        - Access Gate
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /badge-holders/{id}:
+    parameters:
+      - name: id
+        description: A badge holder's id.
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the badge holder with the id provided in the path.
+      operationId: getBadgeHolder
+      tags:
+        - Badge Holder
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BadgeHolderResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /badge-holders/by-code/{code}:
+    parameters:
+      - name: code
+        description: A badge holder's code.
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the badge holder that corresponds to the code in the path.
+      operationId: getBadgeHolderFromCode
+      tags:
+        - Badge Holder
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BadgeHolderResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /badge-holders/last-accesses:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: Returns a list of `AccessJournalEntry` resources.
+      operationId: listBadgeHoldersLastAccesses
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+        - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+        - $ref: "./jsonapi.yaml#/components/parameters/sort"
+        - $ref: "./jsonapi.yaml#/components/parameters/include"
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "#/components/parameters/AccessJournalEntryFiltersParameter"
+      tags:
+        - Badge Holder
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AccessJournalEntryListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /badge-holders/{code}/access/entries:
+    parameters:
+      - in: path
+        name: code
+        description: The code of a badge holder.
+        required: true
+        schema:
+          type: string
+    post:
+      description: |
+        Creates an entry into the access journal for the badge holder identified by the code in the path. Security
+        checks on the badge holders may be inhibited if an emergency situation is going on, according to configuration.
+        This API updates both the access journal and, when the access outcome is positive, the badge holder's last
+        movement information, too.
+      operationId: grantAccessFromCode
+      tags:
+        - Badge Holder
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      requestBody:
+        description: The data needed to keep track of the badge holder's access.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/ManualAccessRequest"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AccessJournalEntryResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /badges/{id}:
+    parameters:
+      - name: id
+        description: A badge's id.
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      description: Returns the badge identified by the id provided in the path.
+      operationId: getBadge
+      tags:
+        - Badge Holder
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/BadgeResponse"
+        "404":
+          description: "[Not found](https://jsonapi.org/format/#fetching-resources-responses-404)"
+  /access/entries:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Creates an entry in the access journal for the badge holder that owns the badge provided in the request.
+        Security checks on the badge holder may be inhibited if an emergency is going on, according to configuration.
+        This service updates both the access journal and, when the access outcome is positive, the badge holder last
+        movement information, too.
+      operationId: grantAccess
+      tags:
+        - Access Journal
+      x-authorities:
+        - apiUser
+      requestBody:
+        description: The access journal entry to create.
+        required: true
+        content:
+          application/vnd.api+json:
+            schema:
+              $ref: "#/components/schemas/AccessJournalEntryRequest"
+      responses:
+        "201":
+          description: "[Created](https://jsonapi.org/format/#crud-creating-responses-201)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AccessJournalEntryResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /zones/kpis:
+    parameters:
+      - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    get:
+      description: |
+        Calculates a set of KPIs about zones. The defined KPIs are:
+        * The number of zones with bunkers inside them;
+        * The number of bunkers;
+        * The total amount of people checked-in bunkers.
+      operationId: listZonesKPIs
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./core.yaml#/components/schemas/KPIEntityListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /zones/{id}/emergencies:
+    parameters:
+      - $ref: "#/components/parameters/ZoneId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: Starts an emergency for the zone specified in the path and all its children zones.
+      operationId: startEmergencyForZone
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ZoneEmergencyResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /emergencies:
+    parameters:
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      - $ref: "./jsonapi.yaml#/components/parameters/pageSize"
+      - $ref: "./jsonapi.yaml#/components/parameters/pageNumber"
+      - $ref: "./jsonapi.yaml#/components/parameters/sort"
+      - $ref: "./jsonapi.yaml#/components/parameters/include"
+    get:
+      description: Returns a list of the zone emergencies that match the provided filters, if specified.
+      operationId: listEmergencies
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "#/components/parameters/ZoneEmergencyFilterParameter"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ZoneEmergencyListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /emergencies/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ZoneEmergencyId"
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    patch:
+      description: Stops the emergency specified in the path. The emergency will be stopped for every zone linked to it.
+      operationId: stopEmergency
+      tags:
+        - Zone
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/ZoneEmergencyResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /access/groups:
+    get:
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+        - name: filter
+          in: query
+          required: true
+          style: deepObject
+          schema:
+            type: object
+            properties:
+              s:
+                description: Filters access groups by code and description.
+                type: string
+      description: Returns the list of access groups defined for the organization provided as parameter.
+      operationId: listAccessGroups
+      tags:
+        - Access Group
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "#/components/schemas/AccessGroupListResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /access/groups/{groupId}/gates/{gateId}:
+    parameters:
+      - name: groupId
+        description: The id of an access group.
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: gateId
+        description: The id of an access gate.
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+    post:
+      description: |
+        Creates an association between the access group and the access gate provided in the path. When the association
+        is created, every time a badge holder wants to pass through the gate with id `gateId`, it is checked that he
+        belongs to group `groupId` or to one of the others linked to the access gate.
+      operationId: associateGroupToAccessGate
+      tags:
+        - Access Group
+      x-authorities:
+        - apiUser
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+    delete:
+      description: Deletes the association between the access group and the access gate provided in the path.
+      operationId: dissociateFromAccessGate
+      tags:
+        - Access Group
+      x-authorities:
+        - apiUser
+      responses:
+        "204":
+          description: "[Deleted](https://jsonapi.org/format/#crud-deleting-responses-204)."
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
+  /access/groups/gates/{gateId}:
+    parameters:
+      - name: gateId
+        description: The id of an access gate.
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      description: Associates all the access groups of the organization provided as parameter to the gate in the path.
+      operationId: associateAllGroupsToAccessGate
+      tags:
+        - Access Group
+      x-authorities:
+        - apiUser
+      parameters:
+        - $ref: "./core.yaml#/components/parameters/filterOrganizationRequired"
+        - $ref: "./jsonapi.yaml#/components/parameters/acceptLanguage"
+      responses:
+        "200":
+          description: "[OK](https://jsonapi.org/format/#fetching-resources-responses-200)"
+        "400":
+          description: "Bad request"
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: "./jsonapi.yaml#/components/schemas/failure"
