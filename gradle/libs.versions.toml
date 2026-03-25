@@ -1,0 +1,29 @@
+[versions]
+
+kotlin = "2.0.21"
+jackson = "2.19.4"
+dataframe = "0.15.0"
+
+spotless = "7.2.1"
+detekt = "1.23.8"
+
+[libraries]
+
+yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml", version.ref = "jackson" }
+jackson = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+
+dataframe = { module = "org.jetbrains.kotlinx:dataframe", version.ref = "dataframe" }
+
+detektfmt = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt"}
+
+[bundles]
+
+jackson = [ "jackson", "yaml" ]
+dataframe = [ "dataframe" ]
+
+[plugins]
+
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt"}

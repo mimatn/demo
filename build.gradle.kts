@@ -1,16 +1,15 @@
 plugins {
-    kotlin("jvm") version "1.9.24"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.spotless)
     application
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.2")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
-    implementation("org.jetbrains.kotlinx:dataframe:0.14.1")
+    implementation(libs.bundles.jackson)
+    implementation(libs.bundles.dataframe)
+
+    detektPlugins(libs.detektfmt)
 }
 
 kotlin {
@@ -19,4 +18,32 @@ kotlin {
 
 application {
     mainClass.set("com.example.demo.MainKt")
+}
+
+detekt {
+    config.setFrom(file("config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+    parallel = true
+}
+
+configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+    format("misc") {
+        target("**/*.gradle", "**/*.md", "**/.gitignore", "**/*.xml", "**/*.properties")
+
+        trimTrailingWhitespace()
+        leadingTabsToSpaces(2)
+        endWithNewline()
+    }
+
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint()
+    }
+
+    java {
+        importOrder("java", "javax", "com.aton", "")
+
+        removeUnusedImports()
+        googleJavaFormat()
+    }
 }
