@@ -1,4 +1,10 @@
+package com.example.demo.parser
+
+import com.example.demo.model.CountedDependencyEdge
+import com.example.demo.model.DependencyEdge
+import com.example.demo.model.YamlFileInfo
 import com.fasterxml.jackson.databind.JsonNode
+import kotlin.collections.iterator
 
 class DependencyBuilder {
 
@@ -67,21 +73,21 @@ class DependencyBuilder {
                 if (e.startsWith("#/components/schemas/")) {
                     val targetSchema = e.substringAfterLast("/")
                     edge.add(
-                            DependencyEdge(
-                                    "$fileName::$schemaName",
-                                    "$fileName::$targetSchema",
-                                    "internal_schema_ref"
-                            )
+                        DependencyEdge(
+                            "$fileName::$schemaName",
+                            "$fileName::$targetSchema",
+                            "internal_schema_ref"
+                        )
                     )
                     // Se il ref punta ad un altro schema esterno creo una dipendenza tra i due file e i due schemi
                 } else if (e.startsWith("./")) {
                     val targetSchema = extractSchemaNameFromRef(e)
                     edge.add(
-                            DependencyEdge(
-                                    "$fileName::$schemaName",
-                                    "$fileName::$targetSchema",
-                                    "external_schema_ref"
-                            )
+                        DependencyEdge(
+                            "$fileName::$schemaName",
+                            "$fileName::$targetSchema",
+                            "external_schema_ref"
+                        )
                     )
                 }
             }
@@ -129,22 +135,22 @@ class DependencyBuilder {
                         val targetSchema = e.substringAfterLast("/")
 
                         edges.add(
-                                DependencyEdge(
-                                        from = operationNode,
-                                        to = "$fileName::$targetSchema",
-                                        type = "operation_internal_schema_ref"
-                                )
+                            DependencyEdge(
+                                from = operationNode,
+                                to = "$fileName::$targetSchema",
+                                type = "operation_internal_schema_ref"
+                            )
                         )
                     } else if (e.startsWith("./")) {
                         val targetFile = e.substringBefore("#").removePrefix("./")
                         val targetSchema = extractSchemaNameFromRef(e)
 
                         edges.add(
-                                DependencyEdge(
-                                        from = operationNode,
-                                        to = "$targetFile::$targetSchema",
-                                        type = "operation_external_schema_ref"
-                                )
+                            DependencyEdge(
+                                from = operationNode,
+                                to = "$targetFile::$targetSchema",
+                                type = "operation_external_schema_ref"
+                            )
                         )
                     }
                 }

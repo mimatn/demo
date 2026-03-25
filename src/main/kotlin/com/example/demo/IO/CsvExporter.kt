@@ -1,3 +1,7 @@
+package com.example.demo.IO
+
+import com.example.demo.model.CountedDependencyEdge
+import com.example.demo.model.NodeStats
 import java.io.File
 
 class CsvExporter {

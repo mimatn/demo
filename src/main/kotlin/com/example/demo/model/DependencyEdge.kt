@@ -1,3 +1,5 @@
+package com.example.demo.model
+
 // Data class per rappresentare un arco di dipendenza tra due file o entità
 data class DependencyEdge(
     val from: String,

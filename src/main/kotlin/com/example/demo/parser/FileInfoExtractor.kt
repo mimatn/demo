@@ -1,7 +1,11 @@
+package com.example.demo.parser
+
+import com.example.demo.model.YamlFileInfo
 import com.fasterxml.jackson.databind.JsonNode
+import kotlin.collections.iterator
 import kotlin.collections.mutableListOf
 
-fun extractFileInfo(file : String, root : JsonNode, refExtractor: RefExtractor): YamlFileInfo{
+fun extractFileInfo(file : String, root : JsonNode, refExtractor: RefExtractor): YamlFileInfo {
 
 
     //Controllo che il file abbia un campo info

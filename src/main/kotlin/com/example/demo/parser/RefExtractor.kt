@@ -1,6 +1,8 @@
+package com.example.demo.parser
+
 import com.fasterxml.jackson.databind.JsonNode
 
-class RefExtractor{
+class RefExtractor {
 
     // Funzione per trovare i $ref all'interno di un JsonNode
     fun findRef(node : JsonNode) : List<String>{

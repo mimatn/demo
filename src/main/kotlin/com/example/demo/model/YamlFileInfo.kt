@@ -1,3 +1,5 @@
+package com.example.demo.model
+
 data class YamlFileInfo(
     val fileName: String,
     val title:String?,

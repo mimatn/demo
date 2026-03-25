@@ -1,3 +1,8 @@
+package com.example.demo.analysis
+
+import com.example.demo.model.CountedDependencyEdge
+import com.example.demo.model.NodeStats
+
 class GraphAnalyzer {
 
     // Funzione per calcolare le statistiche dei nodi a partire dalle dipendenze contate

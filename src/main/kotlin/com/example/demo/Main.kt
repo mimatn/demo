@@ -1,13 +1,13 @@
 package com.example.demo
 
-import CsvExporter
-import DependencyBuilder
-import DependencyEdge
-import GraphAnalyzer
-import RefExtractor
-import YamlFileInfo
+import com.example.demo.IO.CsvExporter
+import com.example.demo.parser.DependencyBuilder
+import com.example.demo.model.DependencyEdge
+import com.example.demo.analysis.GraphAnalyzer
+import com.example.demo.parser.RefExtractor
+import com.example.demo.model.YamlFileInfo
 import YamlLoader
-import extractFileInfo
+import com.example.demo.parser.extractFileInfo
 
 class DemoApplication
 
