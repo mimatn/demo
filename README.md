@@ -1,7 +1,9 @@
 # Cose da migliorare
 
+- scegliere un nome di package, e spostare le classi. Suggerimento: com.aton.m14e.yaml (e similari per le altre parti di progetto) 
+- togliere i file YAML dai sorgenti, e metterli in una directory destinata ai dati da analizzare
+- gestire come parametri directory dei sorgenti YAML e dell'output
 - Gestire piu' metodi HTTP e casi OpenAPI non standard.
-- Migliorare la qualita' del codice (naming, duplicazioni, refactor mirati).
 - Aggiungere gestione errori piu' robusta sui file malformati.
 
 # Cose da fare nel notebook
