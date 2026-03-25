@@ -1,15 +1,13 @@
 package com.example.demo
 
-import YamlLoader
-import com.example.demo.IO.CsvExporter
 import com.example.demo.analysis.GraphAnalyzer
+import com.example.demo.io.CsvExporter
 import com.example.demo.model.DependencyEdge
 import com.example.demo.model.YamlFileInfo
 import com.example.demo.parser.DependencyBuilder
 import com.example.demo.parser.RefExtractor
+import com.example.demo.parser.YamlLoader
 import com.example.demo.parser.extractFileInfo
-
-class DemoApplication
 
 fun main() {
     // Inizializzo gli oggetti
@@ -42,12 +40,12 @@ fun main() {
     val exporter = CsvExporter()
     exporter.exportDependencies(
         countedDependencies,
-        "C:\\Users\\Francesco.Pezzuto\\Desktop\\project\\demo\\src\\main\\kotlin\\com\\example\\demo\\output\\dependencies.csv"
+        "output\\dependencies.csv"
     )
 
     exporter.exportNodeStats(
         nodeStats,
-        "C:\\Users\\Francesco.Pezzuto\\Desktop\\project\\demo\\src\\main\\kotlin\\com\\example\\demo\\output\\nodeStats.csv"
+        "output\\nodeStats.csv"
     )
 
     println()

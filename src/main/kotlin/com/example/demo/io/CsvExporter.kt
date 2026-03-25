@@ -1,4 +1,4 @@
-package com.example.demo.IO
+package com.example.demo.io
 
 import com.example.demo.model.CountedDependencyEdge
 import com.example.demo.model.NodeStats
