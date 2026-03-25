@@ -112,17 +112,17 @@ class DependencyBuilder {
             val pathName = pathEntry.key
             val pathBody = pathEntry.value
             val operationField = pathBody.fields()
-            //Per ogni operazione (get, post, put, delete, patch) controllo se ha dei ref che puntano ad altri
+            // Per ogni operazione (get, post, put, delete, patch) controllo se ha dei ref che puntano ad altri
             while (operationField.hasNext()) {
                 val operationEntry = operationField.next()
                 val method = operationEntry.key
                 val operationBody = operationEntry.value
 
                 if (method != "get" &&
-                                method != "post" &&
-                                method != "put" &&
-                                method != "delete" &&
-                                method != "patch"
+                    method != "post" &&
+                    method != "put" &&
+                    method != "delete" &&
+                    method != "patch"
                 ) {
                     continue
                 }

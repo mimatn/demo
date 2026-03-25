@@ -14,10 +14,10 @@ class CsvExporter {
 
             for (dep in dependencies) {
                 out.println(
-                        "${escape(dep.from)}," +
-                                "${escape(dep.to)}," +
-                                "${escape(dep.type)}," +
-                                dep.count
+                    "${escape(dep.from)}," +
+                        "${escape(dep.to)}," +
+                        "${escape(dep.type)}," +
+                        dep.count
                 )
             }
         }
@@ -32,7 +32,7 @@ class CsvExporter {
             for (stat in nodeStats) {
                 val total = stat.outDegree + stat.inDegree
                 out.println(
-                        "${escape(stat.node)}," + stat.outDegree + "," + stat.inDegree + "," + total
+                    "${escape(stat.node)}," + stat.outDegree + "," + stat.inDegree + "," + total
                 )
             }
         }

@@ -1,12 +1,12 @@
 package com.example.demo
 
-import com.example.demo.IO.CsvExporter
-import com.example.demo.parser.DependencyBuilder
-import com.example.demo.model.DependencyEdge
-import com.example.demo.analysis.GraphAnalyzer
-import com.example.demo.parser.RefExtractor
-import com.example.demo.model.YamlFileInfo
 import YamlLoader
+import com.example.demo.IO.CsvExporter
+import com.example.demo.analysis.GraphAnalyzer
+import com.example.demo.model.DependencyEdge
+import com.example.demo.model.YamlFileInfo
+import com.example.demo.parser.DependencyBuilder
+import com.example.demo.parser.RefExtractor
 import com.example.demo.parser.extractFileInfo
 
 class DemoApplication
@@ -34,20 +34,20 @@ fun main() {
     }
 
     val countedDependencies =
-            DependencyBuilder().countDependencies(allDependencies).sortedByDescending { it.count }
+        DependencyBuilder().countDependencies(allDependencies).sortedByDescending { it.count }
 
     val analyzer = GraphAnalyzer()
     val nodeStats = analyzer.computeNodeStats(countedDependencies)
 
     val exporter = CsvExporter()
     exporter.exportDependencies(
-            countedDependencies,
-            "C:\\Users\\Francesco.Pezzuto\\Desktop\\project\\demo\\src\\main\\kotlin\\com\\example\\demo\\output\\dependencies.csv"
+        countedDependencies,
+        "C:\\Users\\Francesco.Pezzuto\\Desktop\\project\\demo\\src\\main\\kotlin\\com\\example\\demo\\output\\dependencies.csv"
     )
 
     exporter.exportNodeStats(
-            nodeStats,
-            "C:\\Users\\Francesco.Pezzuto\\Desktop\\project\\demo\\src\\main\\kotlin\\com\\example\\demo\\output\\nodeStats.csv"
+        nodeStats,
+        "C:\\Users\\Francesco.Pezzuto\\Desktop\\project\\demo\\src\\main\\kotlin\\com\\example\\demo\\output\\nodeStats.csv"
     )
 
     println()
